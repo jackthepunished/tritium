@@ -14,7 +14,7 @@ BitNet-style 1.58-bit models (weights in {-1, 0, +1}) replace matrix multiplicat
 |---|---|---|
 | `tritc` | Model converter: HF BitNet checkpoint → packed `.trit` format | Rust |
 | `tritd` | Host runtime: tokenizer, sampler, KV cache, FPGA orchestration | Rust |
-| `tritcore` | Ternary matmul engine + transformer dataflow on FPGA | SystemVerilog |
+| `tritcore` | Ternary matmul engine + transformer dataflow on FPGA (`rtl/`) | SystemVerilog |
 | `tritsim` | Bit-accurate software reference of tritcore, used as golden model | Rust |
 | `tritbench` | Benchmark harness: tokens/s, J/token, TTFT vs Pi/Jetson baselines | Rust |
 
@@ -27,7 +27,11 @@ Direct continuation of [ternoise](https://github.com/jackthepunished/ternoise) �
 Phase 0 complete: tritsim generates coherent text from the real BitNet b1.58
 2B4T checkpoint on CPU and matches the QAT reference at mean logit cosine
 0.999 with 100% top-1 agreement over the test prompts (see
-docs/02-ROADMAP.md for the gates). Read in order:
+docs/02-ROADMAP.md for the gates).
+
+Phase 1 (week 2) complete: the 64-lane RTL ternary matvec core matches the
+golden model bit-for-bit under Verilator across random, edge-case, and
+real-checkpoint weight vectors (`make -C rtl test`). Read in order:
 
 1. [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) — system design and the honest bandwidth math
 2. [docs/02-ROADMAP.md](docs/02-ROADMAP.md) — 6-week milestone plan

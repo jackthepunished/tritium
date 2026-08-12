@@ -12,9 +12,9 @@ Each week ends with a public artifact (repo tag + short post). The cadence is th
 
 ## Week 2 — .trit format + RTL matmul core in simulation
 
-- [ ] Freeze `model.trit` v0: packing, tiling order, manifest. `tritc` emits it; tritsim consumes it (same bytes the FPGA will see).
-- [ ] SystemVerilog: trit unpack + lane array (start N=64) + adder tree + accumulator; fixed-point RMSNorm and SiLU units.
-- [ ] Verilator testbench driven by tritsim-generated vectors; bit-exact match required per tile, per layer.
+- [x] Freeze `model.trit` v0: packing, tiling order, manifest. `tritc` emits it; tritsim consumes it (same bytes the FPGA will see). (Landed with Phase 0.)
+- [x] SystemVerilog: trit unpack + lane array (N=64) + adder tree + accumulator (`rtl/trit_matvec.sv`). Fixed-point RMSNorm/activation units deferred to week 3: bit-exact verification requires migrating tritsim's f32 norm math to matching fixed-point first (Q-format design), which belongs with board bring-up.
+- [x] Verilator testbench driven by tritsim-generated vectors (`tritsim vectors`, `make -C rtl test`); bit-exact on random, padding, extremes, zeros, 6912-wide, and real layer-0 k_proj tiles, plus an invalid-encoding error check.
 - **Artifact:** waveform + "RTL matches golden model bit-for-bit" post with the testbench harness.
 
 ## Week 3 — first silicon contact
