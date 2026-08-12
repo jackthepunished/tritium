@@ -153,7 +153,9 @@ impl Model {
         for (li, layer) in self.layers.iter().enumerate() {
             let t0 = trace && li == 0;
             // attention block
+            crate::stats::record("residual", &x);
             let xn = rmsnorm(&x, &layer.input_norm, cfg.rms_eps);
+            crate::stats::record("norm_out.input", &xn);
             let mut q = layer.q.apply(&xn);
             let mut k = layer.k.apply(&xn);
             let v = layer.v.apply(&xn);
@@ -193,10 +195,15 @@ impl Model {
             if t0 {
                 dump("ctx_pre_subnorm", &ctx);
             }
+            crate::stats::record("q", &q);
+            crate::stats::record("k", &k);
+            crate::stats::record("v", &v);
+            crate::stats::record("ctx", &ctx);
             let ctx = match &layer.attn_sub_norm {
                 Some(g) => rmsnorm(&ctx, g, cfg.rms_eps),
                 None => ctx,
             };
+            crate::stats::record("norm_out.attn_sub", &ctx);
             let attn_out = layer.o.apply(&ctx);
             if t0 {
                 dump("ctx_post_subnorm", &ctx);
@@ -208,6 +215,7 @@ impl Model {
 
             // mlp block
             let xn = rmsnorm(&x, &layer.post_norm, cfg.rms_eps);
+            crate::stats::record("norm_out.post_attn", &xn);
             let g = layer.gate.apply(&xn);
             let u = layer.up.apply(&xn);
             let a: Vec<f32> = g
@@ -221,10 +229,12 @@ impl Model {
                 dump("up_proj", &u);
                 dump("act_pre_subnorm", &a);
             }
+            crate::stats::record("mlp_act", &a);
             let a = match &layer.ffn_sub_norm {
                 Some(gain) => rmsnorm(&a, gain, cfg.rms_eps),
                 None => a,
             };
+            crate::stats::record("norm_out.ffn_sub", &a);
             let mlp_out = layer.down.apply(&a);
             if t0 {
                 dump("down_proj", &mlp_out);
@@ -240,7 +250,7 @@ impl Model {
 
         // logits: plain f32 matmul against lm_head (not ternary by design)
         let xn = rmsnorm(&x, &self.final_norm, cfg.rms_eps);
-        (0..cfg.vocab_size)
+        let logits: Vec<f32> = (0..cfg.vocab_size)
             .map(|v| {
                 self.lm_head[v * h..(v + 1) * h]
                     .iter()
@@ -248,7 +258,9 @@ impl Model {
                     .map(|(a, b)| a * b)
                     .sum()
             })
-            .collect()
+            .collect();
+        crate::stats::record("logits", &logits);
+        logits
     }
 }
 

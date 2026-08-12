@@ -69,5 +69,6 @@ fn main() -> Result<()> {
             println!("vectors written to {}", out.display());
         }
     }
+    tritsim::stats::flush()?;
     Ok(())
 }
