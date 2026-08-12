@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::fmt::Write as _;
 use std::path::Path;
 use trit_core::matvec::ternary_matvec;
@@ -88,6 +88,26 @@ pub fn generate_all(out: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Vectors cut from the actual checkpoint: first `max_rows` of layer-0 k_proj
+/// against a deterministic random activation, using the exact trits the model
+/// runs. Guards against generator-side packing bugs that random sets share.
+pub fn model_tile_set(out: &Path, model: &Path, name: &str, max_rows: usize) -> Result<()> {
+    let r = trit_core::tritfmt::TritReader::open(model)?;
+    let tname = "model.layers.0.self_attn.k_proj.weight";
+    let meta = r
+        .metas()
+        .iter()
+        .find(|m| m.name == tname)
+        .with_context(|| format!("{tname} not in model"))?;
+    let (all, _scale) = r.read_trit(tname)?;
+    let cols = meta.shape[1];
+    let rows = meta.shape[0].min(max_rows);
+    let trits = &all[..rows * cols];
+    let mut rng = Rng(0xD1CE);
+    let x: Vec<i8> = (0..cols).map(|_| rng.i8()).collect();
+    write_set(out, name, rows, cols, trits, &x)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -117,6 +137,21 @@ mod tests {
         let yh: Vec<String> = std::fs::read_to_string(dir.join("t/y.hex"))
             .unwrap().lines().map(String::from).collect();
         assert_eq!(yh, vec!["fffffff6", "00000050"]); // -10, 80
+    }
+
+    #[test]
+    fn model_tile_set_uses_stored_trits() {
+        use trit_core::tritfmt::TritWriter;
+        let dir = std::env::temp_dir().join("tritsim_vectors_model");
+        std::fs::create_dir_all(&dir).unwrap();
+        let mp = dir.join("m.trit");
+        let mut w = TritWriter::create(&mp, "{}").unwrap();
+        let trits: Vec<i8> = (0..2 * 64).map(|i| [(1i8), 0, -1][i % 3]).collect();
+        w.write_trit("model.layers.0.self_attn.k_proj.weight", &[2, 64], &trits, 0.5).unwrap();
+        w.finish().unwrap();
+        model_tile_set(&dir, &mp, "model_k_proj_l0", 8).unwrap();
+        let meta = std::fs::read_to_string(dir.join("model_k_proj_l0/meta.txt")).unwrap();
+        assert_eq!(meta.trim(), "2 64"); // capped at available rows
     }
 
     #[test]
