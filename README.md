@@ -38,7 +38,13 @@ the real checkpoint (docs/03b-NUMERICS.md), norm folding removes every
 per-element divide/rsqrt from the datapath (proved on the real model), and
 Yosys asserts a multiplier-free netlist for the matvec core
 (`make -C rtl synth`; RoPE, outside the ternary datapath, will use
-multipliers). Board decision memo: docs/04b-BOARD-MEMO.md. Read in order:
+multipliers). Board decision memo: docs/04b-BOARD-MEMO.md.
+
+Phase 3 (week 3b) complete: hardware-in-the-loop. Built with
+`--features rtl`, tritsim routes every ternary matvec through the Verilated
+RTL core (`tritsim --backend rtl run|compare`); the real 2B4T checkpoint
+decodes byte-identically to the golden path at 24 s/token in simulation.
+The board purchase gate is passed. Read in order:
 
 1. [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) — system design and the honest bandwidth math
 2. [docs/02-ROADMAP.md](docs/02-ROADMAP.md) — 6-week milestone plan
