@@ -12,13 +12,26 @@ fn argmax(l: &[f32]) -> u32 {
 /// Feed `prompt_ids`, then greedily decode `steps` tokens (stops early on eos).
 pub fn greedy_ids(model: &Model, prompt_ids: &[u32], steps: usize, eos_id: Option<u32>) -> Result<Vec<u32>> {
     anyhow::ensure!(!prompt_ids.is_empty(), "empty prompt");
-    let mut cache = KvCache::new(&model.cfg);
+    let cfg = &model.cfg;
+    anyhow::ensure!(
+        prompt_ids.len() <= cfg.max_seq,
+        "prompt of {} tokens exceeds max_seq {}",
+        prompt_ids.len(),
+        cfg.max_seq
+    );
+    if let Some(bad) = prompt_ids.iter().find(|&&t| t as usize >= cfg.vocab_size) {
+        anyhow::bail!("prompt token {bad} out of vocab ({})", cfg.vocab_size);
+    }
+    let mut cache = KvCache::new(cfg);
     let mut logits = Vec::new();
     for (pos, tok) in prompt_ids.iter().enumerate() {
         logits = model.forward(*tok, pos, &mut cache);
     }
     let mut out = Vec::new();
     let mut pos = prompt_ids.len();
+    // Stop at the context limit rather than asking forward() for an
+    // out-of-range position.
+    let steps = steps.min(cfg.max_seq.saturating_sub(prompt_ids.len()));
     for _ in 0..steps {
         let next = argmax(&logits);
         if Some(next) == eos_id {

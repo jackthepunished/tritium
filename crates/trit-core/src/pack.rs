@@ -16,6 +16,10 @@ pub fn pack_trits(trits: &[i8]) -> Vec<u8> {
 }
 
 pub fn unpack_trits(bytes: &[u8], n: usize) -> anyhow::Result<Vec<i8>> {
+    let required = n.div_ceil(4);
+    if bytes.len() < required {
+        bail!("truncated trit data: need {required} bytes for {n} trits, got {}", bytes.len());
+    }
     let mut out = Vec::with_capacity(n);
     for i in 0..n {
         let code = (bytes[i / 4] >> ((i % 4) * 2)) & 0b11;
@@ -46,5 +50,12 @@ mod tests {
     #[test]
     fn invalid_encoding_is_an_error() {
         assert!(unpack_trits(&[0b0000_0011], 1).is_err());
+    }
+
+    #[test]
+    fn truncated_data_is_an_error() {
+        assert!(unpack_trits(&[0x49], 6).is_err()); // 6 trits need 2 bytes
+        assert!(unpack_trits(&[], 1).is_err());
+        assert!(unpack_trits(&[], 0).unwrap().is_empty());
     }
 }

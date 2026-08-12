@@ -17,6 +17,9 @@ tok = AutoTokenizer.from_pretrained(model_dir)
 model = AutoModelForCausalLM.from_pretrained(model_dir, torch_dtype=torch.bfloat16)
 model.eval()
 
+n_bitlinear = sum(1 for _, m in model.named_modules() if type(m).__name__ == "AutoBitLinear")
+assert n_bitlinear > 0, "no AutoBitLinear modules: unquantized fallback, trace would be invalid"
+
 bos = tok.bos_token_id
 print("bos id:", bos)
 ids = torch.tensor([[bos]])

@@ -93,52 +93,54 @@ pub struct TritReader {
     payload_start: usize,
 }
 
+/// Bounds-checked read of `n` bytes at cursor `p`; the file is untrusted input,
+/// so every field access must fail with Err rather than panic on truncation.
+fn take<'a>(b: &'a [u8], p: &mut usize, n: usize) -> Result<&'a [u8]> {
+    let end = p.checked_add(n).context("length overflow")?;
+    let s = b.get(*p..end).context("truncated .trit file")?;
+    *p = end;
+    Ok(s)
+}
+
+fn take_u32(b: &[u8], p: &mut usize) -> Result<u32> {
+    Ok(u32::from_le_bytes(take(b, p, 4)?.try_into().unwrap()))
+}
+
 impl TritReader {
     pub fn open(path: &Path) -> Result<Self> {
         let f = std::fs::File::open(path).with_context(|| format!("open {}", path.display()))?;
         let mmap = unsafe { memmap2::Mmap::map(&f)? };
         let b = &mmap[..];
-        if &b[0..4] != b"TRIT" {
+        let mut p = 0usize;
+        if take(b, &mut p, 4)? != b"TRIT" {
             bail!("bad magic");
         }
-        let mut p = 4usize;
-        let rd_u32 = |b: &[u8], p: &mut usize| {
-            let v = u32::from_le_bytes(b[*p..*p + 4].try_into().unwrap());
-            *p += 4;
-            v
-        };
-        let version = rd_u32(b, &mut p);
+        let version = take_u32(b, &mut p)?;
         if version != 0 {
             bail!("unsupported version {version}");
         }
-        let clen = rd_u32(b, &mut p) as usize;
-        let config = std::str::from_utf8(&b[p..p + clen])?.to_string();
-        p += clen;
-        let n = rd_u32(b, &mut p) as usize;
-        let mut metas = Vec::with_capacity(n);
+        let clen = take_u32(b, &mut p)? as usize;
+        let config = std::str::from_utf8(take(b, &mut p, clen)?)?.to_string();
+        let n = take_u32(b, &mut p)? as usize;
+        // No with_capacity(n): n is file-controlled and preallocation would
+        // let a corrupt header request gigabytes before any bounds check fires.
+        let mut metas = Vec::new();
         for _ in 0..n {
-            let nlen = u16::from_le_bytes(b[p..p + 2].try_into().unwrap()) as usize;
-            p += 2;
-            let name = std::str::from_utf8(&b[p..p + nlen])?.to_string();
-            p += nlen;
-            let dtype = match b[p] {
+            let nlen = u16::from_le_bytes(take(b, &mut p, 2)?.try_into().unwrap()) as usize;
+            let name = std::str::from_utf8(take(b, &mut p, nlen)?)?.to_string();
+            let dtype = match take(b, &mut p, 1)?[0] {
                 0 => DType::F32,
                 1 => DType::Trit,
                 x => bail!("bad dtype {x}"),
             };
-            p += 1;
-            let ndim = b[p] as usize;
-            p += 1;
+            let ndim = take(b, &mut p, 1)?[0] as usize;
             let mut shape = Vec::with_capacity(ndim);
             for _ in 0..ndim {
-                shape.push(rd_u32(b, &mut p) as usize);
+                shape.push(take_u32(b, &mut p)? as usize);
             }
-            let scale = f32::from_le_bytes(b[p..p + 4].try_into().unwrap());
-            p += 4;
-            let offset = u64::from_le_bytes(b[p..p + 8].try_into().unwrap());
-            p += 8;
-            let byte_len = u64::from_le_bytes(b[p..p + 8].try_into().unwrap());
-            p += 8;
+            let scale = f32::from_le_bytes(take(b, &mut p, 4)?.try_into().unwrap());
+            let offset = u64::from_le_bytes(take(b, &mut p, 8)?.try_into().unwrap());
+            let byte_len = u64::from_le_bytes(take(b, &mut p, 8)?.try_into().unwrap());
             metas.push(TensorMeta { name, dtype, shape, scale, offset, byte_len });
         }
         Ok(Self { mmap, config, metas, payload_start: p })
@@ -159,9 +161,24 @@ impl TritReader {
             .with_context(|| format!("tensor not found: {name}"))
     }
 
-    fn bytes(&self, m: &TensorMeta) -> &[u8] {
-        let s = self.payload_start + m.offset as usize;
-        &self.mmap[s..s + m.byte_len as usize]
+    fn bytes(&self, m: &TensorMeta) -> Result<&[u8]> {
+        let start = self
+            .payload_start
+            .checked_add(usize::try_from(m.offset)?)
+            .context("tensor offset overflow")?;
+        let end = start
+            .checked_add(usize::try_from(m.byte_len)?)
+            .context("tensor length overflow")?;
+        self.mmap
+            .get(start..end)
+            .with_context(|| format!("tensor {} data out of file bounds", m.name))
+    }
+
+    fn elem_count(m: &TensorMeta) -> Result<usize> {
+        m.shape
+            .iter()
+            .try_fold(1usize, |a, &d| a.checked_mul(d))
+            .with_context(|| format!("tensor {} shape overflow", m.name))
     }
 
     pub fn read_f32(&self, name: &str) -> Result<Vec<f32>> {
@@ -169,8 +186,12 @@ impl TritReader {
         if m.dtype != DType::F32 {
             bail!("{name} is not F32");
         }
-        Ok(self
-            .bytes(m)
+        let bytes = self.bytes(m)?;
+        let n = Self::elem_count(m)?;
+        if bytes.len() != n * 4 {
+            bail!("{name}: byte_len {} does not match shape ({n} f32s)", bytes.len());
+        }
+        Ok(bytes
             .chunks_exact(4)
             .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
             .collect())
@@ -181,8 +202,8 @@ impl TritReader {
         if m.dtype != DType::Trit {
             bail!("{name} is not Trit");
         }
-        let n: usize = m.shape.iter().product();
-        Ok((unpack_trits(self.bytes(m), n)?, m.scale))
+        let n = Self::elem_count(m)?;
+        Ok((unpack_trits(self.bytes(m)?, n)?, m.scale))
     }
 }
 
@@ -211,5 +232,29 @@ mod tests {
         assert!(r.read_f32("nope").is_err());
         // dtype mismatch is an error
         assert!(r.read_trit("norm.weight").is_err());
+    }
+
+    #[test]
+    fn truncated_files_error_instead_of_panicking() {
+        let dir = std::env::temp_dir().join("tritfmt_trunc_test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let full_path = dir.join("full.trit");
+        let mut w = TritWriter::create(&full_path, r#"{"hidden_size":4}"#).unwrap();
+        w.write_f32("norm.weight", &[4], &[1.0, 2.0, 3.0, 4.0]).unwrap();
+        w.write_trit("w.weight", &[2, 3], &[1, -1, 0, 0, 1, 1], 0.5).unwrap();
+        w.finish().unwrap();
+        let full = std::fs::read(&full_path).unwrap();
+
+        // Every strict prefix must produce Err somewhere, never a panic.
+        let cut_path = dir.join("cut.trit");
+        for cut in [0, 3, 4, 8, 12, 20, full.len() / 2, full.len() - 1] {
+            std::fs::write(&cut_path, &full[..cut]).unwrap();
+            let outcome = TritReader::open(&cut_path).and_then(|r| {
+                r.read_f32("norm.weight")?;
+                r.read_trit("w.weight")?;
+                Ok(())
+            });
+            assert!(outcome.is_err(), "cut at {cut} bytes should error");
+        }
     }
 }

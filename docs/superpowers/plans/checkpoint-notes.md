@@ -1,6 +1,8 @@
 # BitNet b1.58 2B4T bf16 checkpoint notes (Task 5 inspection)
 
 Source: microsoft/bitnet-b1.58-2B-4T-bf16, inspected 2026-08-12.
+Pinned revision: 276681394656abdadb8e80e5b2c3db5e5d7fcaff (fetch_model.sh
+downloads exactly this; all Phase 0 validation numbers refer to it).
 
 From config.json:
 

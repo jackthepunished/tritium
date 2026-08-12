@@ -11,6 +11,7 @@ const TERNARY_SUFFIXES: &[&str] = &[
     "gate_proj.weight", "up_proj.weight", "down_proj.weight",
 ];
 
+#[derive(Debug)]
 pub struct Report {
     pub tensors: usize,
     pub ternary_tensors: usize,
@@ -49,11 +50,18 @@ pub fn convert(input_dir: &Path, output: &Path) -> Result<Report> {
     anyhow::ensure!(!st_files.is_empty(), "no .safetensors files in {}", input_dir.display());
 
     let (mut n, mut n_tern, mut zsum, mut esum) = (0usize, 0usize, 0f32, 0f32);
+    // Names are unique within one safetensors file but nothing guarantees it
+    // across shards; a duplicate would silently shadow in TritReader::meta.
+    let mut seen = std::collections::HashSet::new();
     for path in st_files {
         let file = std::fs::File::open(&path)?;
         let mmap = unsafe { memmap2::Mmap::map(&file)? };
         let st = SafeTensors::deserialize(&mmap)?;
         for (name, view) in st.tensors() {
+            anyhow::ensure!(
+                seen.insert(name.clone()),
+                "duplicate tensor name across shards: {name}"
+            );
             let shape: Vec<usize> = view.shape().to_vec();
             let data = to_f32(view.dtype(), view.data())?;
             let is_ternary = shape.len() == 2
@@ -130,5 +138,23 @@ mod tests {
         assert_eq!(trits, vec![1, -1, 0, 1]);
         assert!((scale - 0.95).abs() < 1e-6);
         assert_eq!(r.read_f32("model.norm.weight").unwrap(), vec![1.0, 1.0]);
+    }
+
+    #[test]
+    fn duplicate_names_across_shards_error() {
+        let dir = std::env::temp_dir().join("tritc_dup_test");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("config.json"), r#"{}"#).unwrap();
+        let norm = f32_bytes(&[1.0, 1.0]);
+        let mut tensors = HashMap::new();
+        tensors.insert(
+            "model.norm.weight".to_string(),
+            TensorView::new(Dtype::F32, vec![2], &norm).unwrap(),
+        );
+        let bytes = serialize(&tensors, &None).unwrap();
+        std::fs::write(dir.join("a.safetensors"), &bytes).unwrap();
+        std::fs::write(dir.join("b.safetensors"), &bytes).unwrap();
+        let err = convert(&dir, &dir.join("out.trit")).unwrap_err();
+        assert!(err.to_string().contains("duplicate tensor name"));
     }
 }

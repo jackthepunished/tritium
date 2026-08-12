@@ -130,6 +130,15 @@ impl Model {
         let cfg = &self.cfg;
         let (hd, nh, nkv) = (cfg.head_dim(), cfg.num_heads, cfg.num_kv_heads);
         let h = cfg.hidden_size;
+        // Explicit guards so misuse fails with a message instead of a slice
+        // panic deep in the KV cache. v1 keeps forward() infallible; callers
+        // (generate, compare) validate ranges before the loop.
+        assert!(
+            (token as usize) < cfg.vocab_size,
+            "token {token} out of vocab ({})",
+            cfg.vocab_size
+        );
+        assert!(pos < cfg.max_seq, "pos {pos} exceeds max_seq {}", cfg.max_seq);
         let mut x = self.embed[token as usize * h..(token as usize + 1) * h].to_vec();
 
         let trace = std::env::var_os("TRITSIM_TRACE").is_some();

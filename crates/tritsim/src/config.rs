@@ -13,6 +13,7 @@ struct Raw {
     rope_theta: Option<f32>,
     rms_norm_eps: Option<f32>,
     hidden_act: Option<String>,
+    max_position_embeddings: Option<usize>,
 }
 
 #[derive(Clone, Debug)]
@@ -46,7 +47,9 @@ impl ModelConfig {
             rope_theta: r.rope_theta.unwrap_or(10000.0),
             rms_eps: r.rms_norm_eps.unwrap_or(1e-5),
             act,
-            max_seq: 2048,
+            // v1 KV cache caps context at 2048 (see docs/02-ROADMAP.md), but
+            // never claim more than the checkpoint itself supports.
+            max_seq: 2048.min(r.max_position_embeddings.unwrap_or(2048)),
         })
     }
     pub fn head_dim(&self) -> usize {

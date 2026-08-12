@@ -1,5 +1,8 @@
 /// BitNet b1.58 weight quantization: scale = mean(|w|), trits = clamp(round(w/scale), -1, 1).
 pub fn absmean_quantize(w: &[f32]) -> (Vec<i8>, f32) {
+    if w.is_empty() {
+        return (Vec::new(), 1.0);
+    }
     // f64 accumulator: projection tensors run to tens of millions of elements,
     // where sequential f32 summation loses enough low-order bits to shift the
     // scale by several percent and flip trits at rounding boundaries.
@@ -44,6 +47,13 @@ mod tests {
         let (trits, scale) = absmean_quantize(&[0.0, 0.0]);
         assert_eq!(trits, vec![0, 0]);
         assert!(scale > 0.0);
+    }
+
+    #[test]
+    fn absmean_empty_is_safe() {
+        let (trits, scale) = absmean_quantize(&[]);
+        assert!(trits.is_empty());
+        assert!(scale.is_finite() && scale > 0.0);
     }
 
     #[test]

@@ -28,6 +28,21 @@ fn argmax(l: &[f32]) -> usize {
 
 pub fn compare(model: &Model, dump_path: &Path) -> Result<CompareStats> {
     let d: Dump = serde_json::from_str(&std::fs::read_to_string(dump_path)?)?;
+    anyhow::ensure!(!d.prompt_ids.is_empty(), "reference dump has no prompt ids");
+    anyhow::ensure!(
+        d.logits.len() == d.prompt_ids.len(),
+        "reference dump has {} logit rows for {} prompt ids",
+        d.logits.len(),
+        d.prompt_ids.len()
+    );
+    for (i, row) in d.logits.iter().enumerate() {
+        anyhow::ensure!(
+            row.len() == model.cfg.vocab_size,
+            "logit row {i} has {} entries, model vocab is {} (cosine would silently truncate)",
+            row.len(),
+            model.cfg.vocab_size
+        );
+    }
     let mut cache = KvCache::new(&model.cfg);
     let (mut cos_sum, mut top1) = (0f32, 0usize);
     for (pos, tok) in d.prompt_ids.iter().enumerate() {

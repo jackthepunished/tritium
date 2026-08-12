@@ -15,11 +15,14 @@ impl Rng {
         (0..n).map(|_| self.next_f32()).collect()
     }
     fn trits(&mut self, n: usize) -> Vec<i8> {
+        // next_f32 is in [-0.5, 0.5); shift to [0, 3) so all three trit
+        // values occur (the previous |x*3| as u32 could only yield 0 or 1,
+        // leaving negative weights untested).
         (0..n)
-            .map(|_| match (self.next_f32() * 3.0).abs() as u32 {
-                0 => 0i8,
-                1 => 1,
-                _ => -1,
+            .map(|_| match ((self.next_f32() + 0.5) * 3.0) as u32 {
+                0 => -1i8,
+                1 => 0,
+                _ => 1,
             })
             .collect()
     }
@@ -53,6 +56,13 @@ fn build_tiny_model(name: &str) -> PathBuf {
     w.write_f32("model.norm.weight", &[16], &vec![1.0; 16]).unwrap();
     w.finish().unwrap();
     path
+}
+
+#[test]
+fn fixture_rng_produces_all_three_trit_values() {
+    let mut rng = Rng(0x5eed_2026);
+    let t = rng.trits(1000);
+    assert!(t.contains(&-1) && t.contains(&0) && t.contains(&1));
 }
 
 #[test]
