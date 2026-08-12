@@ -30,6 +30,14 @@ enum Cmd {
         #[arg(long)]
         dump: PathBuf,
     },
+    /// Emit golden vector sets for the RTL testbench
+    Vectors {
+        #[arg(long, default_value = "rtl/vectors")]
+        out: PathBuf,
+        /// Also cut a tile of real weights from this .trit model
+        #[arg(long)]
+        model: Option<PathBuf>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -52,6 +60,13 @@ fn main() -> Result<()> {
                 s.mean_cosine >= 0.98 && s.top1_match_frac >= 0.90,
                 "below acceptance thresholds (cosine >= 0.98, top1 >= 0.90)"
             );
+        }
+        Cmd::Vectors { out, model } => {
+            tritsim::vectors::generate_all(&out)?;
+            if let Some(m) = model {
+                tritsim::vectors::model_tile_set(&out, &m, "model_k_proj_l0", 8)?;
+            }
+            println!("vectors written to {}", out.display());
         }
     }
     Ok(())

@@ -5,3 +5,5 @@ logits.json
 __pycache__/
 *_dump.json
 logits*.json
+rtl/vectors/
+rtl/obj_dir/
