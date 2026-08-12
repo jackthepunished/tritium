@@ -31,8 +31,8 @@ tritium follows the same doctrine.
 
 ## Week 3b — layer sequencer under Verilator (pre-purchase gate)
 
-- [ ] Layer sequencer + weight streaming end-to-end under Verilator (ternoise M5 pattern), output matches tritsim.
-- **The board purchase gate sits here** (see docs/04b-BOARD-MEMO.md): buy only once this runs.
+- [x] Hardware-in-the-loop end-to-end (ternoise M5 pattern): tritsim's `--backend rtl` (cargo feature `rtl`) routes every ternary matvec of the real 2B4T model through the Verilated trit_matvec core. Compare output byte-identical to the CPU backend (6 positions, folded norm); greedy text identical. Measured 24 s/token in Verilator (~1.4M beats/s) — the number that says why silicon is next.
+- **The board purchase gate sits here** (see docs/04b-BOARD-MEMO.md): PASSED 2026-08-12 — buying is now unblocked.
 
 ## Week 3c — first silicon contact (after board purchase)
 

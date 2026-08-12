@@ -1,13 +1,29 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use tritsim::backend::{set_backend, Backend};
 use tritsim::model::Model;
 
 #[derive(Parser)]
 #[command(name = "tritsim", about = "tritium golden-model inference")]
 struct Cli {
+    /// Matvec backend: cpu, or rtl (Verilated core; needs --features rtl build)
+    #[arg(long, global = true, default_value = "cpu")]
+    backend: String,
     #[command(subcommand)]
     cmd: Cmd,
+}
+
+fn select_backend(name: &str) -> Result<()> {
+    match name {
+        "cpu" => set_backend(Backend::Cpu),
+        #[cfg(feature = "rtl")]
+        "rtl" => set_backend(Backend::Rtl),
+        #[cfg(not(feature = "rtl"))]
+        "rtl" => anyhow::bail!("this binary was built without --features rtl"),
+        other => anyhow::bail!("unknown backend {other}"),
+    }
+    Ok(())
 }
 
 #[derive(Subcommand)]
@@ -49,6 +65,7 @@ fn main() -> Result<()> {
 }
 
 fn run(cli: Cli) -> Result<()> {
+    select_backend(&cli.backend)?;
     match cli.cmd {
         Cmd::Run { model, tokenizer, prompt, steps } => {
             let m = Model::load(&model)?;
