@@ -33,3 +33,7 @@ recorded vectors (per layer per token).
    fixed-point items, in that order of difficulty reversed: mlp_act is harder.
 4. The raw stats JSONs are regenerable (`TRITSIM_STATS=out.json tritsim run ...`)
    and not committed.
+5. **Collect stats in the default (unfolded) mode.** The folded path
+   (`TRITSIM_FOLDED_NORM=1`) never materializes normed vectors — that is its
+   point — so `norm_out.*` stages are absent from its reports by design. The
+   tables above were measured unfolded.

@@ -47,7 +47,7 @@
 
 **Files:** Create `rtl/synth.ys`, extend `rtl/Makefile` (`synth` target), `.github`-style check deferred (no CI in repo yet).
 
-```
+```text
 # rtl/synth.ys
 read_verilog -sv trit_matvec.sv
 hierarchy -top trit_matvec

@@ -18,8 +18,12 @@ numbers.
   memory-bound at `bandwidth / packed_model_size`. Packed 2B4T is ~600 MB;
   a 700M-class model ~175 MB.
 - **Numerics (03b-NUMERICS.md):** q/k/v/ctx/norm-out stages fit int16;
-  residual and the relu2 activation stage stay f32/wide in v1 — both live
-  off the ternary streaming path, so they don't gate the board choice.
+  residual and the relu2 activation stage stay f32/wide in v1. They remain in
+  the throughput path (quantization, buffering, transfer into the ternary
+  matvecs), but their traffic is ~3 orders of magnitude below weight
+  streaming — per layer per token, activations are ~10-28 KB (2560-6912
+  elements) against ~20 MB of packed weights — so the roofline and therefore
+  the board choice stay weight-bandwidth-dominated.
 
 ## Options
 

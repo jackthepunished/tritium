@@ -36,8 +36,9 @@ real-checkpoint weight vectors (`make -C rtl test`).
 Phase 2 (week 3, reframed sim-first) complete: measured per-stage numerics on
 the real checkpoint (docs/03b-NUMERICS.md), norm folding removes every
 per-element divide/rsqrt from the datapath (proved on the real model), and
-Yosys asserts a multiplier-free netlist (`make -C rtl synth`). Board decision
-memo: docs/04b-BOARD-MEMO.md. Read in order:
+Yosys asserts a multiplier-free netlist for the matvec core
+(`make -C rtl synth`; RoPE, outside the ternary datapath, will use
+multipliers). Board decision memo: docs/04b-BOARD-MEMO.md. Read in order:
 
 1. [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) — system design and the honest bandwidth math
 2. [docs/02-ROADMAP.md](docs/02-ROADMAP.md) — 6-week milestone plan

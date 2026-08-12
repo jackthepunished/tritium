@@ -29,10 +29,14 @@ tritium follows the same doctrine.
 - [x] Board-selection memo (docs/04b-BOARD-MEMO.md) with roofline x synthesis numbers; purchase decision to Bahadir. **Decision gate (moved from silicon to paper, where it belongs pre-purchase).**
 - **Artifact:** the numerics report + the "no multipliers, no dividers" synthesis check.
 
-## Week 3b — first silicon contact (after board purchase)
+## Week 3b — layer sequencer under Verilator (pre-purchase gate)
 
-- [ ] Layer sequencer + weight streaming under Verilator end-to-end first (ternoise M5 pattern), then port to the chosen board.
-- [ ] Single transformer layer end-to-end on hardware, output matches tritsim.
+- [ ] Layer sequencer + weight streaming end-to-end under Verilator (ternoise M5 pattern), output matches tritsim.
+- **The board purchase gate sits here** (see docs/04b-BOARD-MEMO.md): buy only once this runs.
+
+## Week 3c — first silicon contact (after board purchase)
+
+- [ ] Port the sequencer to the chosen board; single transformer layer end-to-end on hardware, output matches tritsim.
 - [ ] Measure: achieved bandwidth, lane utilization, clock against the roofline.
 - **Artifact:** scope/ILA screenshot + measured GB/s vs the ARCHITECTURE table.
 

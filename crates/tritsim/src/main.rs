@@ -41,7 +41,15 @@ enum Cmd {
 }
 
 fn main() -> Result<()> {
-    match Cli::parse().cmd {
+    let result = run(Cli::parse());
+    // Flush even when the command failed: a failed compare run should still
+    // keep its collected TRITSIM_STATS report.
+    tritsim::stats::flush()?;
+    result
+}
+
+fn run(cli: Cli) -> Result<()> {
+    match cli.cmd {
         Cmd::Run { model, tokenizer, prompt, steps } => {
             let m = Model::load(&model)?;
             let tk = tokenizers::Tokenizer::from_file(&tokenizer).map_err(anyhow::Error::msg)?;
@@ -69,6 +77,5 @@ fn main() -> Result<()> {
             println!("vectors written to {}", out.display());
         }
     }
-    tritsim::stats::flush()?;
     Ok(())
 }
