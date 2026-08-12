@@ -30,6 +30,11 @@ enum Cmd {
         #[arg(long)]
         dump: PathBuf,
     },
+    /// Emit golden vector sets for the RTL testbench
+    Vectors {
+        #[arg(long, default_value = "rtl/vectors")]
+        out: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
@@ -52,6 +57,10 @@ fn main() -> Result<()> {
                 s.mean_cosine >= 0.98 && s.top1_match_frac >= 0.90,
                 "below acceptance thresholds (cosine >= 0.98, top1 >= 0.90)"
             );
+        }
+        Cmd::Vectors { out } => {
+            tritsim::vectors::generate_all(&out)?;
+            println!("vectors written to {}", out.display());
         }
     }
     Ok(())
