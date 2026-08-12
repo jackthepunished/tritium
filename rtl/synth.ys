@@ -1,0 +1,15 @@
+# Generic synthesis sanity for trit_matvec:
+#  - zero multiplier cells (the whole point of ternary weights)
+#  - order-of-magnitude cell counts for the board memo
+# Device-accurate numbers come with the board toolchain later.
+read_verilog -sv trit_matvec.sv
+# MAX_COLS=512 for synthesis sanity: generic synth flattens x_mem (no BRAM
+# mapping without a device target) and the 64-port read mux explodes at the
+# full 8192 depth. The datapath (decode + adder tree + accumulator) is
+# unaffected by this parameter; memory maps to BRAM on a real device.
+chparam -set MAX_COLS 512 trit_matvec
+hierarchy -top trit_matvec
+synth -flatten
+select -assert-count 0 t:$mul
+select -assert-count 0 t:$macc
+stat

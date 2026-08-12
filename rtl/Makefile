@@ -4,7 +4,10 @@ CARGO_TARGET_DIR ?= $(HOME)/.cache/tritium-target
 SETS := exact_64x64 padded_5x100 extremes_4x128 zeros_3x64 wide_2x6912
 SET_DIRS := $(addprefix vectors/,$(SETS))
 
-.PHONY: test lint vectors clean
+.PHONY: test lint vectors synth clean
+
+synth:
+	yosys -s synth.ys
 
 # Path relative to the repo root (the vectors recipe runs after `cd ..`).
 MODEL ?= models/bitnet-2b4t.trit
