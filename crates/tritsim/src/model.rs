@@ -15,6 +15,25 @@ pub struct BitLinear {
 
 impl BitLinear {
     pub fn apply(&self, x: &[f32]) -> Vec<f32> {
+        // Debug knob for isolating quantization-boundary divergence when
+        // comparing against a reference: skip activation quantization and
+        // run the ternary weights against f32 activations directly.
+        if std::env::var_os("TRITSIM_NO_ACTQUANT").is_some() {
+            return (0..self.rows)
+                .map(|r| {
+                    let row = &self.trits[r * self.cols..(r + 1) * self.cols];
+                    let mut acc = 0f32;
+                    for (t, v) in row.iter().zip(x) {
+                        match t {
+                            1 => acc += v,
+                            -1 => acc -= v,
+                            _ => {}
+                        }
+                    }
+                    acc * self.w_scale
+                })
+                .collect();
+        }
         let (xq, x_scale) = absmax_quantize(x);
         ternary_matvec(&self.trits, self.rows, self.cols, &xq)
             .into_iter()
@@ -113,12 +132,28 @@ impl Model {
         let h = cfg.hidden_size;
         let mut x = self.embed[token as usize * h..(token as usize + 1) * h].to_vec();
 
+        let trace = std::env::var_os("TRITSIM_TRACE").is_some();
+        let dump = |tag: &str, v: &[f32]| {
+            let norm = v.iter().map(|a| a * a).sum::<f32>().sqrt();
+            eprintln!("{tag} norm {norm:12.4} first4 {:?}", &v[..4]);
+        };
+        if trace {
+            dump("embed ", &x);
+        }
+
         for (li, layer) in self.layers.iter().enumerate() {
+            let t0 = trace && li == 0;
             // attention block
             let xn = rmsnorm(&x, &layer.input_norm, cfg.rms_eps);
             let mut q = layer.q.apply(&xn);
             let mut k = layer.k.apply(&xn);
             let v = layer.v.apply(&xn);
+            if t0 {
+                dump("input_layernorm", &xn);
+                dump("q_proj", &q);
+                dump("k_proj", &k);
+                dump("v_proj", &v);
+            }
             rope_inplace(&mut q, hd, pos, cfg.rope_theta);
             rope_inplace(&mut k, hd, pos, cfg.rope_theta);
             let kc = &mut cache.k[li];
@@ -146,11 +181,18 @@ impl Model {
                     }
                 }
             }
+            if t0 {
+                dump("ctx_pre_subnorm", &ctx);
+            }
             let ctx = match &layer.attn_sub_norm {
                 Some(g) => rmsnorm(&ctx, g, cfg.rms_eps),
                 None => ctx,
             };
             let attn_out = layer.o.apply(&ctx);
+            if t0 {
+                dump("ctx_post_subnorm", &ctx);
+                dump("o_proj", &attn_out);
+            }
             for i in 0..h {
                 x[i] += attn_out[i];
             }
@@ -164,13 +206,25 @@ impl Model {
                 .zip(&u)
                 .map(|(gv, uv)| activate(cfg.act, *gv) * uv)
                 .collect();
+            if t0 {
+                dump("post_attention_layernorm", &xn);
+                dump("gate_proj", &g);
+                dump("up_proj", &u);
+                dump("act_pre_subnorm", &a);
+            }
             let a = match &layer.ffn_sub_norm {
                 Some(gain) => rmsnorm(&a, gain, cfg.rms_eps),
                 None => a,
             };
             let mlp_out = layer.down.apply(&a);
+            if t0 {
+                dump("down_proj", &mlp_out);
+            }
             for i in 0..h {
                 x[i] += mlp_out[i];
+            }
+            if trace {
+                dump(&format!("layer {li:2}"), &x);
             }
         }
         cache.len = pos + 1;

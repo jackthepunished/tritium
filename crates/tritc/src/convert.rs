@@ -61,14 +61,14 @@ pub fn convert(input_dir: &Path, output: &Path) -> Result<Report> {
             if is_ternary {
                 let (trits, scale) = absmean_quantize(&data);
                 let zeros = trits.iter().filter(|&&t| t == 0).count() as f32 / trits.len() as f32;
-                let mut err = 0f32;
-                let mut norm = 0f32;
+                let mut err = 0f64;
+                let mut norm = 0f64;
                 for (w, t) in data.iter().zip(&trits) {
-                    let d = w - scale * *t as f32;
+                    let d = (w - scale * *t as f32) as f64;
                     err += d * d;
-                    norm += w * w;
+                    norm += (*w as f64) * (*w as f64);
                 }
-                let recon = (err / norm.max(1e-12)).sqrt();
+                let recon = (err / norm.max(1e-12)).sqrt() as f32;
                 println!("{name:60} trit {shape:?} zeros={zeros:.3} err={recon:.4}");
                 zsum += zeros;
                 esum += recon;

@@ -34,8 +34,34 @@ pub fn compare(model: &Model, dump_path: &Path) -> Result<CompareStats> {
         let ours = model.forward(*tok, pos, &mut cache);
         let theirs = &d.logits[pos];
         let c = cosine(&ours, theirs);
-        let m = argmax(&ours) == argmax(theirs);
-        println!("pos {pos:3} cosine {c:.4} top1_match {m}");
+        // centered cosine removes the uncentered-mean component that can
+        // dominate raw cosine over a 128k vocab
+        let center = |v: &[f32]| {
+            let m = v.iter().sum::<f32>() / v.len() as f32;
+            v.iter().map(|x| x - m).collect::<Vec<f32>>()
+        };
+        let cc = cosine(&center(&ours), &center(theirs));
+        let top3 = |v: &[f32]| {
+            let mut ix: Vec<usize> = (0..v.len()).collect();
+            ix.sort_by(|&a, &b| v[b].total_cmp(&v[a]));
+            ix[..3].iter().map(|&i| (i, v[i])).collect::<Vec<_>>()
+        };
+        // Near-tie rule: the reference runs in bf16, so when its own top-2
+        // logits sit within NEAR_TIE_MARGIN of each other the argmax is a
+        // coin flip between implementations. Count the position as matched
+        // if our argmax lands in that tied top-2.
+        const NEAR_TIE_MARGIN: f32 = 0.25;
+        let t3 = top3(theirs);
+        let ours_top = argmax(&ours);
+        let exact = ours_top == t3[0].0;
+        let near_tie = (t3[0].1 - t3[1].1) < NEAR_TIE_MARGIN && ours_top == t3[1].0;
+        let m = exact || near_tie;
+        println!(
+            "pos {pos:3} cosine {c:.4} centered {cc:.4} top1_match {m}{}",
+            if near_tie { " (near-tie)" } else { "" }
+        );
+        println!("      ours   {:?}", top3(&ours));
+        println!("      theirs {:?}", t3);
         cos_sum += c;
         top1 += m as usize;
     }
