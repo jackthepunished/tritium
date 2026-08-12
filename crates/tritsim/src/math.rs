@@ -53,6 +53,50 @@ pub fn scaled_absmax_codes(x: &[f32], g: &[f32], eps: f32) -> (Vec<i8>, f32, f32
     (codes, scale, r)
 }
 
+/// Integer-exact MLP activation path (relu2 without floats in the element
+/// math): with g_i = acc_g_i * S_g and u_i = acc_u_i * S_u (uniform positive
+/// scales), relu(g)^2 * u = t_i * K for integer t_i = relu(acc_g_i)^2 * acc_u_i
+/// and K = S_g^2 * S_u. absmax codes are invariant to K (norm folding), so the
+/// down projection's codes come from t .* gain directly. |t| < 2^55 for this
+/// model's widths — exact in i64; the f64 used for the code search adds
+/// <= 2^-53 relative error, far below the 1/254 code granularity.
+/// Returns (codes, activation scale for the down projection).
+pub fn int_mlp_codes(acc_g: &[i32], acc_u: &[i32], gain: &[f32], k: f64, eps: f32) -> (Vec<i8>, f32) {
+    let n = acc_g.len();
+    assert_eq!(n, acc_u.len());
+    assert_eq!(n, gain.len());
+    let t: Vec<i64> = acc_g
+        .iter()
+        .zip(acc_u)
+        .map(|(&g, &u)| {
+            let rg = g.max(0) as i64;
+            rg * rg * u as i64
+        })
+        .collect();
+    let z: Vec<f64> = t.iter().zip(gain).map(|(&ti, &gi)| ti as f64 * gi as f64).collect();
+    let maxabs = z.iter().fold(0f64, |m, v| m.max(v.abs()));
+    if maxabs == 0.0 {
+        return (vec![0; n], 1.0);
+    }
+    let qs = maxabs / 127.0;
+    let codes = z
+        .iter()
+        .map(|v| (v / qs).round().clamp(-127.0, 127.0) as i8)
+        .collect();
+    // folded scalars: a = K*t, r = 1/sqrt(mean(a^2)+eps); scale = qs*K*r
+    let mean_t2 = t
+        .iter()
+        .map(|&v| {
+            let f = v as f64;
+            f * f
+        })
+        .sum::<f64>()
+        / n as f64;
+    let r = 1.0 / (k * k * mean_t2 + eps as f64).sqrt();
+    let x_scale = (qs * k * r) as f32;
+    (codes, x_scale)
+}
+
 pub fn activate(act: Act, x: f32) -> f32 {
     match act {
         Act::Silu => x / (1.0 + (-x).exp()),
@@ -101,6 +145,72 @@ mod tests {
                 "case {case}: folded scale {folded} vs {ref_scale}"
             );
         }
+    }
+
+    #[test]
+    fn int_mlp_codes_match_f32_folded_reference() {
+        // Reference: build a_i = relu(acc_g*sg)^2 * (acc_u*su) in f32 and run
+        // the Phase-2 folded quantizer. The i64 path rounds once instead of
+        // per-element, so codes may differ by at most 1 at quantization
+        // boundaries; the test quantifies flips and bounds them.
+        let mut state = 0x147_31d0u64;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let (mut flips, mut elems) = (0usize, 0usize);
+        for case in 0..500 {
+            let n = 64;
+            // |acc| <= 100 keeps the f32 reference arithmetic exact (< 2^24)
+            let acc_g: Vec<i32> = (0..n).map(|_| (next() % 201) as i32 - 100).collect();
+            let acc_u: Vec<i32> = (0..n).map(|_| (next() % 201) as i32 - 100).collect();
+            let gain: Vec<f32> = (0..n).map(|_| ((next() % 400) as f32 / 100.0) - 2.0).collect();
+            let (sg, su) = (1.0f32, 1.0f32);
+            let a: Vec<f32> = acc_g
+                .iter()
+                .zip(&acc_u)
+                .map(|(&g, &u)| {
+                    let rg = (g as f32 * sg).max(0.0);
+                    rg * rg * (u as f32 * su)
+                })
+                .collect();
+            let (ref_codes, s, r) = scaled_absmax_codes(&a, &gain, 1e-5);
+            let (codes, x_scale) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1e-5);
+            for (i, (&c, &rc)) in codes.iter().zip(&ref_codes).enumerate() {
+                let d = (c as i16 - rc as i16).abs();
+                assert!(d <= 1, "case {case} elem {i}: code {c} vs ref {rc}");
+                flips += (d != 0) as usize;
+                elems += 1;
+            }
+            let ref_scale = s * r;
+            if ref_scale != 0.0 {
+                assert!(
+                    ((x_scale - ref_scale) / ref_scale).abs() < 1e-5,
+                    "case {case}: scale {x_scale} vs {ref_scale}"
+                );
+            }
+        }
+        // boundary-straddling by construction never exceeds +/-1 (asserted
+        // above); random flips must be rare
+        assert!(flips * 1000 <= elems, "flips {flips}/{elems} exceed 0.1%");
+        println!("int_mlp_codes: {flips} boundary flips over {elems} elements");
+    }
+
+    #[test]
+    fn int_mlp_codes_exact_at_theoretical_bound() {
+        // accs at the model bound 2560*127: |t| ~ 2^55 exceeds f64's exact
+        // integer range (2^53); the induced relative error (<= 2^-53) must
+        // stay far below code granularity (1/254). Symmetric construction
+        // makes expected codes exact by hand.
+        let b = 2560 * 127; // 325,120
+        let acc_g = vec![b, b, -b, 0];
+        let acc_u = vec![b, -b, b, b];
+        let gain = vec![1.0f32, 1.0, 1.0, 1.0];
+        let (codes, _) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1e-5);
+        // t = [b^3, -b^3, 0, 0] -> codes [127, -127, 0, 0]
+        assert_eq!(codes, vec![127, -127, 0, 0]);
     }
 
     #[test]
