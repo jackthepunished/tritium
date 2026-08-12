@@ -29,8 +29,10 @@ const CFG: &str = r#"{"hidden_size":16,"intermediate_size":32,"num_hidden_layers
   "num_attention_heads":4,"num_key_value_heads":2,"vocab_size":32,
   "rope_theta":10000.0,"rms_norm_eps":1e-5,"hidden_act":"relu2"}"#;
 
-fn build_tiny_model() -> PathBuf {
-    let path = std::env::temp_dir().join("tritsim_tiny.trit");
+/// Each test gets its own file: tests run in parallel and File::create truncates,
+/// so a shared path races (reader sees a zero-length file mid-rewrite).
+fn build_tiny_model(name: &str) -> PathBuf {
+    let path = std::env::temp_dir().join(format!("tritsim_tiny_{name}.trit"));
     let mut rng = Rng(0x5eed_2026);
     let mut w = TritWriter::create(&path, CFG).unwrap();
     let (h, ff, kvh) = (16usize, 32usize, 8usize); // kvh = num_kv_heads * head_dim = 2*4
@@ -55,7 +57,7 @@ fn build_tiny_model() -> PathBuf {
 
 #[test]
 fn forward_is_deterministic_and_finite() {
-    let path = build_tiny_model();
+    let path = build_tiny_model("determinism");
     let model = Model::load(&path).unwrap();
     let run = || {
         let mut cache = KvCache::new(&model.cfg);
@@ -73,7 +75,7 @@ fn forward_is_deterministic_and_finite() {
 
 #[test]
 fn causality_past_logits_unaffected_by_future_tokens() {
-    let path = build_tiny_model();
+    let path = build_tiny_model("causality");
     let model = Model::load(&path).unwrap();
     let logits_at = |tokens: &[u32], upto: usize| {
         let mut cache = KvCache::new(&model.cfg);
@@ -90,8 +92,18 @@ fn causality_past_logits_unaffected_by_future_tokens() {
 }
 
 #[test]
+fn generate_produces_requested_number_of_tokens() {
+    use tritsim::generate::greedy_ids;
+    let path = build_tiny_model("generate");
+    let model = Model::load(&path).unwrap();
+    let out = greedy_ids(&model, &[1, 5], 8, None).unwrap();
+    assert_eq!(out.len(), 8);
+    assert!(out.iter().all(|&t| (t as usize) < 32));
+}
+
+#[test]
 fn greedy_argmax_is_stable() {
-    let path = build_tiny_model();
+    let path = build_tiny_model("argmax");
     let model = Model::load(&path).unwrap();
     let mut cache = KvCache::new(&model.cfg);
     let logits = model.forward(3, 0, &mut cache);
