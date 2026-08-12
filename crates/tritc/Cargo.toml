@@ -1,0 +1,12 @@
+[package]
+name = "tritc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+trit-core = { path = "../trit-core" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+half = "2"
+memmap2 = "0.9"
+safetensors = "0.4"
