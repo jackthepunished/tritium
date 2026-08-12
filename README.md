@@ -24,7 +24,10 @@ Direct continuation of [ternoise](https://github.com/jackthepunished/ternoise) �
 
 ## Status
 
-Pre-code. Docs-first. Read in order:
+Phase 0 complete: tritsim generates coherent text from the real BitNet b1.58
+2B4T checkpoint on CPU and matches the QAT reference at mean logit cosine
+0.999 with 100% top-1 agreement over the test prompts (see
+docs/02-ROADMAP.md for the gates). Read in order:
 
 1. [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) — system design and the honest bandwidth math
 2. [docs/02-ROADMAP.md](docs/02-ROADMAP.md) — 6-week milestone plan
