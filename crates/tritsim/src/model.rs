@@ -2,7 +2,6 @@ use crate::config::ModelConfig;
 use crate::math::{activate, rmsnorm, rope_inplace, scaled_absmax_codes, softmax_inplace};
 use anyhow::{Context, Result};
 use std::path::Path;
-use trit_core::matvec::ternary_matvec;
 use trit_core::quant::absmax_quantize;
 use trit_core::tritfmt::TritReader;
 
@@ -17,7 +16,7 @@ impl BitLinear {
     /// Matvec on already-quantized codes with an externally-supplied
     /// activation scale (the norm-folding path).
     pub fn apply_prequantized(&self, xq: &[i8], x_scale: f32) -> Vec<f32> {
-        ternary_matvec(&self.trits, self.rows, self.cols, xq)
+        crate::backend::matvec(&self.trits, self.rows, self.cols, xq)
             .into_iter()
             .map(|acc| acc as f32 * self.w_scale * x_scale)
             .collect()
@@ -44,7 +43,7 @@ impl BitLinear {
                 .collect();
         }
         let (xq, x_scale) = absmax_quantize(x);
-        ternary_matvec(&self.trits, self.rows, self.cols, &xq)
+        crate::backend::matvec(&self.trits, self.rows, self.cols, &xq)
             .into_iter()
             .map(|acc| acc as f32 * self.w_scale * x_scale)
             .collect()
