@@ -34,11 +34,15 @@ TERNARY_SUFFIXES with no changes needed.
    The forward pass defines the model, not master-weight proximity. Zero
    fraction 0.377 is sane. Decision: proceed; the logit comparison is the
    real gate.
-2. transformers' native BitNet modeling runs master weights UNQUANTIZED
-   (no weight_quant/activation_quant in modeling_bitnet source; sub-norms
-   and relu2 are implemented). dump_logits.py therefore patches QAT
-   quantization (absmean ternary W, absmax int8 activations) into all 210
-   projection linears so the reference matches deployed inference semantics.
+2. The reference DOES quantize online, but not in modeling_bitnet: config
+   carries quantization_config {quant_method: bitnet, linear_class:
+   autobitlinear, quantization_mode: online}, and transformers' bitnet
+   integration swaps projections for AutoBitLinear (WeightQuant = per-tensor
+   absmean ternary; activation_quant = per-token absmax int8; sub-norm
+   applied to the projection input). Recipe matches tritsim exactly, so
+   dump_logits.py uses the native path unpatched and asserts AutoBitLinear
+   modules are present (guards against silent unquantized fallback).
+   Requires accelerate installed.
 
 Memory note for tritsim on this model: unpacked trits in Vec<i8> ~2.4 GB,
 f32 embeddings ~1.3 GB (currently cloned into lm_head when tied: another
