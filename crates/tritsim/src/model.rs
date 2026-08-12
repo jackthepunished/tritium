@@ -1,9 +1,17 @@
 use crate::config::ModelConfig;
-use crate::math::{activate, rmsnorm, rope_inplace, scaled_absmax_codes, softmax_inplace};
+use crate::math::{
+    activate, int_mlp_codes, rmsnorm, rope_inplace, scaled_absmax_codes, softmax_inplace,
+};
 use anyhow::{Context, Result};
 use std::path::Path;
 use trit_core::quant::absmax_quantize;
 use trit_core::tritfmt::TritReader;
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ForwardMode {
+    pub folded: bool,
+    pub int_mlp: bool,
+}
 
 pub struct BitLinear {
     pub trits: Vec<i8>,
@@ -13,6 +21,12 @@ pub struct BitLinear {
 }
 
 impl BitLinear {
+    /// Raw i32 accumulators for already-quantized codes (integer-MLP path;
+    /// caller owns all scaling).
+    pub fn acc(&self, xq: &[i8]) -> Vec<i32> {
+        crate::backend::matvec(&self.trits, self.rows, self.cols, xq)
+    }
+
     /// Matvec on already-quantized codes with an externally-supplied
     /// activation scale (the norm-folding path).
     pub fn apply_prequantized(&self, xq: &[i8], x_scale: f32) -> Vec<f32> {
@@ -135,6 +149,20 @@ impl Model {
     }
 
     pub fn forward(&self, token: u32, pos: usize, cache: &mut KvCache) -> Vec<f32> {
+        let mode = ForwardMode {
+            folded: std::env::var_os("TRITSIM_FOLDED_NORM").is_some(),
+            int_mlp: std::env::var_os("TRITSIM_INT_MLP").is_some(),
+        };
+        self.forward_with_mode(token, pos, cache, mode)
+    }
+
+    pub fn forward_with_mode(
+        &self,
+        token: u32,
+        pos: usize,
+        cache: &mut KvCache,
+        mode: ForwardMode,
+    ) -> Vec<f32> {
         let cfg = &self.cfg;
         let (hd, nh, nkv) = (cfg.head_dim(), cfg.num_heads, cfg.num_kv_heads);
         let h = cfg.hidden_size;
@@ -150,7 +178,11 @@ impl Model {
         let mut x = self.embed[token as usize * h..(token as usize + 1) * h].to_vec();
 
         let trace = std::env::var_os("TRITSIM_TRACE").is_some();
-        let folded = std::env::var_os("TRITSIM_FOLDED_NORM").is_some();
+        let ForwardMode { folded, int_mlp } = mode;
+        assert!(
+            !int_mlp || folded,
+            "int_mlp requires folded mode (it extends the folded path)"
+        );
         let dump = |tag: &str, v: &[f32]| {
             let norm = v.iter().map(|a| a * a).sum::<f32>().sqrt();
             eprintln!("{tag} norm {norm:12.4} first4 {:?}", &v[..4]);
@@ -241,6 +273,31 @@ impl Model {
             }
 
             // mlp block
+            if int_mlp {
+                // integer-exact path: the f32 activation vector never exists.
+                // Requires folded mode (asserted at function entry) and the
+                // gated relu2 architecture with a ffn sub-norm.
+                let gain = layer
+                    .ffn_sub_norm
+                    .as_ref()
+                    .expect("TRITSIM_INT_MLP requires ffn_sub_norm (BitNet arch)");
+                assert_eq!(cfg.act, crate::math::Act::Relu2, "int MLP path is relu2-specific");
+                let (codes, s, r) = scaled_absmax_codes(&x, &layer.post_norm, cfg.rms_eps);
+                let xs = s * r;
+                let acc_g = layer.gate.acc(&codes);
+                let acc_u = layer.up.acc(&codes);
+                let k = (layer.gate.w_scale as f64 * xs as f64).powi(2)
+                    * (layer.up.w_scale as f64 * xs as f64);
+                let (down_codes, down_scale) = int_mlp_codes(&acc_g, &acc_u, gain, k, cfg.rms_eps);
+                let mlp_out = layer.down.apply_prequantized(&down_codes, down_scale);
+                for i in 0..h {
+                    x[i] += mlp_out[i];
+                }
+                if trace {
+                    dump(&format!("layer {li:2}"), &x);
+                }
+                continue;
+            }
             let (g, u);
             if folded {
                 let (codes, s, r) = scaled_absmax_codes(&x, &layer.post_norm, cfg.rms_eps);
