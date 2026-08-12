@@ -1,5 +1,5 @@
 use crate::config::ModelConfig;
-use crate::math::{activate, rmsnorm, rope_inplace, softmax_inplace};
+use crate::math::{activate, rmsnorm, rope_inplace, scaled_absmax_codes, softmax_inplace};
 use anyhow::{Context, Result};
 use std::path::Path;
 use trit_core::matvec::ternary_matvec;
@@ -14,6 +14,15 @@ pub struct BitLinear {
 }
 
 impl BitLinear {
+    /// Matvec on already-quantized codes with an externally-supplied
+    /// activation scale (the norm-folding path).
+    pub fn apply_prequantized(&self, xq: &[i8], x_scale: f32) -> Vec<f32> {
+        ternary_matvec(&self.trits, self.rows, self.cols, xq)
+            .into_iter()
+            .map(|acc| acc as f32 * self.w_scale * x_scale)
+            .collect()
+    }
+
     pub fn apply(&self, x: &[f32]) -> Vec<f32> {
         // Debug knob for isolating quantization-boundary divergence when
         // comparing against a reference: skip activation quantization and
@@ -142,6 +151,7 @@ impl Model {
         let mut x = self.embed[token as usize * h..(token as usize + 1) * h].to_vec();
 
         let trace = std::env::var_os("TRITSIM_TRACE").is_some();
+        let folded = std::env::var_os("TRITSIM_FOLDED_NORM").is_some();
         let dump = |tag: &str, v: &[f32]| {
             let norm = v.iter().map(|a| a * a).sum::<f32>().sqrt();
             eprintln!("{tag} norm {norm:12.4} first4 {:?}", &v[..4]);
@@ -153,12 +163,27 @@ impl Model {
         for (li, layer) in self.layers.iter().enumerate() {
             let t0 = trace && li == 0;
             // attention block
-            let xn = rmsnorm(&x, &layer.input_norm, cfg.rms_eps);
-            let mut q = layer.q.apply(&xn);
-            let mut k = layer.k.apply(&xn);
-            let v = layer.v.apply(&xn);
+            crate::stats::record("residual", &x);
+            let (mut q, mut k, v);
+            if folded {
+                // norm folding: the 1/rms scalar never touches the elements;
+                // BitLinear consumes absmax codes of x .* g directly.
+                let (codes, s, r) = scaled_absmax_codes(&x, &layer.input_norm, cfg.rms_eps);
+                let xs = s * r;
+                q = layer.q.apply_prequantized(&codes, xs);
+                k = layer.k.apply_prequantized(&codes, xs);
+                v = layer.v.apply_prequantized(&codes, xs);
+            } else {
+                let xn = rmsnorm(&x, &layer.input_norm, cfg.rms_eps);
+                crate::stats::record("norm_out.input", &xn);
+                if t0 {
+                    dump("input_layernorm", &xn);
+                }
+                q = layer.q.apply(&xn);
+                k = layer.k.apply(&xn);
+                v = layer.v.apply(&xn);
+            }
             if t0 {
-                dump("input_layernorm", &xn);
                 dump("q_proj", &q);
                 dump("k_proj", &k);
                 dump("v_proj", &v);
@@ -193,13 +218,23 @@ impl Model {
             if t0 {
                 dump("ctx_pre_subnorm", &ctx);
             }
-            let ctx = match &layer.attn_sub_norm {
-                Some(g) => rmsnorm(&ctx, g, cfg.rms_eps),
-                None => ctx,
+            crate::stats::record("q", &q);
+            crate::stats::record("k", &k);
+            crate::stats::record("v", &v);
+            crate::stats::record("ctx", &ctx);
+            let attn_out = match (&layer.attn_sub_norm, folded) {
+                (Some(g), true) => {
+                    let (codes, s, r) = scaled_absmax_codes(&ctx, g, cfg.rms_eps);
+                    layer.o.apply_prequantized(&codes, s * r)
+                }
+                (Some(g), false) => {
+                    let ctx = rmsnorm(&ctx, g, cfg.rms_eps);
+                    crate::stats::record("norm_out.attn_sub", &ctx);
+                    layer.o.apply(&ctx)
+                }
+                (None, _) => layer.o.apply(&ctx),
             };
-            let attn_out = layer.o.apply(&ctx);
             if t0 {
-                dump("ctx_post_subnorm", &ctx);
                 dump("o_proj", &attn_out);
             }
             for i in 0..h {
@@ -207,25 +242,44 @@ impl Model {
             }
 
             // mlp block
-            let xn = rmsnorm(&x, &layer.post_norm, cfg.rms_eps);
-            let g = layer.gate.apply(&xn);
-            let u = layer.up.apply(&xn);
+            let (g, u);
+            if folded {
+                let (codes, s, r) = scaled_absmax_codes(&x, &layer.post_norm, cfg.rms_eps);
+                let xs = s * r;
+                g = layer.gate.apply_prequantized(&codes, xs);
+                u = layer.up.apply_prequantized(&codes, xs);
+            } else {
+                let xn = rmsnorm(&x, &layer.post_norm, cfg.rms_eps);
+                crate::stats::record("norm_out.post_attn", &xn);
+                if t0 {
+                    dump("post_attention_layernorm", &xn);
+                }
+                g = layer.gate.apply(&xn);
+                u = layer.up.apply(&xn);
+            }
             let a: Vec<f32> = g
                 .iter()
                 .zip(&u)
                 .map(|(gv, uv)| activate(cfg.act, *gv) * uv)
                 .collect();
             if t0 {
-                dump("post_attention_layernorm", &xn);
                 dump("gate_proj", &g);
                 dump("up_proj", &u);
                 dump("act_pre_subnorm", &a);
             }
-            let a = match &layer.ffn_sub_norm {
-                Some(gain) => rmsnorm(&a, gain, cfg.rms_eps),
-                None => a,
+            crate::stats::record("mlp_act", &a);
+            let mlp_out = match (&layer.ffn_sub_norm, folded) {
+                (Some(gain), true) => {
+                    let (codes, s, r) = scaled_absmax_codes(&a, gain, cfg.rms_eps);
+                    layer.down.apply_prequantized(&codes, s * r)
+                }
+                (Some(gain), false) => {
+                    let a = rmsnorm(&a, gain, cfg.rms_eps);
+                    crate::stats::record("norm_out.ffn_sub", &a);
+                    layer.down.apply(&a)
+                }
+                (None, _) => layer.down.apply(&a),
             };
-            let mlp_out = layer.down.apply(&a);
             if t0 {
                 dump("down_proj", &mlp_out);
             }
@@ -240,7 +294,7 @@ impl Model {
 
         // logits: plain f32 matmul against lm_head (not ternary by design)
         let xn = rmsnorm(&x, &self.final_norm, cfg.rms_eps);
-        (0..cfg.vocab_size)
+        let logits: Vec<f32> = (0..cfg.vocab_size)
             .map(|v| {
                 self.lm_head[v * h..(v + 1) * h]
                     .iter()
@@ -248,7 +302,9 @@ impl Model {
                     .map(|(a, b)| a * b)
                     .sum()
             })
-            .collect()
+            .collect();
+        crate::stats::record("logits", &logits);
+        logits
     }
 }
 

@@ -17,12 +17,28 @@ Each week ends with a public artifact (repo tag + short post). The cadence is th
 - [x] Verilator testbench driven by tritsim-generated vectors (`tritsim vectors`, `make -C rtl test`); bit-exact on random, padding, extremes, zeros, 6912-wide, and real layer-0 k_proj tiles, plus an invalid-encoding error check.
 - **Artifact:** waveform + "RTL matches golden model bit-for-bit" post with the testbench harness.
 
-## Week 3 — first silicon contact
+## Week 3 — numerics, norm folding, synthesis numbers (reframed)
 
-- [ ] Port core to the ternoise dev board; weight streaming from onboard DDR via DMA.
-- [ ] Single transformer layer end-to-end on hardware, output matches tritsim.
-- [ ] Measure: achieved bandwidth, lane utilization, clock. This decides N, packing format, and whether P2 stays on this board or moves to a KV260-class part. **Decision gate.**
-- **Artifact:** scope/ILA screenshot + measured GB/s. Post the utilization math against the ARCHITECTURE table.
+Original premise ("port to the ternoise dev board") corrected: no board exists —
+ternoise is deliberately simulation-first, board chosen from synthesis numbers.
+tritium follows the same doctrine.
+
+- [x] Measure per-stage numeric ranges on the real checkpoint (`TRITSIM_STATS`); write docs/03b-NUMERICS.md. Massive activations confirmed (residual max ~138k; relu2 stage ~1.5e10).
+- [x] Norm folding: eliminate the per-element rsqrt/divide from the datapath (absmax codes are scale-invariant); proved on the real model — identical compare metrics and greedy outputs, property-tested across 1000 adversarial vectors.
+- [x] Yosys generic synthesis of trit_matvec with a zero-multiplier assertion (`make -C rtl synth`): ~29.5k datapath cells at 64 lanes, no $mul/$macc.
+- [x] Board-selection memo (docs/04b-BOARD-MEMO.md) with roofline x synthesis numbers; purchase decision to Bahadir. **Decision gate (moved from silicon to paper, where it belongs pre-purchase).**
+- **Artifact:** the numerics report + the "no multipliers, no dividers" synthesis check.
+
+## Week 3b — layer sequencer under Verilator (pre-purchase gate)
+
+- [ ] Layer sequencer + weight streaming end-to-end under Verilator (ternoise M5 pattern), output matches tritsim.
+- **The board purchase gate sits here** (see docs/04b-BOARD-MEMO.md): buy only once this runs.
+
+## Week 3c — first silicon contact (after board purchase)
+
+- [ ] Port the sequencer to the chosen board; single transformer layer end-to-end on hardware, output matches tritsim.
+- [ ] Measure: achieved bandwidth, lane utilization, clock against the roofline.
+- **Artifact:** scope/ILA screenshot + measured GB/s vs the ARCHITECTURE table.
 
 ## Week 4 — full model on hardware
 

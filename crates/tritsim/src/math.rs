@@ -5,8 +5,10 @@ pub enum Act {
 }
 
 pub fn rmsnorm(x: &[f32], gain: &[f32], eps: f32) -> Vec<f32> {
-    let ms = x.iter().map(|v| v * v).sum::<f32>() / x.len() as f32;
-    let r = 1.0 / (ms + eps).sqrt();
+    // f64 mean-square for consistency with scaled_absmax_codes (and the same
+    // accumulation-precision reasoning as absmean_quantize).
+    let ms = x.iter().map(|v| (*v as f64) * (*v as f64)).sum::<f64>() / x.len() as f64;
+    let r = (1.0 / (ms + eps as f64).sqrt()) as f32;
     x.iter().zip(gain).map(|(v, g)| v * r * g).collect()
 }
 
@@ -37,6 +39,20 @@ pub fn rope_inplace(v: &mut [f32], head_dim: usize, pos: usize, theta: f32) {
     }
 }
 
+/// Norm folding: absmax int8 codes are invariant to uniform positive scaling,
+/// so for a BitLinear fed by rmsnorm the codes can be computed from x .* g
+/// alone -- the 1/rms factor never enters the per-element datapath. Returns
+/// (codes, scale of x.*g, r = 1/rms) with `scale * r` equal to the scale
+/// absmax_quantize would have produced on the normed vector.
+/// The rms sum runs in f64 for the same reason as absmean_quantize.
+pub fn scaled_absmax_codes(x: &[f32], g: &[f32], eps: f32) -> (Vec<i8>, f32, f32) {
+    let z: Vec<f32> = x.iter().zip(g).map(|(a, b)| a * b).collect();
+    let (codes, scale) = trit_core::quant::absmax_quantize(&z);
+    let ms = x.iter().map(|v| (*v as f64) * (*v as f64)).sum::<f64>() / x.len() as f64;
+    let r = (1.0 / (ms + eps as f64).sqrt()) as f32;
+    (codes, scale, r)
+}
+
 pub fn activate(act: Act, x: f32) -> f32 {
     match act {
         Act::Silu => x / (1.0 + (-x).exp()),
@@ -50,6 +66,42 @@ pub fn activate(act: Act, x: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use trit_core::quant::absmax_quantize;
+
+    #[test]
+    fn folding_codes_match_norm_then_quantize() {
+        // absmax int8 codes are invariant to the uniform 1/rms factor, so
+        // quantize(rmsnorm(x, g)) and scaled_absmax_codes(x, g) must produce
+        // identical codes, and the scales must differ by exactly r = 1/rms
+        // (up to f32 rounding).
+        let mut state = 0x5eed_f01du64;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            ((state >> 40) as f32 / (1u64 << 24) as f32) - 0.5
+        };
+        for case in 0..1000 {
+            let n = 64;
+            let mut x: Vec<f32> = (0..n).map(|_| next() * 4.0).collect();
+            let g: Vec<f32> = (0..n).map(|_| next() * 2.0).collect();
+            if case % 3 == 1 {
+                x[case % n] = 1.0e4; // massive-activation spike
+            }
+            if case % 3 == 2 {
+                x[case % n] = -3.4e4;
+            }
+            let eps = 1e-5;
+            let (ref_codes, ref_scale) = absmax_quantize(&rmsnorm(&x, &g, eps));
+            let (codes, scale, r) = scaled_absmax_codes(&x, &g, eps);
+            assert_eq!(codes, ref_codes, "case {case}: codes diverged");
+            let folded = scale * r;
+            assert!(
+                (folded - ref_scale).abs() <= 1e-6 * ref_scale.abs().max(1e-30),
+                "case {case}: folded scale {folded} vs {ref_scale}"
+            );
+        }
+    }
 
     #[test]
     fn rmsnorm_hand_computed() {

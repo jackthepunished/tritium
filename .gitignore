@@ -7,3 +7,4 @@ __pycache__/
 logits*.json
 rtl/vectors/
 rtl/obj_dir/
+numerics*.json
