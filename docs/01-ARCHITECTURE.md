@@ -72,7 +72,7 @@ Bit-accurate Rust implementation of everything tritcore does, including fixed-po
 
 - **Lane array:** N parallel lanes, each lane = trit decoder + add/sub mux + pipelined adder tree feeding a 24–32b accumulator. N sized to saturate memory bandwidth (e.g., 128 lanes × int8 at 200 MHz ≈ 25.6 GB/s of weight consumption capacity — far above a DDR3 link, so N=64 is plenty there).
 - **Dataflow:** output-stationary per tile; activations for the current layer held in SRAM, weight tiles streamed. Layer-by-layer execution, no pipelining across layers in v1.
-- **Nonlinear units:** RMSNorm via fixed-point rsqrt (Newton iteration), SiLU/GELU via piecewise-linear LUT, RoPE via precomputed sin/cos tables. All mirrored exactly in tritsim.
+- **Nonlinear units:** RMSNorm needs no per-element division or rsqrt anywhere in the datapath — every norm in this architecture feeds an absmax int8 quantizer (BitLinear) or the host-side lm_head, and absmax codes are invariant to the uniform 1/rms factor. The codes come from `x .* g` directly; the rms survives only as one per-token scalar (sum of squares, one rsqrt) folded into the output scale. Proved bit-identical on the real checkpoint (see docs/03b-NUMERICS.md and `scaled_absmax_codes` in tritsim). Activation (relu2) via the quantized path; RoPE via precomputed sin/cos tables (its multipliers are outside the ternary datapath claim). All mirrored exactly in tritsim.
 - **Activation quant:** absmax int8 per-token (as in BitNet), computed on-chip.
 - **KV cache:** int8 pages; hot window in BRAM, older pages in DDR. v1 caps context at 2K tokens.
 - **Interface:** AXI4 on Zynq-class (PS handles tritd), or FT601/USB3 + DMA on pure-fabric boards.
