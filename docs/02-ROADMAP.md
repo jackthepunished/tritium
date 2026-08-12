@@ -4,10 +4,10 @@ Each week ends with a public artifact (repo tag + short post). The cadence is th
 
 ## Week 1 — tritsim: correct before fast
 
-- [ ] Rust workspace scaffold (`tritc`, `tritsim`, `tritd`, `tritbench` crates).
-- [ ] Load `microsoft/bitnet-b1.58-2B-4T` (or smaller ternary checkpoint) via safetensors; verify ternary-ness of weights, extract scales.
-- [ ] Implement decode loop in tritsim: embedding, RMSNorm, ternary linear (select-accumulate, int8 activations, absmax quant), RoPE, attention, SiLU MLP, sampling.
-- [ ] Match reference logits from `bitnet.cpp` (or HF transformers) within quantization tolerance on a fixed prompt set.
+- [x] Rust workspace scaffold (`tritc`, `tritsim` crates; `tritd`, `tritbench` deferred to their phases).
+- [x] Load `microsoft/bitnet-b1.58-2B-4T` (bf16 master weights) via safetensors; quantize with the b1.58 recipe, report zero-fraction and reconstruction stats.
+- [x] Implement decode loop in tritsim: embedding, RMSNorm, ternary linear (select-accumulate, int8 activations, absmax quant), RoPE, GQA attention, relu2 gated MLP with sub-norms, greedy sampling.
+- [x] Match reference logits (HF transformers with native online BitNet quantization) on fixed prompts: mean cosine 0.999, top-1 100% (near-tie rule at BOS documented in compare output).
 - **Artifact:** tritsim generating coherent text on CPU. Post: "ternary LLM inference in pure Rust, no multiplies in the hot loop."
 
 ## Week 2 — .trit format + RTL matmul core in simulation
