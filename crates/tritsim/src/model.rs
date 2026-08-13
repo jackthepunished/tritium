@@ -1,9 +1,41 @@
 use crate::config::ModelConfig;
-use crate::math::{activate, rmsnorm, rope_inplace, scaled_absmax_codes, softmax_inplace};
+use crate::math::{
+    activate, int_mlp_codes, rmsnorm, rope_inplace, scaled_absmax_codes, softmax_inplace,
+};
 use anyhow::{Context, Result};
 use std::path::Path;
 use trit_core::quant::absmax_quantize;
 use trit_core::tritfmt::TritReader;
+
+/// Numerics mode as an ordered ladder, so the invalid "int MLP without
+/// folding" state is unrepresentable: IntMlp extends Folded extends Reference.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum ForwardMode {
+    #[default]
+    Reference,
+    Folded,
+    IntMlp,
+}
+
+impl ForwardMode {
+    pub fn folded(self) -> bool {
+        !matches!(self, ForwardMode::Reference)
+    }
+    pub fn int_mlp(self) -> bool {
+        matches!(self, ForwardMode::IntMlp)
+    }
+    /// TRITSIM_INT_MLP=1 implies folding (it extends the folded path);
+    /// parsed once per process.
+    fn from_env() -> Self {
+        if std::env::var_os("TRITSIM_INT_MLP").is_some() {
+            ForwardMode::IntMlp
+        } else if std::env::var_os("TRITSIM_FOLDED_NORM").is_some() {
+            ForwardMode::Folded
+        } else {
+            ForwardMode::Reference
+        }
+    }
+}
 
 pub struct BitLinear {
     pub trits: Vec<i8>,
@@ -13,6 +45,12 @@ pub struct BitLinear {
 }
 
 impl BitLinear {
+    /// Raw i32 accumulators for already-quantized codes (integer-MLP path;
+    /// caller owns all scaling).
+    pub fn acc(&self, xq: &[i8]) -> Vec<i32> {
+        crate::backend::matvec(&self.trits, self.rows, self.cols, xq)
+    }
+
     /// Matvec on already-quantized codes with an externally-supplied
     /// activation scale (the norm-folding path).
     pub fn apply_prequantized(&self, xq: &[i8], x_scale: f32) -> Vec<f32> {
@@ -135,6 +173,17 @@ impl Model {
     }
 
     pub fn forward(&self, token: u32, pos: usize, cache: &mut KvCache) -> Vec<f32> {
+        static MODE: std::sync::OnceLock<ForwardMode> = std::sync::OnceLock::new();
+        self.forward_with_mode(token, pos, cache, *MODE.get_or_init(ForwardMode::from_env))
+    }
+
+    pub fn forward_with_mode(
+        &self,
+        token: u32,
+        pos: usize,
+        cache: &mut KvCache,
+        mode: ForwardMode,
+    ) -> Vec<f32> {
         let cfg = &self.cfg;
         let (hd, nh, nkv) = (cfg.head_dim(), cfg.num_heads, cfg.num_kv_heads);
         let h = cfg.hidden_size;
@@ -150,7 +199,12 @@ impl Model {
         let mut x = self.embed[token as usize * h..(token as usize + 1) * h].to_vec();
 
         let trace = std::env::var_os("TRITSIM_TRACE").is_some();
-        let folded = std::env::var_os("TRITSIM_FOLDED_NORM").is_some();
+        let (folded, int_mlp) = (mode.folded(), mode.int_mlp());
+        // Architecture requirement for the int path, checked once per call
+        // (not per layer): relu2 with per-layer ffn sub-norms.
+        if int_mlp {
+            assert_eq!(cfg.act, crate::math::Act::Relu2, "int MLP path is relu2-specific");
+        }
         let dump = |tag: &str, v: &[f32]| {
             let norm = v.iter().map(|a| a * a).sum::<f32>().sqrt();
             eprintln!("{tag} norm {norm:12.4} first4 {:?}", &v[..4]);
@@ -240,44 +294,72 @@ impl Model {
                 x[i] += attn_out[i];
             }
 
-            // mlp block
-            let (g, u);
-            if folded {
+            // mlp block: three variants of "x -> down-projection input",
+            // sharing one residual/trace tail. int_mlp extends folded and
+            // never materializes the f32 activation vector.
+            let mlp_out = if folded {
                 let (codes, s, r) = scaled_absmax_codes(&x, &layer.post_norm, cfg.rms_eps);
                 let xs = s * r;
-                g = layer.gate.apply_prequantized(&codes, xs);
-                u = layer.up.apply_prequantized(&codes, xs);
+                if int_mlp {
+                    let gain = layer
+                        .ffn_sub_norm
+                        .as_ref()
+                        .expect("int MLP path requires ffn_sub_norm (BitNet arch)");
+                    let acc_g = layer.gate.acc(&codes);
+                    let acc_u = layer.up.acc(&codes);
+                    let (down_codes, down_scale) = int_mlp_codes(
+                        &acc_g,
+                        &acc_u,
+                        gain,
+                        layer.gate.w_scale as f64 * xs as f64,
+                        layer.up.w_scale as f64 * xs as f64,
+                        cfg.rms_eps,
+                    );
+                    layer.down.apply_prequantized(&down_codes, down_scale)
+                } else {
+                    let g = layer.gate.apply_prequantized(&codes, xs);
+                    let u = layer.up.apply_prequantized(&codes, xs);
+                    let a: Vec<f32> = g
+                        .iter()
+                        .zip(&u)
+                        .map(|(gv, uv)| activate(cfg.act, *gv) * uv)
+                        .collect();
+                    crate::stats::record("mlp_act", &a);
+                    match &layer.ffn_sub_norm {
+                        Some(gain) => {
+                            let (codes, s, r) = scaled_absmax_codes(&a, gain, cfg.rms_eps);
+                            layer.down.apply_prequantized(&codes, s * r)
+                        }
+                        None => layer.down.apply(&a),
+                    }
+                }
             } else {
                 let xn = rmsnorm(&x, &layer.post_norm, cfg.rms_eps);
                 crate::stats::record("norm_out.post_attn", &xn);
                 if t0 {
                     dump("post_attention_layernorm", &xn);
                 }
-                g = layer.gate.apply(&xn);
-                u = layer.up.apply(&xn);
-            }
-            let a: Vec<f32> = g
-                .iter()
-                .zip(&u)
-                .map(|(gv, uv)| activate(cfg.act, *gv) * uv)
-                .collect();
-            if t0 {
-                dump("gate_proj", &g);
-                dump("up_proj", &u);
-                dump("act_pre_subnorm", &a);
-            }
-            crate::stats::record("mlp_act", &a);
-            let mlp_out = match (&layer.ffn_sub_norm, folded) {
-                (Some(gain), true) => {
-                    let (codes, s, r) = scaled_absmax_codes(&a, gain, cfg.rms_eps);
-                    layer.down.apply_prequantized(&codes, s * r)
+                let g = layer.gate.apply(&xn);
+                let u = layer.up.apply(&xn);
+                let a: Vec<f32> = g
+                    .iter()
+                    .zip(&u)
+                    .map(|(gv, uv)| activate(cfg.act, *gv) * uv)
+                    .collect();
+                if t0 {
+                    dump("gate_proj", &g);
+                    dump("up_proj", &u);
+                    dump("act_pre_subnorm", &a);
                 }
-                (Some(gain), false) => {
-                    let a = rmsnorm(&a, gain, cfg.rms_eps);
-                    crate::stats::record("norm_out.ffn_sub", &a);
-                    layer.down.apply(&a)
+                crate::stats::record("mlp_act", &a);
+                match &layer.ffn_sub_norm {
+                    Some(gain) => {
+                        let a = rmsnorm(&a, gain, cfg.rms_eps);
+                        crate::stats::record("norm_out.ffn_sub", &a);
+                        layer.down.apply(&a)
+                    }
+                    None => layer.down.apply(&a),
                 }
-                (None, _) => layer.down.apply(&a),
             };
             if t0 {
                 dump("down_proj", &mlp_out);

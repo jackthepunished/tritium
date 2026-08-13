@@ -15,6 +15,22 @@ pub fn absmean_quantize(w: &[f32]) -> (Vec<i8>, f32) {
     (trits, scale)
 }
 
+/// f64 sibling of `absmax_quantize` (same convention: round half away from
+/// zero, clamp to +/-127, all-zero input yields scale 1.0). Kept here so the
+/// absmax policy has exactly one home per element type.
+pub fn absmax_codes_f64(z: &[f64]) -> (Vec<i8>, f64) {
+    let maxabs = z.iter().fold(0f64, |m, v| m.max(v.abs()));
+    if maxabs == 0.0 {
+        return (vec![0; z.len()], 1.0);
+    }
+    let scale = maxabs / 127.0;
+    let codes = z
+        .iter()
+        .map(|v| (v / scale).round().clamp(-127.0, 127.0) as i8)
+        .collect();
+    (codes, scale)
+}
+
 /// Per-token int8 activation quantization: scale = max(|x|)/127.
 pub fn absmax_quantize(x: &[f32]) -> (Vec<i8>, f32) {
     let maxabs = x.iter().fold(0.0f32, |m, v| m.max(v.abs()));

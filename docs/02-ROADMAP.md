@@ -40,6 +40,15 @@ tritium follows the same doctrine.
 - [ ] Measure: achieved bandwidth, lane utilization, clock against the roofline.
 - **Artifact:** scope/ILA screenshot + measured GB/s vs the ARCHITECTURE table.
 
+## Week 4 prep (done in sim) — integer-exact MLP path
+
+- [x] Phase 4 gate (2026-08-13): folded vs folded+TRITSIM_INT_MLP on the real
+  checkpoint — greedy text character-identical on both prompts; summary
+  metrics identical (mean cosine 0.9991, top-1 100%). Per-position logits
+  differ in the 2nd-3rd decimal (per-position cosine within 0.9979-0.9997)
+  because the integer path rounds once where f32 rounds per-element — a
+  different, more exact rounding of the same math, as the plan predicted.
+
 ## Week 4 — full model on hardware
 
 - [ ] Layer sequencer: run all layers per token, host-driven descriptor chain, double-buffered DMA.
