@@ -26,7 +26,7 @@ What this buys the hardware: the MLP element path between the three matvecs is t
 
 ## File Structure
 
-```
+```text
 crates/tritsim/src/math.rs    # int_mlp_codes(acc_g, acc_u, gain, k, eps) -> (codes, x_scale_for_down)
 crates/tritsim/src/model.rs   # BitLinear::acc() exposing raw i32 accumulators; TRITSIM_INT_MLP path
 docs/01-ARCHITECTURE.md       # integer MLP path paragraph

@@ -8,7 +8,7 @@ recorded vectors (per layer per token).
 | Stage | max abs | mean abs | max L2 | Hardware implication |
 |---|---|---|---|---|
 | residual | 137,694 | ~1,000 | 481,460 | Massive activations are real (BOS worst). Needs >= 18 integer bits plus fraction; bf16's 8-bit mantissa rounds at step ~1024 here, which is part of the reference-vs-f32 noise seen in Phase 0. v1 keeps f32; an integer residual needs Q18.13-class width (i32) and a per-tensor scale story. |
-| mlp_act (pre ffn_sub_norm) | 1.55e10 | ~5.7e5 | 1.6e10 | SOLVED (Phase 4): the stage is computed exactly in i64 from the gate/up accumulators — relu(acc_g)^2 * acc_u with |t| < 2^55 for this model's widths — and the down projection's codes come from t .* gain by scale invariance. The 10-decade f32 range never exists in the datapath. See ARCHITECTURE and `int_mlp_codes`; gated on the real model (identical metrics/greedy text vs the folded path). |
+| mlp_act (pre ffn_sub_norm) | 1.55e10 | ~5.7e5 | 1.6e10 | SOLVED (Phase 4): the stage is computed exactly in i64 from the gate/up accumulators — `relu(acc_g)^2 * acc_u` with `abs(t) < 2^55` for this model's widths — and the down projection's codes come from `t .* gain` by scale invariance. The 10-decade f32 range never exists in the datapath. See ARCHITECTURE and `int_mlp_codes`; gated on the real model (identical metrics/greedy text vs the folded path). |
 | norm_out.ffn_sub | 565 | 0.41 | 769 | int16-friendly after quantization. |
 | norm_out.attn_sub | 83 | 1.4 | 518 | int16-friendly. |
 | ctx (attention out) | 62 | 0.82 | 301 | int16-friendly. |
