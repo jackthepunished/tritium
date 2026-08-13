@@ -4,11 +4,19 @@ pub enum Act {
     Relu2,
 }
 
+/// The one home of the rms-scalar policy: f64 mean-square in, 1/sqrt(ms+eps)
+/// out. Every rms consumer (rmsnorm, folding, integer MLP) goes through this
+/// so eps placement and precision cannot drift between paths.
+fn inv_rms(mean_sq: f64, eps: f32) -> f64 {
+    1.0 / (mean_sq + eps as f64).sqrt()
+}
+
+fn mean_sq_f64(x: &[f32]) -> f64 {
+    x.iter().map(|v| (*v as f64) * (*v as f64)).sum::<f64>() / x.len() as f64
+}
+
 pub fn rmsnorm(x: &[f32], gain: &[f32], eps: f32) -> Vec<f32> {
-    // f64 mean-square for consistency with scaled_absmax_codes (and the same
-    // accumulation-precision reasoning as absmean_quantize).
-    let ms = x.iter().map(|v| (*v as f64) * (*v as f64)).sum::<f64>() / x.len() as f64;
-    let r = (1.0 / (ms + eps as f64).sqrt()) as f32;
+    let r = inv_rms(mean_sq_f64(x), eps) as f32;
     x.iter().zip(gain).map(|(v, g)| v * r * g).collect()
 }
 
@@ -48,8 +56,7 @@ pub fn rope_inplace(v: &mut [f32], head_dim: usize, pos: usize, theta: f32) {
 pub fn scaled_absmax_codes(x: &[f32], g: &[f32], eps: f32) -> (Vec<i8>, f32, f32) {
     let z: Vec<f32> = x.iter().zip(g).map(|(a, b)| a * b).collect();
     let (codes, scale) = trit_core::quant::absmax_quantize(&z);
-    let ms = x.iter().map(|v| (*v as f64) * (*v as f64)).sum::<f64>() / x.len() as f64;
-    let r = (1.0 / (ms + eps as f64).sqrt()) as f32;
+    let r = inv_rms(mean_sq_f64(x), eps) as f32;
     (codes, scale, r)
 }
 
@@ -60,8 +67,19 @@ pub fn scaled_absmax_codes(x: &[f32], g: &[f32], eps: f32) -> (Vec<i8>, f32, f32
 /// down projection's codes come from t .* gain directly. |t| < 2^55 for this
 /// model's widths — exact in i64; the f64 used for the code search adds
 /// <= 2^-53 relative error, far below the 1/254 code granularity.
-/// Returns (codes, activation scale for the down projection).
-pub fn int_mlp_codes(acc_g: &[i32], acc_u: &[i32], gain: &[f32], k: f64, eps: f32) -> (Vec<i8>, f32) {
+/// Takes the gate/up effective scales (s_g = w_scale_g * x_scale, s_u likewise)
+/// and owns ALL of the K algebra internally, so the exponent bookkeeping lives
+/// in exactly one place. Returns (codes, activation scale for the down
+/// projection). Note the codes do not depend on K at all (scale invariance);
+/// only the returned scale does.
+pub fn int_mlp_codes(
+    acc_g: &[i32],
+    acc_u: &[i32],
+    gain: &[f32],
+    s_g: f64,
+    s_u: f64,
+    eps: f32,
+) -> (Vec<i8>, f32) {
     let n = acc_g.len();
     assert_eq!(n, acc_u.len());
     assert_eq!(n, gain.len());
@@ -74,16 +92,12 @@ pub fn int_mlp_codes(acc_g: &[i32], acc_u: &[i32], gain: &[f32], k: f64, eps: f3
         })
         .collect();
     let z: Vec<f64> = t.iter().zip(gain).map(|(&ti, &gi)| ti as f64 * gi as f64).collect();
-    let maxabs = z.iter().fold(0f64, |m, v| m.max(v.abs()));
-    if maxabs == 0.0 {
-        return (vec![0; n], 1.0);
+    let (codes, qs) = trit_core::quant::absmax_codes_f64(&z);
+    if qs == 1.0 && z.iter().all(|&v| v == 0.0) {
+        return (codes, 1.0);
     }
-    let qs = maxabs / 127.0;
-    let codes = z
-        .iter()
-        .map(|v| (v / qs).round().clamp(-127.0, 127.0) as i8)
-        .collect();
-    // folded scalars: a = K*t, r = 1/sqrt(mean(a^2)+eps); scale = qs*K*r
+    // folded scalars: a = K*t with K = s_g^2 * s_u; r = 1/sqrt(mean(a^2)+eps)
+    let k = s_g * s_g * s_u;
     let mean_t2 = t
         .iter()
         .map(|&v| {
@@ -92,7 +106,7 @@ pub fn int_mlp_codes(acc_g: &[i32], acc_u: &[i32], gain: &[f32], k: f64, eps: f3
         })
         .sum::<f64>()
         / n as f64;
-    let r = 1.0 / (k * k * mean_t2 + eps as f64).sqrt();
+    let r = inv_rms(k * k * mean_t2, eps);
     let x_scale = (qs * k * r) as f32;
     (codes, x_scale)
 }
@@ -112,6 +126,18 @@ mod tests {
     use super::*;
     use trit_core::quant::absmax_quantize;
 
+    /// Single xorshift for all tests in this module (13/7/17 constants).
+    fn xs_next(state: &mut u64) -> u64 {
+        *state ^= *state << 13;
+        *state ^= *state >> 7;
+        *state ^= *state << 17;
+        *state
+    }
+
+    fn xs_f32(state: &mut u64) -> f32 {
+        ((xs_next(state) >> 40) as f32 / (1u64 << 24) as f32) - 0.5
+    }
+
     #[test]
     fn folding_codes_match_norm_then_quantize() {
         // absmax int8 codes are invariant to the uniform 1/rms factor, so
@@ -119,12 +145,7 @@ mod tests {
         // identical codes, and the scales must differ by exactly r = 1/rms
         // (up to f32 rounding).
         let mut state = 0x5eed_f01du64;
-        let mut next = move || {
-            state ^= state << 13;
-            state ^= state >> 7;
-            state ^= state << 17;
-            ((state >> 40) as f32 / (1u64 << 24) as f32) - 0.5
-        };
+        let mut next = move || xs_f32(&mut state);
         for case in 0..1000 {
             let n = 64;
             let mut x: Vec<f32> = (0..n).map(|_| next() * 4.0).collect();
@@ -154,12 +175,7 @@ mod tests {
         // per-element, so codes may differ by at most 1 at quantization
         // boundaries; the test quantifies flips and bounds them.
         let mut state = 0x147_31d0u64;
-        let mut next = move || {
-            state ^= state << 13;
-            state ^= state >> 7;
-            state ^= state << 17;
-            state
-        };
+        let mut next = move || xs_next(&mut state);
         let (mut flips, mut elems) = (0usize, 0usize);
         for case in 0..500 {
             let n = 64;
@@ -168,16 +184,14 @@ mod tests {
             let acc_u: Vec<i32> = (0..n).map(|_| (next() % 201) as i32 - 100).collect();
             let gain: Vec<f32> = (0..n).map(|_| ((next() % 400) as f32 / 100.0) - 2.0).collect();
             let (sg, su) = (1.0f32, 1.0f32);
+            // reference goes through the production activation helper
             let a: Vec<f32> = acc_g
                 .iter()
                 .zip(&acc_u)
-                .map(|(&g, &u)| {
-                    let rg = (g as f32 * sg).max(0.0);
-                    rg * rg * (u as f32 * su)
-                })
+                .map(|(&g, &u)| activate(Act::Relu2, g as f32 * sg) * (u as f32 * su))
                 .collect();
             let (ref_codes, s, r) = scaled_absmax_codes(&a, &gain, 1e-5);
-            let (codes, x_scale) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1e-5);
+            let (codes, x_scale) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1.0, 1e-5);
             for (i, (&c, &rc)) in codes.iter().zip(&ref_codes).enumerate() {
                 let d = (c as i16 - rc as i16).abs();
                 assert!(d <= 1, "case {case} elem {i}: code {c} vs ref {rc}");
@@ -208,9 +222,47 @@ mod tests {
         let acc_g = vec![b, b, -b, 0];
         let acc_u = vec![b, -b, b, b];
         let gain = vec![1.0f32, 1.0, 1.0, 1.0];
-        let (codes, _) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1e-5);
+        let (codes, _) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1.0, 1e-5);
         // t = [b^3, -b^3, 0, 0] -> codes [127, -127, 0, 0]
         assert_eq!(codes, vec![127, -127, 0, 0]);
+    }
+
+    #[test]
+    fn int_mlp_scale_algebra_with_nonunit_scales() {
+        // Codes must be invariant to (s_g, s_u); the returned scale must match
+        // the analytic formula qs * K * inv_rms(K^2 * mean_t2) computed
+        // independently here. This is the only place the K exponent
+        // bookkeeping can silently break, so it gets its own test.
+        let acc_g = vec![30i32, -12, 7, 0, 55, -3];
+        let acc_u = vec![-20i32, 40, 11, 9, -2, 6];
+        let gain = vec![0.9f32, 1.1, 0.5, 2.0, 1.3, 0.7];
+        let (s_g, s_u) = (0.37f64, 2.5f64);
+
+        let (codes_unit, _) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1.0, 1e-5);
+        let (codes, x_scale) = int_mlp_codes(&acc_g, &acc_u, &gain, s_g, s_u, 1e-5);
+        assert_eq!(codes, codes_unit, "codes must not depend on scales");
+
+        let t: Vec<f64> = acc_g
+            .iter()
+            .zip(&acc_u)
+            .map(|(&g, &u)| {
+                let rg = g.max(0) as f64;
+                rg * rg * u as f64
+            })
+            .collect();
+        let qs = t
+            .iter()
+            .zip(&gain)
+            .map(|(ti, &gi)| (ti * gi as f64).abs())
+            .fold(0f64, f64::max)
+            / 127.0;
+        let k = s_g * s_g * s_u;
+        let mean_t2 = t.iter().map(|v| v * v).sum::<f64>() / t.len() as f64;
+        let expect = qs * k / (k * k * mean_t2 + 1e-5f32 as f64).sqrt();
+        assert!(
+            ((x_scale as f64 - expect) / expect).abs() < 1e-6,
+            "scale {x_scale} vs analytic {expect}"
+        );
     }
 
     #[test]

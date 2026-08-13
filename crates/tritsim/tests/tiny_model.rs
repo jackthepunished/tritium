@@ -32,11 +32,15 @@ const CFG: &str = r#"{"hidden_size":16,"intermediate_size":32,"num_hidden_layers
   "num_attention_heads":4,"num_key_value_heads":2,"vocab_size":32,
   "rope_theta":10000.0,"rms_norm_eps":1e-5,"hidden_act":"relu2"}"#;
 
-/// Each test gets its own file: tests run in parallel and File::create truncates,
-/// so a shared path races (reader sees a zero-length file mid-rewrite).
-fn build_tiny_model(name: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("tritsim_tiny_{name}.trit"));
-    let mut rng = Rng(0x5eed_2026);
+/// One fixture builder for both shapes so schema changes land in one place.
+/// Each test gets its own file: tests run in parallel and File::create
+/// truncates, so a shared path races (reader sees a zero-length file
+/// mid-rewrite). Sub-norm writes are interleaved at their architectural
+/// positions; the RNG consumption order for the shared tensors is identical
+/// in both shapes.
+fn build_tiny_impl(file_stem: &str, seed: u64, subnorms: bool) -> PathBuf {
+    let path = std::env::temp_dir().join(format!("{file_stem}.trit"));
+    let mut rng = Rng(seed);
     let mut w = TritWriter::create(&path, CFG).unwrap();
     let (h, ff, kvh) = (16usize, 32usize, 8usize); // kvh = num_kv_heads * head_dim = 2*4
     w.write_f32("model.embed_tokens.weight", &[32, h], &rng.vec(32 * h)).unwrap();
@@ -48,9 +52,17 @@ fn build_tiny_model(name: &str) -> PathBuf {
         w.write_trit(&format!("{p}self_attn.k_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
         w.write_trit(&format!("{p}self_attn.v_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
         w.write_trit(&format!("{p}self_attn.o_proj.weight"), &[h, h], &rng.trits(h * h), 0.1).unwrap();
+        if subnorms {
+            let gains_h: Vec<f32> = (0..h).map(|j| 0.5 + 0.1 * j as f32).collect();
+            w.write_f32(&format!("{p}self_attn.attn_sub_norm.weight"), &[h], &gains_h).unwrap();
+        }
         w.write_f32(&format!("{p}post_attention_layernorm.weight"), &[h], &ones).unwrap();
         w.write_trit(&format!("{p}mlp.gate_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
         w.write_trit(&format!("{p}mlp.up_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
+        if subnorms {
+            let gains_ff: Vec<f32> = (0..ff).map(|j| 0.3 + 0.05 * j as f32).collect();
+            w.write_f32(&format!("{p}mlp.ffn_sub_norm.weight"), &[ff], &gains_ff).unwrap();
+        }
         w.write_trit(&format!("{p}mlp.down_proj.weight"), &[h, ff], &rng.trits(h * ff), 0.1).unwrap();
     }
     w.write_f32("model.norm.weight", &[16], &vec![1.0; 16]).unwrap();
@@ -58,34 +70,14 @@ fn build_tiny_model(name: &str) -> PathBuf {
     path
 }
 
+fn build_tiny_model(name: &str) -> PathBuf {
+    build_tiny_impl(&format!("tritsim_tiny_{name}"), 0x5eed_2026, false)
+}
+
 /// Variant fixture with attn/ffn sub-norms (the BitNet 2B4T shape), needed by
 /// the folded and integer-MLP paths.
 fn build_tiny_model_with_subnorms(name: &str) -> PathBuf {
-    let path = std::env::temp_dir().join(format!("tritsim_tiny_sn_{name}.trit"));
-    let mut rng = Rng(0x5eed_2027);
-    let mut w = TritWriter::create(&path, CFG).unwrap();
-    let (h, ff, kvh) = (16usize, 32usize, 8usize);
-    w.write_f32("model.embed_tokens.weight", &[32, h], &rng.vec(32 * h)).unwrap();
-    for i in 0..2 {
-        let p = format!("model.layers.{i}.");
-        let ones = vec![1.0f32; h];
-        let gains_h: Vec<f32> = (0..h).map(|j| 0.5 + 0.1 * j as f32).collect();
-        let gains_ff: Vec<f32> = (0..ff).map(|j| 0.3 + 0.05 * j as f32).collect();
-        w.write_f32(&format!("{p}input_layernorm.weight"), &[h], &ones).unwrap();
-        w.write_trit(&format!("{p}self_attn.q_proj.weight"), &[h, h], &rng.trits(h * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.k_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.v_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.o_proj.weight"), &[h, h], &rng.trits(h * h), 0.1).unwrap();
-        w.write_f32(&format!("{p}self_attn.attn_sub_norm.weight"), &[h], &gains_h).unwrap();
-        w.write_f32(&format!("{p}post_attention_layernorm.weight"), &[h], &ones).unwrap();
-        w.write_trit(&format!("{p}mlp.gate_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}mlp.up_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
-        w.write_f32(&format!("{p}mlp.ffn_sub_norm.weight"), &[ff], &gains_ff).unwrap();
-        w.write_trit(&format!("{p}mlp.down_proj.weight"), &[h, ff], &rng.trits(h * ff), 0.1).unwrap();
-    }
-    w.write_f32("model.norm.weight", &[16], &vec![1.0; 16]).unwrap();
-    w.finish().unwrap();
-    path
+    build_tiny_impl(&format!("tritsim_tiny_sn_{name}"), 0x5eed_2027, true)
 }
 
 #[test]
@@ -100,9 +92,9 @@ fn int_mlp_path_matches_folded_closely_and_deterministically() {
         }
         out
     };
-    let folded = run(ForwardMode { folded: true, int_mlp: false });
-    let int1 = run(ForwardMode { folded: true, int_mlp: true });
-    let int2 = run(ForwardMode { folded: true, int_mlp: true });
+    let folded = run(ForwardMode::Folded);
+    let int1 = run(ForwardMode::IntMlp);
+    let int2 = run(ForwardMode::IntMlp);
     assert_eq!(int1, int2, "int path must be deterministic");
     // Different rounding order, so near-equality, not identity, is the claim
     // at tiny scale; the real-model gate demands identical text/metrics.
