@@ -98,10 +98,12 @@ fn int_mlp_path_matches_folded_closely_and_deterministically() {
     assert_eq!(int1, int2, "int path must be deterministic");
     // Different rounding order, so near-equality, not identity, is the claim
     // at tiny scale; the real-model gate demands identical text/metrics.
+    // 1e-4 relative per the plan; the max(1.0) floor makes it absolute for
+    // sub-unit logits (documented: tiny-model logits are O(1-10)).
     for (a, b) in folded.iter().flatten().zip(int1.iter().flatten()) {
         let denom = a.abs().max(1.0);
         assert!(
-            ((a - b) / denom).abs() < 1e-3,
+            ((a - b) / denom).abs() < 1e-4,
             "folded {a} vs int {b} diverged"
         );
     }

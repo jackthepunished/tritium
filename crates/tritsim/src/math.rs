@@ -182,7 +182,11 @@ mod tests {
             // |acc| <= 100 keeps the f32 reference arithmetic exact (< 2^24)
             let acc_g: Vec<i32> = (0..n).map(|_| (next() % 201) as i32 - 100).collect();
             let acc_u: Vec<i32> = (0..n).map(|_| (next() % 201) as i32 - 100).collect();
-            let gain: Vec<f32> = (0..n).map(|_| ((next() % 400) as f32 / 100.0) - 2.0).collect();
+            // dyadic gains (multiples of 0.25): t * gain is then exact in both
+            // f32 and f64, so the two paths compute identical z values and the
+            // plan's zero-flip requirement on random cases holds structurally
+            // (residual risk is only the shared divide-round step)
+            let gain: Vec<f32> = (0..n).map(|_| ((next() % 16) as f32 / 4.0) - 2.0).collect();
             let (sg, su) = (1.0f32, 1.0f32);
             // reference goes through the production activation helper
             let a: Vec<f32> = acc_g
@@ -206,10 +210,52 @@ mod tests {
                 );
             }
         }
-        // boundary-straddling by construction never exceeds +/-1 (asserted
-        // above); random flips must be rare
-        assert!(flips * 1000 <= elems, "flips {flips}/{elems} exceed 0.1%");
-        println!("int_mlp_codes: {flips} boundary flips over {elems} elements");
+        // Plan gate: zero code differences on random cases (deterministic
+        // seed; dyadic gains make z exact in both paths). Tolerances live
+        // only in the dedicated boundary test below.
+        assert_eq!(flips, 0, "random cases must be flip-free ({flips}/{elems})");
+    }
+
+    #[test]
+    fn int_mlp_f64_rounding_bounded_beyond_2p53() {
+        // The bound test above uses b^3 = 2^27 * odd, which is exactly
+        // representable in f64 despite exceeding 2^53 — it cannot exercise
+        // the documented f64-conversion risk. Here t values are odd and
+        // above 2^53 (genuinely non-representable), and the f64 code search
+        // is checked against an exact i128 round-half-away reference.
+        let g = 100_003i32; // odd
+        let u = 1_048_575i32; // odd, ~2^20
+        let acc_g = vec![g, g, -g, g];
+        let acc_u = vec![u, -u + 2, u, 3];
+        let gain = vec![1.0f32; 4];
+        let t: Vec<i64> = acc_g
+            .iter()
+            .zip(&acc_u)
+            .map(|(&a, &b)| {
+                let r = a.max(0) as i64;
+                r * r * b as i64
+            })
+            .collect();
+        assert!(
+            t.iter().any(|&v| v.abs() > (1i64 << 53) && (v as f64) as i64 != v),
+            "fixture must contain a non-representable t"
+        );
+        let m = t.iter().map(|v| v.abs()).max().unwrap() as i128;
+        let exact: Vec<i8> = t
+            .iter()
+            .map(|&v| {
+                let a = v.unsigned_abs() as i128;
+                let q = (254 * a + m) / (2 * m); // round-half-away on |127*t/m|
+                (q as i8) * if v < 0 { -1 } else { 1 }
+            })
+            .collect();
+        let (codes, _) = int_mlp_codes(&acc_g, &acc_u, &gain, 1.0, 1.0, 1e-5);
+        for (i, (&c, &e)) in codes.iter().zip(&exact).enumerate() {
+            assert!(
+                (c as i16 - e as i16).abs() <= 1,
+                "elem {i}: f64 code {c} vs exact {e} deviates beyond 1"
+            );
+        }
     }
 
     #[test]

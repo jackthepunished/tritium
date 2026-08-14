@@ -47,9 +47,10 @@ decodes byte-identically to the golden path at 24 s/token in simulation.
 The board purchase gate is passed.
 
 Phase 4 complete: the squared-ReLU stage is integer-exact — the down
-projection's codes are computed in i64 from the gate/up accumulators
-(TRITSIM_INT_MLP=1), so the ~1.5e10 f32 dynamic range never exists in the
-datapath. Proved on the real checkpoint. Read in order:
+projection's integer product is computed in i64 from the gate/up accumulators
+and quantized through the f64 code-search step (TRITSIM_INT_MLP=1), so the
+~1.5e10 f32 dynamic range never exists in the datapath. Proved on the real
+checkpoint. Read in order:
 
 1. [docs/01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) — system design and the honest bandwidth math
 2. [docs/02-ROADMAP.md](docs/02-ROADMAP.md) — 6-week milestone plan
