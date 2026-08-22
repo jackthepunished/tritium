@@ -23,22 +23,23 @@ pub fn write_set(dir: &Path, name: &str, rows: usize, cols: usize, trits: &[i8],
     }
     std::fs::write(d.join("x.hex"), xh)?;
 
+    // One line per beat, "<pos:016x> <neg:016x>" -- the same two 64-bit words
+    // the .trit v1 payload stores and the RTL core consumes.
     let mut wh = String::new();
     for r in 0..rows {
         for beat in 0..cp / LANES {
-            let mut word: u128 = 0;
+            let (mut pos, mut neg) = (0u64, 0u64);
             for l in 0..LANES {
                 let c = beat * LANES + l;
                 let t = if c < cols { trits[r * cols + c] } else { 0 };
-                let code: u128 = match t {
-                    0 => 0b00,
-                    1 => 0b01,
-                    -1 => 0b10,
+                match t {
+                    0 => {}
+                    1 => pos |= 1u64 << l,
+                    -1 => neg |= 1u64 << l,
                     _ => panic!("non-ternary {t}"),
-                };
-                word |= code << (2 * l);
+                }
             }
-            writeln!(wh, "{word:032x}")?;
+            writeln!(wh, "{pos:016x} {neg:016x}")?;
         }
     }
     std::fs::write(d.join("w.hex"), wh)?;
@@ -128,8 +129,11 @@ mod tests {
         let wh: Vec<String> = std::fs::read_to_string(dir.join("t/w.hex"))
             .unwrap().lines().map(String::from).collect();
         assert_eq!(wh.len(), 2); // one beat per row
-        // row 0: trit0=+1 (bits 1:0 = 01), trit1=-1 (bits 3:2 = 10) -> low byte 0b1001 = 0x09
-        assert!(wh[0].ends_with("09"), "beat {}", wh[0]);
+        // Each line is "<pos:016x> <neg:016x>".
+        // row 0 = [+1,-1,0,0,0]: pos bit 0, neg bit 1
+        assert_eq!(wh[0], "0000000000000001 0000000000000002", "beat {}", wh[0]);
+        // row 1 = [0,0,1,0,1]: pos bits 2 and 4, neg empty
+        assert_eq!(wh[1], "0000000000000014 0000000000000000", "beat {}", wh[1]);
         let yh: Vec<String> = std::fs::read_to_string(dir.join("t/y.hex"))
             .unwrap().lines().map(String::from).collect();
         assert_eq!(yh, vec!["fffffff6", "00000050"]); // -10, 80

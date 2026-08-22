@@ -10,971 +10,2033 @@ VL_INLINE_OPT void Vtrit_matvec___024root___ico_sequent__TOP__0(Vtrit_matvec___0
     Vtrit_matvec__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtrit_matvec___024root___ico_sequent__TOP__0\n"); );
     // Init
-    CData/*1:0*/ trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code;
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code = 0;
     CData/*7:0*/ trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv;
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv = 0;
     // Body
-    vlSelf->trit_matvec__DOT__beat_sum = 0U;
     vlSelf->trit_matvec__DOT__beat_err = 0U;
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[0U]);
+    if ((2U != ((2U & ((IData)(vlSelf->w_pos) << 1U)) 
+                | (1U & (IData)(vlSelf->w_neg))))) {
+        if ((1U != ((2U & ((IData)(vlSelf->w_pos) << 1U)) 
+                    | (1U & (IData)(vlSelf->w_neg))))) {
+            if ((0U != ((2U & ((IData)(vlSelf->w_pos) 
+                               << 1U)) | (1U & (IData)(vlSelf->w_neg))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 1U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 1U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 1U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 1U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 1U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 1U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 2U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 2U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 2U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 2U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 2U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 2U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 3U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 3U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 3U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 3U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 3U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 3U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 4U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 4U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 4U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 4U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 4U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 4U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 5U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 5U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 5U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 5U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 5U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 5U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 6U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 6U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 6U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 6U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 6U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 6U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 7U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 7U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 7U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 7U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 7U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 7U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 8U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 8U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 8U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 8U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 8U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 8U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 9U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 9U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 9U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 9U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 9U)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 9U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0xaU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xaU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0xaU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0xaU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0xaU)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 0xaU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0xbU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xbU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0xbU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0xbU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0xbU)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 0xbU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0xcU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xcU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0xcU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0xcU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0xcU)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 0xcU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0xdU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xdU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0xdU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0xdU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0xdU)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 0xdU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0xeU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xeU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0xeU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0xeU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0xeU)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 0xeU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0xfU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xfU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0xfU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0xfU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0xfU)) << 1U)) 
+                        | (1U & (IData)((vlSelf->w_neg 
+                                         >> 0xfU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x10U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x10U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x10U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x10U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x10U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x10U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x11U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x11U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x11U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x11U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x11U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x11U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x12U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x12U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x12U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x12U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x12U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x12U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x13U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x13U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x13U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x13U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x13U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x13U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x14U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x14U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x14U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x14U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x14U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x14U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x15U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x15U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x15U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x15U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x15U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x15U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x16U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x16U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x16U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x16U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x16U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x16U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x17U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x17U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x17U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x17U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x17U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x17U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x18U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x18U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x18U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x18U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x18U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x18U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x19U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x19U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x19U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x19U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x19U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x19U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x1aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1aU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x1aU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x1aU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x1aU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x1aU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x1bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1bU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x1bU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x1bU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x1bU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x1bU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x1cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1cU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x1cU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x1cU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x1cU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x1cU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x1dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1dU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x1dU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x1dU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x1dU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x1dU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x1eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1eU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x1eU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x1eU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x1eU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x1eU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x1fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1fU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x1fU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x1fU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x1fU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x1fU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x20U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x20U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x20U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x20U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x20U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x20U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x21U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x21U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x21U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x21U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x21U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x21U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x22U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x22U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x22U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x22U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x22U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x22U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x23U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x23U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x23U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x23U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x23U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x23U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x24U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x24U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x24U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x24U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x24U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x24U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x25U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x25U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x25U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x25U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x25U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x25U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x26U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x26U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x26U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x26U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x26U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x26U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x27U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x27U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x27U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x27U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x27U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x27U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x28U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x28U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x28U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x28U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x28U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x28U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x29U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x29U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x29U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x29U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x29U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x29U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x2aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2aU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x2aU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x2aU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x2aU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x2aU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x2bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2bU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x2bU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x2bU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x2bU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x2bU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x2cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2cU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x2cU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x2cU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x2cU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x2cU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x2dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2dU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x2dU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x2dU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x2dU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x2dU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x2eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2eU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x2eU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x2eU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x2eU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x2eU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x2fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2fU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x2fU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x2fU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x2fU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x2fU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x30U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x30U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x30U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x30U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x30U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x30U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x31U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x31U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x31U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x31U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x31U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x31U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x32U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x32U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x32U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x32U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x32U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x32U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x33U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x33U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x33U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x33U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x33U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x33U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x34U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x34U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x34U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x34U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x34U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x34U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x35U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x35U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x35U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x35U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x35U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x35U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x36U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x36U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x36U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x36U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x36U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x36U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x37U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x37U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x37U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x37U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x37U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x37U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x38U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x38U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x38U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x38U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x38U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x38U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x39U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x39U)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x39U)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x39U)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x39U)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x39U)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x3aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3aU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x3aU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x3aU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x3aU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x3aU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x3bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3bU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x3bU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x3bU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x3bU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x3bU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x3cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3cU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x3cU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x3cU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x3cU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x3cU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x3dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3dU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x3dU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x3dU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x3dU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x3dU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x3eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3eU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x3eU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x3eU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x3eU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x3eU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    if ((2U != ((2U & ((IData)((vlSelf->w_pos >> 0x3fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3fU)))))) {
+        if ((1U != ((2U & ((IData)((vlSelf->w_pos >> 0x3fU)) 
+                           << 1U)) | (1U & (IData)(
+                                                   (vlSelf->w_neg 
+                                                    >> 0x3fU)))))) {
+            if ((0U != ((2U & ((IData)((vlSelf->w_pos 
+                                        >> 0x3fU)) 
+                               << 1U)) | (1U & (IData)(
+                                                       (vlSelf->w_neg 
+                                                        >> 0x3fU)))))) {
+                vlSelf->trit_matvec__DOT__beat_err = 1U;
+            }
+        }
+    }
+    vlSelf->trit_matvec__DOT__beat_sum = 0U;
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)(vlSelf->w_pos) << 1U)) 
+                | (1U & (IData)(vlSelf->w_neg))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)(vlSelf->w_pos) 
+                              << 1U)) | (1U & (IData)(vlSelf->w_neg))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(1U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 1U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 1U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 1U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 1U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(2U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 2U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 2U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 2U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 2U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(3U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 3U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 3U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 3U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 3U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(4U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 4U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 4U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 4U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 4U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(5U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 5U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 5U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 5U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 5U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(6U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 6U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 6U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 6U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 6U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(7U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 7U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 7U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 7U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 7U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(8U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 8U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 8U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 8U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 8U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(9U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 9U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 9U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 9U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 9U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xaU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xaU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xaU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xaU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xaU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xbU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xbU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xbU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xbU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xbU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xcU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xcU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xcU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xcU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xcU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xdU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xdU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xdU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xdU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xdU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xeU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xeU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xeU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xeU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xeU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[0U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xfU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xfU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xfU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xfU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xfU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[1U]);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x10U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x10U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x10U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x10U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x10U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x11U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x11U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x11U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x11U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x11U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x12U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x12U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x12U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x12U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x12U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x13U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x13U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x13U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x13U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x13U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x14U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x14U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x14U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x14U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x14U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x15U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x15U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x15U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x15U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x15U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x16U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x16U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x16U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x16U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x16U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x17U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x17U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x17U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x17U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x17U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x18U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x18U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x18U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x18U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x18U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x19U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x19U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x19U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x19U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x19U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1aU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1aU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1bU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1bU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1cU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1cU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1dU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1dU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1eU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1eU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[1U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1fU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1fU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[2U]);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x20U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x20U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x20U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x20U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x20U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x21U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x21U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x21U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x21U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x21U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x22U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x22U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x22U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x22U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x22U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x23U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x23U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x23U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x23U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x23U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x24U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x24U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x24U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x24U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x24U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x25U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x25U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x25U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x25U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x25U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x26U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x26U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x26U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x26U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x26U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x27U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x27U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x27U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x27U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x27U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x28U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x28U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x28U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x28U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x28U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x29U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x29U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x29U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x29U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x29U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2aU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2aU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2bU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2bU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2cU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2cU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2dU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2dU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2eU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2eU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[2U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2fU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2fU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[3U]);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x30U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x30U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x30U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x30U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x30U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x31U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x31U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x31U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x31U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x31U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x32U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x32U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x32U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x32U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x32U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x33U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x33U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x33U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x33U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x33U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x34U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x34U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x34U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x34U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x34U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x35U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x35U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x35U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x35U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x35U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x36U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x36U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x36U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x36U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x36U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x37U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x37U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x37U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x37U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x37U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x38U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x38U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x38U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x38U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x38U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x39U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x39U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x39U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x39U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x39U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3aU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3aU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3bU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3bU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3cU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3cU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3dU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3dU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3eU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3eU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[3U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3fU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3fU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
 }
 
@@ -1016,8 +2078,6 @@ VL_INLINE_OPT void Vtrit_matvec___024root___nba_sequent__TOP__0(Vtrit_matvec___0
     Vtrit_matvec__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtrit_matvec___024root___nba_sequent__TOP__0\n"); );
     // Init
-    CData/*1:0*/ trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code;
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code = 0;
     CData/*7:0*/ trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv;
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv = 0;
     CData/*7:0*/ __Vdly__trit_matvec__DOT__beat_q;
@@ -1084,965 +2144,1025 @@ VL_INLINE_OPT void Vtrit_matvec___024root___nba_sequent__TOP__0(Vtrit_matvec___0
     vlSelf->trit_matvec__DOT__acc_q = __Vdly__trit_matvec__DOT__acc_q;
     vlSelf->trit_matvec__DOT__beat_q = __Vdly__trit_matvec__DOT__beat_q;
     vlSelf->trit_matvec__DOT__beat_sum = 0U;
-    vlSelf->trit_matvec__DOT__beat_err = 0U;
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[0U]);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)(vlSelf->w_pos) << 1U)) 
+                | (1U & (IData)(vlSelf->w_neg))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)(vlSelf->w_pos) 
+                              << 1U)) | (1U & (IData)(vlSelf->w_neg))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(1U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 1U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 1U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 1U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 1U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(2U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 2U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 2U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 2U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 2U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(3U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 3U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 3U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 3U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 3U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(4U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 4U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 4U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 4U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 4U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(5U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 5U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 5U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 5U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 5U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(6U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 6U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 6U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 6U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 6U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(7U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 7U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 7U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 7U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 7U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(8U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 8U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 8U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 8U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 8U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(9U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 9U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 9U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 9U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 9U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xaU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xaU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xaU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xaU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xaU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xbU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xbU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xbU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xbU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xbU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xcU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xcU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xcU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xcU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xcU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xdU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xdU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xdU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xdU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xdU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[0U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xeU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xeU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xeU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xeU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xeU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[0U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0xfU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0xfU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0xfU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0xfU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0xfU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[1U]);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x10U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x10U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x10U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x10U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x10U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x11U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x11U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x11U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x11U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x11U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x12U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x12U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x12U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x12U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x12U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x13U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x13U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x13U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x13U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x13U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x14U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x14U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x14U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x14U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x14U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x15U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x15U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x15U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x15U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x15U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x16U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x16U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x16U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x16U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x16U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x17U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x17U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x17U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x17U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x17U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x18U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x18U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x18U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x18U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x18U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x19U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x19U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x19U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x19U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x19U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1aU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1aU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1bU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1bU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1cU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1cU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1dU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1dU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[1U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1eU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1eU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[1U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x1fU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x1fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x1fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x1fU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x1fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[2U]);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x20U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x20U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x20U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x20U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x20U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x21U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x21U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x21U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x21U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x21U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x22U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x22U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x22U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x22U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x22U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x23U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x23U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x23U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x23U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x23U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x24U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x24U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x24U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x24U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x24U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x25U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x25U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x25U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x25U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x25U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x26U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x26U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x26U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x26U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x26U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x27U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x27U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x27U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x27U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x27U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x28U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x28U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x28U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x28U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x28U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x29U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x29U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x29U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x29U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x29U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2aU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2aU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2bU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2bU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2cU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2cU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2dU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2dU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[2U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2eU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2eU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[2U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x2fU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x2fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x2fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x2fU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x2fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & vlSelf->w_data[3U]);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x30U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x30U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x30U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x30U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x30U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 2U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x31U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x31U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x31U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x31U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x31U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 4U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x32U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x32U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x32U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x32U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x32U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 6U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x33U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x33U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x33U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x33U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x33U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 8U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x34U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x34U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x34U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x34U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x34U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0xaU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x35U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x35U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x35U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x35U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x35U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0xcU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x36U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x36U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x36U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x36U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x36U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0xeU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x37U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x37U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x37U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x37U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x37U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x10U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x38U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x38U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x38U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x38U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x38U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x12U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x39U) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x39U)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x39U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x39U)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x39U)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x14U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3aU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3aU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3aU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3aU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x16U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3bU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3bU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3bU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3bU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x18U));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3cU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3cU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3cU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3cU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x1aU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3dU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3dU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3dU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3dU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (3U & (vlSelf->w_data[3U] >> 0x1cU));
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3eU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3eU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3eU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3eU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
-    trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code 
-        = (vlSelf->w_data[3U] >> 0x1eU);
     trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv 
         = vlSelf->trit_matvec__DOT__x_mem[(0x1fffU 
                                            & ((IData)(0x3fU) 
                                               + VL_SHIFTL_III(13,32,32, (IData)(vlSelf->trit_matvec__DOT__beat_q), 6U)))];
-    if ((1U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    if ((2U == ((2U & ((IData)((vlSelf->w_pos >> 0x3fU)) 
+                       << 1U)) | (1U & (IData)((vlSelf->w_neg 
+                                                >> 0x3fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               + VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((2U == (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
+    } else if ((1U == ((2U & ((IData)((vlSelf->w_pos 
+                                       >> 0x3fU)) << 1U)) 
+                       | (1U & (IData)((vlSelf->w_neg 
+                                        >> 0x3fU)))))) {
         vlSelf->trit_matvec__DOT__beat_sum = (vlSelf->trit_matvec__DOT__beat_sum 
                                               - VL_EXTENDS_II(32,8, (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__xv)));
-    } else if ((0U != (IData)(trit_matvec__DOT__unnamedblk1__DOT__unnamedblk2__DOT__code))) {
-        vlSelf->trit_matvec__DOT__beat_err = 1U;
     }
 }
 
@@ -2119,7 +3239,7 @@ void Vtrit_matvec___024root___eval(Vtrit_matvec___024root* vlSelf) {
 #ifdef VL_DEBUG
             Vtrit_matvec___024root___dump_triggers__ico(vlSelf);
 #endif
-            VL_FATAL_MT("trit_matvec.sv", 7, "", "Input combinational region did not converge.");
+            VL_FATAL_MT("trit_matvec.sv", 17, "", "Input combinational region did not converge.");
         }
         __VicoIterCount = ((IData)(1U) + __VicoIterCount);
         __VicoContinue = 0U;
@@ -2135,7 +3255,7 @@ void Vtrit_matvec___024root___eval(Vtrit_matvec___024root* vlSelf) {
 #ifdef VL_DEBUG
             Vtrit_matvec___024root___dump_triggers__nba(vlSelf);
 #endif
-            VL_FATAL_MT("trit_matvec.sv", 7, "", "NBA region did not converge.");
+            VL_FATAL_MT("trit_matvec.sv", 17, "", "NBA region did not converge.");
         }
         __VnbaIterCount = ((IData)(1U) + __VnbaIterCount);
         __VnbaContinue = 0U;
@@ -2146,7 +3266,7 @@ void Vtrit_matvec___024root___eval(Vtrit_matvec___024root* vlSelf) {
 #ifdef VL_DEBUG
                 Vtrit_matvec___024root___dump_triggers__act(vlSelf);
 #endif
-                VL_FATAL_MT("trit_matvec.sv", 7, "", "Active region did not converge.");
+                VL_FATAL_MT("trit_matvec.sv", 17, "", "Active region did not converge.");
             }
             vlSelf->__VactIterCount = ((IData)(1U) 
                                        + vlSelf->__VactIterCount);
