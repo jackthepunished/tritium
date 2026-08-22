@@ -5,7 +5,7 @@ use crate::math::{
 use anyhow::{Context, Result};
 use std::path::Path;
 use trit_core::quant::absmax_quantize;
-use trit_core::tritfmt::TritReader;
+use trit_core::tritfmt::TritFile;
 
 /// Numerics mode as an ordered ladder, so the invalid "int MLP without
 /// folding" state is unrepresentable: IntMlp extends Folded extends Reference.
@@ -130,41 +130,47 @@ impl KvCache {
 
 impl Model {
     pub fn load(path: &Path) -> Result<Self> {
-        let r = TritReader::open(path)?;
+        let r = TritFile::open(path)?;
         let cfg = ModelConfig::from_json(r.config_json())?;
+        // The oracle deliberately expands the bit planes to one i8 per weight:
+        // its job is to be obviously correct, not fast. The production path in
+        // trit-core reads the same planes in place.
         let bl = |name: &str| -> Result<BitLinear> {
-            let m = r
-                .metas()
-                .iter()
-                .find(|m| m.name == name)
-                .with_context(|| format!("missing {name}"))?;
-            let (rows, cols) = (m.shape[0], m.shape[1]);
-            let (trits, w_scale) = r.read_trit(name)?;
-            Ok(BitLinear { trits, rows, cols, w_scale })
+            let span = r.trit_span(name).with_context(|| format!("missing {name}"))?;
+            Ok(BitLinear {
+                trits: r.planes(span).to_trits(),
+                rows: span.rows(),
+                cols: span.cols(),
+                w_scale: span.scale(),
+            })
         };
-        let f32_opt = |name: &str| r.read_f32(name).ok();
+        let f32_of = |name: &str| -> Result<Vec<f32>> {
+            let span = r.dense_span(name).with_context(|| format!("missing {name}"))?;
+            Ok(r.dense(span).into_owned())
+        };
+        let f32_opt = |name: &str| f32_of(name).ok();
 
         let mut layers = Vec::with_capacity(cfg.num_layers);
         for i in 0..cfg.num_layers {
             let p = format!("model.layers.{i}.");
             layers.push(Layer {
-                input_norm: r.read_f32(&format!("{p}input_layernorm.weight"))?,
+                input_norm: f32_of(&format!("{p}input_layernorm.weight"))?,
                 q: bl(&format!("{p}self_attn.q_proj.weight"))?,
                 k: bl(&format!("{p}self_attn.k_proj.weight"))?,
                 v: bl(&format!("{p}self_attn.v_proj.weight"))?,
                 o: bl(&format!("{p}self_attn.o_proj.weight"))?,
                 attn_sub_norm: f32_opt(&format!("{p}self_attn.attn_sub_norm.weight")),
-                post_norm: r.read_f32(&format!("{p}post_attention_layernorm.weight"))?,
+                post_norm: f32_of(&format!("{p}post_attention_layernorm.weight"))?,
                 gate: bl(&format!("{p}mlp.gate_proj.weight"))?,
                 up: bl(&format!("{p}mlp.up_proj.weight"))?,
                 down: bl(&format!("{p}mlp.down_proj.weight"))?,
                 ffn_sub_norm: f32_opt(&format!("{p}mlp.ffn_sub_norm.weight")),
             });
         }
-        let embed = r.read_f32("model.embed_tokens.weight")?;
-        let lm_head = r.read_f32("lm_head.weight").unwrap_or_else(|_| embed.clone());
+        let embed = f32_of("model.embed_tokens.weight")?;
+        let lm_head = f32_of("lm_head.weight").unwrap_or_else(|_| embed.clone());
         Ok(Self {
-            final_norm: r.read_f32("model.norm.weight")?,
+            final_norm: f32_of("model.norm.weight")?,
             embed,
             lm_head,
             layers,

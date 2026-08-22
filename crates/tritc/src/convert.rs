@@ -50,18 +50,47 @@ pub fn convert(input_dir: &Path, output: &Path) -> Result<Report> {
     anyhow::ensure!(!st_files.is_empty(), "no .safetensors files in {}", input_dir.display());
 
     let (mut n, mut n_tern, mut zsum, mut esum) = (0usize, 0usize, 0f32, 0f32);
+
+    // Map every shard at once so tensors can be emitted in one global order.
+    // `SafeTensors::tensors()` iterates a HashMap, so writing in its order makes
+    // the output non-deterministic: the same checkpoint converts to a different
+    // byte layout on every run. Sorting by name gives the file a canonical
+    // layout, which is what lets `tritc upgrade` reproduce a conversion exactly
+    // and what makes a checksum of a .trit mean anything.
+    let mmaps: Vec<memmap2::Mmap> = st_files
+        .iter()
+        .map(|p| {
+            let f = std::fs::File::open(p).with_context(|| format!("open {}", p.display()))?;
+            // SAFETY: read-only map of an input file, dropped at the end of this
+            // function; the views below never outlive it.
+            Ok(unsafe { memmap2::Mmap::map(&f)? })
+        })
+        .collect::<Result<_>>()?;
+    let shards: Vec<SafeTensors> = mmaps
+        .iter()
+        .zip(&st_files)
+        .map(|(m, p)| SafeTensors::deserialize(m).with_context(|| format!("parse {}", p.display())))
+        .collect::<Result<_>>()?;
+
     // Names are unique within one safetensors file but nothing guarantees it
-    // across shards; a duplicate would silently shadow in TritReader::meta.
+    // across shards; a duplicate would silently shadow at lookup time.
     let mut seen = std::collections::HashSet::new();
-    for path in st_files {
-        let file = std::fs::File::open(&path)?;
-        let mmap = unsafe { memmap2::Mmap::map(&file)? };
-        let st = SafeTensors::deserialize(&mmap)?;
-        for (name, view) in st.tensors() {
+    let mut index: Vec<(String, usize)> = Vec::new();
+    for (i, st) in shards.iter().enumerate() {
+        for name in st.names() {
             anyhow::ensure!(
                 seen.insert(name.clone()),
                 "duplicate tensor name across shards: {name}"
             );
+            index.push((name.clone(), i));
+        }
+    }
+    index.sort_by(|a, b| a.0.cmp(&b.0));
+
+    {
+        for (name, shard) in &index {
+            let name = name.clone();
+            let view = shards[*shard].tensor(&name)?;
             let shape: Vec<usize> = view.shape().to_vec();
             let data = to_f32(view.dtype(), view.data())?;
             let is_ternary = shape.len() == 2
@@ -132,12 +161,13 @@ mod tests {
         assert_eq!(report.tensors, 2);
         assert_eq!(report.ternary_tensors, 1);
 
-        let r = trit_core::tritfmt::TritReader::open(&out).unwrap();
+        let r = trit_core::tritfmt::TritFile::open(&out).unwrap();
         assert_eq!(r.config_json(), r#"{"hidden_size":2}"#);
-        let (trits, scale) = r.read_trit("model.layers.0.self_attn.q_proj.weight").unwrap();
+        let span = r.trit_span("model.layers.0.self_attn.q_proj.weight").unwrap();
+        let (trits, scale) = (r.planes(span).to_trits(), span.scale());
         assert_eq!(trits, vec![1, -1, 0, 1]);
         assert!((scale - 0.95).abs() < 1e-6);
-        assert_eq!(r.read_f32("model.norm.weight").unwrap(), vec![1.0, 1.0]);
+        assert_eq!(&*r.dense(r.dense_span("model.norm.weight").unwrap()), &[1.0, 1.0]);
     }
 
     #[test]

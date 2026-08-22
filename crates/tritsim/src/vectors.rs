@@ -92,16 +92,12 @@ pub fn generate_all(out: &Path) -> Result<()> {
 /// against a deterministic random activation, using the exact trits the model
 /// runs. Guards against generator-side packing bugs that random sets share.
 pub fn model_tile_set(out: &Path, model: &Path, name: &str, max_rows: usize) -> Result<()> {
-    let r = trit_core::tritfmt::TritReader::open(model)?;
+    let r = trit_core::tritfmt::TritFile::open(model)?;
     let tname = "model.layers.0.self_attn.k_proj.weight";
-    let meta = r
-        .metas()
-        .iter()
-        .find(|m| m.name == tname)
-        .with_context(|| format!("{tname} not in model"))?;
-    let (all, _scale) = r.read_trit(tname)?;
-    let cols = meta.shape[1];
-    let rows = meta.shape[0].min(max_rows);
+    let span = r.trit_span(tname).with_context(|| format!("{tname} not in model"))?;
+    let all = r.planes(span).to_trits();
+    let cols = span.cols();
+    let rows = span.rows().min(max_rows);
     let trits = &all[..rows * cols];
     let mut rng = Rng(0xD1CE);
     let x: Vec<i8> = (0..cols).map(|_| rng.i8()).collect();
