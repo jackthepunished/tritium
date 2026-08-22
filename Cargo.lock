@@ -937,6 +937,7 @@ dependencies = [
  "serde_json",
  "tokenizers",
  "trit-core",
+ "trit-cpu",
 ]
 
 [[package]]

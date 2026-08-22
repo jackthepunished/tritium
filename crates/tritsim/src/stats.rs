@@ -93,8 +93,12 @@ mod tests {
 
     #[test]
     fn disabled_global_is_noop() {
-        // TRITSIM_STATS unset in the test env: record must not panic or allocate a recorder
+        // TRITSIM_STATS unset in the test env: record must not panic, and must
+        // not bring a recorder into existence.
         record("whatever", &[1.0]);
-        assert!(global().is_none() || true); // reaching here without panic is the assertion
+        assert!(
+            global().is_none(),
+            "recording with TRITSIM_STATS unset must not allocate a recorder"
+        );
     }
 }

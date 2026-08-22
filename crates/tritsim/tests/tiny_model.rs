@@ -65,7 +65,7 @@ fn build_tiny_impl(file_stem: &str, seed: u64, subnorms: bool) -> PathBuf {
         }
         w.write_trit(&format!("{p}mlp.down_proj.weight"), &[h, ff], &rng.trits(h * ff), 0.1).unwrap();
     }
-    w.write_f32("model.norm.weight", &[16], &vec![1.0; 16]).unwrap();
+    w.write_f32("model.norm.weight", &[16], &[1.0; 16]).unwrap();
     w.finish().unwrap();
     path
 }

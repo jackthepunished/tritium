@@ -1,6 +1,14 @@
 pub mod backend;
+pub mod config;
+pub mod kv;
+pub mod math;
 pub mod matvec;
+pub mod model;
 pub mod pack;
 pub mod planes;
 pub mod quant;
+pub mod rope;
+pub mod sampler;
+pub mod session;
+pub mod tokenizer;
 pub mod tritfmt;

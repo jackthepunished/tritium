@@ -17,8 +17,10 @@ pub fn write_set(dir: &Path, name: &str, rows: usize, cols: usize, trits: &[i8],
     std::fs::write(d.join("meta.txt"), format!("{rows} {cp}\n"))?;
 
     let mut xh = String::new();
+    // Padded columns are written as zero activations; combined with zero planes
+    // they contribute nothing, which is what makes padding exact.
     for c in 0..cp {
-        let v = if c < cols { x[c] } else { 0 };
+        let v = x.get(c).copied().unwrap_or(0);
         writeln!(xh, "{:02x}", v as u8)?;
     }
     std::fs::write(d.join("x.hex"), xh)?;
@@ -85,7 +87,7 @@ pub fn generate_all(out: &Path) -> Result<()> {
     let trits: Vec<i8> = (0..4 * 128).map(|_| if rng.next() & 1 == 0 { 1 } else { -1 }).collect();
     let x: Vec<i8> = (0..128).map(|_| if rng.next() & 1 == 0 { -128 } else { 127 }).collect();
     write_set(out, "extremes_4x128", 4, 128, &trits, &x)?;
-    write_set(out, "zeros_3x64", 3, 64, &vec![0i8; 3 * 64], &(0..64).map(|i| i as i8).collect::<Vec<_>>())?;
+    write_set(out, "zeros_3x64", 3, 64, &[0i8; 3 * 64], &(0..64).map(|i| i as i8).collect::<Vec<_>>())?;
     Ok(())
 }
 

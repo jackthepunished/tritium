@@ -24,6 +24,7 @@ use std::sync::OnceLock;
 use trit_core::backend::MatvecBackend;
 use trit_core::planes::TritPlanes;
 
+pub mod f32_kernels;
 pub mod scalar;
 
 #[cfg(target_arch = "x86_64")]
@@ -239,5 +240,9 @@ impl MatvecBackend for CpuBackend {
 
     fn threads(&self) -> usize {
         self.threads
+    }
+
+    fn f32_matvec(&self, w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32]) {
+        f32_kernels::f32_matvec(w, rows, cols, x, y, self.threads)
     }
 }

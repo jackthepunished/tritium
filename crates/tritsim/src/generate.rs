@@ -28,18 +28,16 @@ pub fn greedy_ids(model: &Model, prompt_ids: &[u32], steps: usize, eos_id: Optio
         logits = model.forward(*tok, pos, &mut cache);
     }
     let mut out = Vec::new();
-    let mut pos = prompt_ids.len();
     // Stop at the context limit rather than asking forward() for an
     // out-of-range position.
     let steps = steps.min(cfg.max_seq.saturating_sub(prompt_ids.len()));
-    for _ in 0..steps {
+    for pos in prompt_ids.len()..prompt_ids.len() + steps {
         let next = argmax(&logits);
         if Some(next) == eos_id {
             break;
         }
         out.push(next);
         logits = model.forward(next, pos, &mut cache);
-        pos += 1;
     }
     Ok(out)
 }

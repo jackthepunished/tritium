@@ -28,6 +28,29 @@ pub trait MatvecBackend: Send + Sync {
     fn threads(&self) -> usize {
         1
     }
+
+    /// Dense f32 matrix-vector product, row-major.
+    ///
+    /// Not ternary, and not incidental: the LM head is 128256 x 2560 f32 on
+    /// BitNet 2B4T, so at batch 1 it moves 1315 MB per token against 521 MB for
+    /// every ternary projection combined. A backend that vectorizes the ternary
+    /// kernel and leaves this one scalar has not moved end-to-end throughput.
+    ///
+    /// The default is the portable reference; backends override it.
+    fn f32_matvec(&self, w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32]) {
+        f32_matvec_reference(w, rows, cols, x, y)
+    }
+}
+
+/// Portable dense f32 matvec.
+pub fn f32_matvec_reference(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32]) {
+    assert_eq!(w.len(), rows * cols);
+    assert_eq!(x.len(), cols);
+    assert_eq!(y.len(), rows);
+    for (r, out) in y.iter_mut().enumerate() {
+        let row = &w[r * cols..(r + 1) * cols];
+        *out = row.iter().zip(x).map(|(a, b)| a * b).sum();
+    }
 }
 
 /// The portable reference backend. Always available, no dependencies.
