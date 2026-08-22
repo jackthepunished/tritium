@@ -56,7 +56,7 @@ projections, is the thing to attack next.
 | `crates/trit-rtl` | Hardware-in-the-loop backend over the Verilated core. | working |
 | `crates/tritsim` | Independent golden reference. The oracle every other path is diffed against. | working |
 | `rtl/` | Multiplier-free SystemVerilog `tritcore` + Verilator testbenches. | 64 lanes, simulation-first |
-| `benches/` | Comparative harness vs llama.cpp / bitnet.cpp baselines. | not built yet |
+| `benches/` | Comparative harness vs llama.cpp / bitnet.cpp baselines. | working; no baseline installed here yet |
 
 ## Quickstart
 
@@ -170,8 +170,10 @@ Full specification, including both plane invariants and the v0 migration path:
 - No FPGA silicon yet. The RTL is simulation-first: the 64-term single-cycle
   reduction and 64 parallel activation reads are fine under Verilator and are not
   yet timing-closed on a board.
-- `benches/` does not exist, so there is no llama.cpp comparison here yet. The
-  numbers above are Tritium against its own past, plus a measured roofline.
+- No llama.cpp or bitnet.cpp comparison has been run yet. `benches/` is built and
+  records a row for each baseline, but neither binary is installed on the machine
+  these numbers came from, so both show as `unavailable`. The figures above are
+  Tritium against its own past, plus a roofline measured on the same host.
 - Energy per token is reported only where a real counter exists. It is never
   estimated.
 
