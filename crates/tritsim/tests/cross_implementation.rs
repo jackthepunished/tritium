@@ -201,3 +201,69 @@ fn tied_embeddings_are_aliased_not_cloned() {
     // vocab * hidden * 4 bytes, counted once.
     assert_eq!(model.lm_head_bytes(), 48 * 80 * 4);
 }
+
+/// The same cross-check against the real BitNet b1.58 2B4T checkpoint.
+///
+/// Ignored by default because it needs `models/bitnet-2b4t.trit` (gitignored,
+/// 1.8 GB). Run with:
+///   cargo test -p tritsim --release --test cross_implementation -- --ignored --nocapture
+#[test]
+#[ignore = "needs the real checkpoint"]
+fn real_checkpoint_paths_agree() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../models/bitnet-2b4t.trit");
+    if !path.exists() {
+        eprintln!("{} absent; skipping", path.display());
+        return;
+    }
+
+    let sim = SimModel::load(&path).unwrap();
+    let file = TritFile::open(&path).unwrap();
+    let threads: usize = std::env::var("XCMP_THREADS").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+    if let Ok(k) = std::env::var("XCMP_KERNEL") { trit_cpu::force_kernel(&k).unwrap(); }
+    eprintln!("threads={threads} kernel={}", trit_cpu::kernel_name());
+    let backend: Arc<dyn MatvecBackend> = Arc::new(trit_cpu::CpuBackend::new(threads));
+    let core_base = CoreModel::load(file, backend).unwrap();
+
+    // A prompt long enough that RoPE and the KV cache are genuinely exercised.
+    let tokens: Vec<u32> = vec![128000, 791, 6864, 315, 9822, 374, 12366, 13];
+
+    for (sim_mode, core_mode) in [
+        (ForwardMode::Reference, Numerics::Reference),
+        (ForwardMode::Folded, Numerics::Folded),
+        (ForwardMode::IntMlp, Numerics::IntMlp),
+    ] {
+        let mut core = CoreModel::load(TritFile::open(&path).unwrap(), core_base.backend_arc())
+            .map(|m| Arc::try_unwrap(m).ok().unwrap())
+            .unwrap();
+        core.set_numerics(core_mode).unwrap();
+        let core = Arc::new(core);
+
+        let mut sim_cache = KvCache::new(&sim.cfg);
+        let mut kv = trit_core::kv::KvCache::new(core.config());
+        let mut scratch = Scratch::new(core.config());
+        let mut logits = vec![0.0f32; core.config().vocab_size];
+
+        for (pos, &t) in tokens.iter().enumerate() {
+            let a = sim.forward_with_mode(t, pos, &mut sim_cache, sim_mode);
+            core.forward_into(t, pos, &mut kv, &mut scratch, &mut logits).unwrap();
+
+            let c = cosine(&a, &logits);
+            let (ta, tb) = (argmax(&a), argmax(&logits));
+            // The margin between the top two logits: a flip at a near-tie is a
+            // different situation from a flip with real separation.
+            let mut sorted: Vec<f32> = a.clone();
+            sorted.sort_by(|x, y| y.total_cmp(x));
+            let margin = sorted[0] - sorted[1];
+            println!(
+                "{core_mode:?} pos {pos}: cosine {c:.6} top1 sim={ta} core={tb} margin={margin:.4}"
+            );
+            // 1 - 1e-6: the two implementations are expected to agree to the
+            // last bit here. They did not until the scale multiplications were
+            // ordered to match the reference exactly -- f32 multiplication is
+            // not associative, and folding w_scale * x_scale into one constant
+            // was enough to change the generated text at the first near-tie.
+            assert!(c > 0.999999, "{core_mode:?} pos {pos}: cosine {c}");
+            assert_eq!(ta, tb, "{core_mode:?} pos {pos}: top-1 differs (margin {margin:.4})");
+        }
+    }
+}

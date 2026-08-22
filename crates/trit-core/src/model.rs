@@ -166,6 +166,10 @@ impl Model {
     pub fn backend(&self) -> &dyn MatvecBackend {
         self.backend.as_ref()
     }
+    /// Share this model's backend with another model instance.
+    pub fn backend_arc(&self) -> Arc<dyn MatvecBackend> {
+        self.backend.clone()
+    }
     pub fn tied_embeddings(&self) -> bool {
         self.tied
     }
@@ -250,11 +254,11 @@ impl Model {
             );
 
             self.acc_into(&layer.q, &s.codes, &mut s.acc);
-            scale_into(&s.acc[..layer.q.rows()], layer.q.scale() * x_scale, &mut s.q);
+            scale_into(&s.acc[..layer.q.rows()], layer.q.scale(), x_scale, &mut s.q);
             self.acc_into(&layer.k, &s.codes, &mut s.acc);
-            scale_into(&s.acc[..layer.k.rows()], layer.k.scale() * x_scale, &mut s.k);
+            scale_into(&s.acc[..layer.k.rows()], layer.k.scale(), x_scale, &mut s.k);
             self.acc_into(&layer.v, &s.codes, &mut s.acc);
-            scale_into(&s.acc[..layer.v.rows()], layer.v.scale() * x_scale, &mut s.v);
+            scale_into(&s.acc[..layer.v.rows()], layer.v.scale(), x_scale, &mut s.v);
 
             s.rope.apply(&mut s.q);
             s.rope.apply(&mut s.k);
@@ -290,9 +294,9 @@ impl Model {
                 None => math::absmax_codes_into(&s.ctx, &mut s.codes2),
             };
             self.acc_into(&layer.o, &s.codes2, &mut s.acc);
-            let ow = layer.o.scale() * o_scale;
+            let ow = layer.o.scale();
             for (i, a) in s.acc[..layer.o.rows()].iter().enumerate() {
-                s.x[i] += *a as f32 * ow;
+                s.x[i] += *a as f32 * ow * o_scale;
             }
 
             // ---- mlp ----
@@ -323,17 +327,17 @@ impl Model {
                 )
             } else {
                 self.acc_into(&layer.gate, &s.codes, &mut s.acc);
-                let gs = layer.gate.scale() * x_scale;
+                let gw = layer.gate.scale();
                 s.gate_f.clear();
-                s.gate_f.extend(s.acc[..layer.gate.rows()].iter().map(|a| *a as f32 * gs));
+                s.gate_f.extend(s.acc[..layer.gate.rows()].iter().map(|a| *a as f32 * gw * x_scale));
                 self.acc_into(&layer.up, &s.codes, &mut s.acc);
-                let us = layer.up.scale() * x_scale;
+                let uw = layer.up.scale();
                 s.act.clear();
                 s.act.extend(
                     s.gate_f
                         .iter()
                         .zip(&s.acc[..layer.up.rows()])
-                        .map(|(g, u)| math::activate(cfg.act, *g) * (*u as f32 * us)),
+                        .map(|(g, u)| math::activate(cfg.act, *g) * (*u as f32 * uw * x_scale)),
                 );
                 match &layer.ffn_sub_norm {
                     Some(g) => norm_quant(
@@ -345,9 +349,9 @@ impl Model {
             };
 
             self.acc_into(&layer.down, &s.codes2, &mut s.acc);
-            let dw = layer.down.scale() * down_scale;
+            let dw = layer.down.scale();
             for (i, a) in s.acc[..layer.down.rows()].iter().enumerate() {
-                s.x[i] += *a as f32 * dw;
+                s.x[i] += *a as f32 * dw * down_scale;
             }
         }
 
@@ -385,10 +389,19 @@ fn norm_quant(
     }
 }
 
-/// `out[i] = acc[i] * scale`, resizing `out` to match.
-fn scale_into(acc: &[i32], scale: f32, out: &mut Vec<f32>) {
+/// `out[i] = acc[i] * w_scale * x_scale`, resizing `out` to match.
+///
+/// The two scales are applied as separate multiplications, in this order, and
+/// deliberately NOT pre-multiplied into one. f32 multiplication is not
+/// associative: `(acc * w) * x` and `acc * (w * x)` round differently, and the
+/// second form drifts from the reference implementation the model's numerics
+/// were validated against. Folding them would save one multiply per element
+/// against a matvec that already cost thousands -- and it silently changed the
+/// generated text at the first near-tie.
+#[inline]
+fn scale_into(acc: &[i32], w_scale: f32, x_scale: f32, out: &mut Vec<f32>) {
     out.clear();
-    out.extend(acc.iter().map(|a| *a as f32 * scale));
+    out.extend(acc.iter().map(|a| *a as f32 * w_scale * x_scale));
 }
 
 /// Every buffer a decode step needs, allocated once.

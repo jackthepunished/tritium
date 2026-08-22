@@ -119,6 +119,60 @@ requires exact equality. All pass.
 
 These are targets to improve, not invariants. G1-G6 are invariants.
 
+## G8 — trit-core against the tritsim oracle
+
+Two independent implementations of the same model must agree.
+
+```
+cargo test -p tritsim --release --test cross_implementation              # tiny fixtures
+cargo test -p tritsim --release --test cross_implementation -- --ignored # real checkpoint
+```
+
+On the real checkpoint, 8 positions, all three numerics rungs:
+**cosine 1.000000 and identical top-1 at every position.**
+
+This gate found a real bug. The production path had precomputed
+`w_scale * x_scale` into a single constant and multiplied once, where the
+reference multiplies twice: `acc as f32 * w_scale * x_scale`. f32 multiplication
+is not associative, so `acc * (w * x)` and `(acc * w) * x` round differently.
+The drift was invisible at short contexts (cosine 1.000000 for four positions),
+grew with position to 0.999624 by position 7, and changed the 16th generated
+token from "the" to "known". Ordering the multiplications to match the reference
+restored cosine 1.000000 everywhere.
+
+## Post-pivot results
+
+The pivot's purpose was to move the G7 numbers without moving G1-G6. Measured
+on the environment of record with `models/bitnet-2b4t.trit` (v1):
+
+| Metric | Pre-pivot | Post-pivot | Change |
+|---|---|---|---|
+| Decode | 0.16 tok/s | **14.89 tok/s** | **93x** |
+| Time to first token | ~33 s | **470 ms** | 70x |
+| Peak RSS | 6,401,024 KB | **1,891,184 KB** | 3.4x less |
+| Achieved bandwidth | ~0.3 GB/s | **27.3 GB/s** | 66% of the 41.1 GB/s measured on this host |
+
+Kernel throughput on a 2560x6912 tensor, planes resident in L3:
+
+| Kernel | ms | GB/s | vs scalar |
+|---|---|---|---|
+| scalar | 9.10 | 0.5 | 1.00x |
+| avx512vnni | 0.28 | 15.8 | **32.45x** |
+| avx512bw | 0.38 | 11.6 | 23.91x |
+| avx2 | 0.66 | 6.7 | 13.87x |
+| bitserial (popcount) | 6.12 | 0.7 | 1.49x |
+
+Threading is measured, not assumed. A decode step issues 210 ternary matvecs
+whose largest is 4.4 MB, and splitting each across the machine costs more in
+fork/join than it saves: 14.13 tok/s at one thread against 2.40 tok/s at 32
+before `PARALLEL_MIN_BYTES` was introduced. It now peaks at 4 threads (14.89)
+and stays flat to 32 (14.34).
+
+G1-G6 are unchanged throughout. G2 still reports 0.9991/100%, G3 is still
+byte-identical in every numerics mode on both implementations, and the real
+checkpoint still decodes byte-identically through the Verilated RTL core --
+24.4 s/token in simulation, via `tritd --backend rtl`.
+
 ## Sanctioned changes
 
 Numbers here move only with an entry below, naming the phase, the reason, and
@@ -126,7 +180,9 @@ the before/after.
 
 | Phase | What changed | Before | After | Reason |
 |---|---|---|---|---|
-| _(none yet)_ | | | | |
+| B | `.trit` v0 -> v1 bit planes | v0 codes | v1 planes | The migration is proven exact: `tritc upgrade` of the v0 file is byte-identical to a fresh convert. G2 and G3 unchanged. |
+| B | Recorded zero fraction | 0.377 | **0.4219** | The old figure was hand-transcribed into checkpoint-notes.md and wrong. The byte-identity of the upgrade proves the trits themselves did not change. |
+| C | RTL weight interface | `w_data[127:0]` | `w_pos`/`w_neg` | Synthesis is unchanged at 33,659 cells, still multiplier-free. | |
 
 The one change already anticipated: RoPE currently computes
 `theta.powf(-2.0 * i / head_dim)` in **f32** (`crates/tritsim/src/math.rs`),

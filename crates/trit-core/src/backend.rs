@@ -19,7 +19,7 @@ use crate::planes::TritPlanes;
 /// it is wrong, not approximate.
 ///
 /// `xq` may be as long as `planes.padded_cols()`, with zeros past `cols`.
-pub trait MatvecBackend: Send + Sync {
+pub trait MatvecBackend: Send + Sync + std::fmt::Debug {
     fn matvec(&self, planes: &TritPlanes<'_>, xq: &[i8], y: &mut [i32]);
 
     /// Identifier for logs and benchmark reports, e.g. `cpu/avx512vnni x16`.

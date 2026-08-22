@@ -916,6 +916,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "trit-rtl"
+version = "0.1.0"
+dependencies = [
+ "trit-core",
+]
+
+[[package]]
 name = "tritc"
 version = "0.1.0"
 dependencies = [
@@ -925,6 +932,21 @@ dependencies = [
  "memmap2",
  "safetensors",
  "trit-core",
+]
+
+[[package]]
+name = "tritd"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cc",
+ "clap",
+ "serde",
+ "serde_json",
+ "tokenizers",
+ "trit-core",
+ "trit-cpu",
+ "trit-rtl",
 ]
 
 [[package]]

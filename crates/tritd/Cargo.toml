@@ -1,0 +1,29 @@
+[package]
+name = "tritd"
+version = "0.1.0"
+edition = "2021"
+description = "Tritium host daemon and C runtime: streaming ternary inference"
+
+[lib]
+name = "tritd"
+# rlib for the binary and the tests; cdylib and staticlib for C consumers.
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[dependencies]
+trit-core = { path = "../trit-core" }
+trit-cpu = { path = "../trit-cpu" }
+trit-rtl = { path = "../trit-rtl", optional = true }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+tokenizers = "0.21"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+default = []
+# Route ternary matvecs through the Verilated tritcore engine. Requires
+# verilator, a C++ toolchain and GNU make at build time.
+rtl = ["dep:trit-rtl"]
+
+[dev-dependencies]
+cc = "1"

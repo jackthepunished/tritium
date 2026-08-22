@@ -1,3 +1,30 @@
 [workspace]
 resolver = "2"
-members = ["crates/trit-core", "crates/trit-cpu", "crates/tritc", "crates/tritsim"]
+members = [
+    "crates/trit-core",
+    "crates/trit-cpu",
+    "crates/trit-rtl",
+    "crates/tritc",
+    "crates/tritd",
+    "crates/tritsim",
+]
+# trit-rtl is excluded from the default set on purpose: building it runs
+# Verilator, and a plain `cargo build` of the runtime must not need an RTL
+# simulator on PATH. Build it explicitly with `-p trit-rtl`, or via
+# `tritd --features rtl`.
+default-members = [
+    "crates/trit-core",
+    "crates/trit-cpu",
+    "crates/tritc",
+    "crates/tritd",
+    "crates/tritsim",
+]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+# Keep symbols: the kernels are the thing worth profiling, and a stripped
+# release build makes perf output useless.
+debug = 1
+# NOT panic = "abort": the C ABI relies on catch_unwind, and a panic crossing
+# the FFI boundary is undefined behavior.

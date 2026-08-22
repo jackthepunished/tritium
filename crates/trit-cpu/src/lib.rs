@@ -184,6 +184,7 @@ pub fn ternary_matvec_planes_vec(planes: &TritPlanes<'_>, xq: &[i8]) -> Vec<i32>
 ///
 /// Threading splits **rows**, never a reduction, so results stay bit-identical
 /// to the single-threaded path regardless of thread count or scheduling.
+#[derive(Debug)]
 pub struct CpuBackend {
     threads: usize,
     name: String,
@@ -207,13 +208,24 @@ impl Default for CpuBackend {
     }
 }
 
-/// Rows below this run single-threaded: the rayon fork/join costs more than the
-/// work for the small projections, and the KV-head tensors are only 640 rows.
-const PARALLEL_ROW_THRESHOLD: usize = 512;
+/// Minimum plane bytes before a ternary matvec is worth splitting across
+/// threads.
+///
+/// Measured, not guessed. A decode step on BitNet 2B4T issues 210 ternary
+/// matvecs, and the largest of them is 4.4 MB of planes. Splitting each one
+/// across the machine costs more in fork/join than it saves: on a 32-core Zen 4,
+/// end-to-end decode measured 14.06 tok/s single-threaded against 2.40 tok/s at
+/// 32 threads -- nearly 6x slower. The threshold is set above every per-layer
+/// tensor in this model class, so they run inline, and the parallelism that does
+/// pay goes to the LM head (1313 MB/token) via the dense f32 path.
+///
+/// Batched prefill, or a model whose projections are an order of magnitude
+/// larger, would want this revisited -- with a measurement, not an intuition.
+const PARALLEL_MIN_BYTES: usize = 32 << 20;
 
 impl MatvecBackend for CpuBackend {
     fn matvec(&self, planes: &TritPlanes<'_>, xq: &[i8], y: &mut [i32]) {
-        if self.threads == 1 || planes.rows() < PARALLEL_ROW_THRESHOLD {
+        if self.threads == 1 || planes.as_bytes().len() < PARALLEL_MIN_BYTES {
             return ternary_matvec_planes(planes, xq, y);
         }
         use rayon::prelude::*;
