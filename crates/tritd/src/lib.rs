@@ -91,10 +91,28 @@ impl Runtime {
     }
 }
 
-/// `tokenizer.json` beside the model file, which is where `tritc convert`
-/// output and a downloaded checkpoint both put it.
+/// Find `tokenizer.json` for a model, without being told where it is.
+///
+/// Checked in order:
+///   1. beside the model      -- models/m.trit      -> models/tokenizer.json
+///   2. the checkpoint dir    -- models/m.trit      -> models/m/tokenizer.json
+///   3. beside it, one level down by stem, as `hf` layouts often leave it
+///
+/// Falls back to (1) so the error message names a concrete path rather than
+/// complaining abstractly that nothing was found.
 pub fn default_tokenizer_path(model: &Path) -> PathBuf {
-    model.parent().unwrap_or(Path::new(".")).join("tokenizer.json")
+    let dir = model.parent().unwrap_or(Path::new("."));
+    let beside = dir.join("tokenizer.json");
+    if beside.exists() {
+        return beside;
+    }
+    if let Some(stem) = model.file_stem() {
+        let in_checkpoint_dir = dir.join(stem).join("tokenizer.json");
+        if in_checkpoint_dir.exists() {
+            return in_checkpoint_dir;
+        }
+    }
+    beside
 }
 
 /// Read a prompt from a literal, a file, or stdin (`-`).
@@ -120,12 +138,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tokenizer_path_defaults_beside_the_model() {
+    fn tokenizer_path_falls_back_to_beside_the_model() {
+        // Nothing exists at either candidate, so the fallback names a concrete
+        // path for the error message.
         assert_eq!(
-            default_tokenizer_path(Path::new("/models/m.trit")),
-            PathBuf::from("/models/tokenizer.json")
+            default_tokenizer_path(Path::new("/nonexistent/m.trit")),
+            PathBuf::from("/nonexistent/tokenizer.json")
         );
-        assert_eq!(default_tokenizer_path(Path::new("m.trit")), PathBuf::from("tokenizer.json"));
+    }
+
+    #[test]
+    fn tokenizer_path_finds_the_checkpoint_directory() {
+        let dir = std::env::temp_dir().join("tritd_tok_lookup");
+        let ckpt = dir.join("mymodel");
+        std::fs::create_dir_all(&ckpt).unwrap();
+        let tok = ckpt.join("tokenizer.json");
+        std::fs::write(&tok, "{}").unwrap();
+        // models/mymodel.trit -> models/mymodel/tokenizer.json
+        assert_eq!(default_tokenizer_path(&dir.join("mymodel.trit")), tok);
+
+        // A tokenizer sitting beside the model wins.
+        let beside = dir.join("tokenizer.json");
+        std::fs::write(&beside, "{}").unwrap();
+        assert_eq!(default_tokenizer_path(&dir.join("mymodel.trit")), beside);
+        std::fs::remove_file(&beside).ok();
     }
 
     #[test]

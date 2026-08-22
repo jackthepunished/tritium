@@ -1,0 +1,4 @@
+host,date,runtime,runtime_version,model,quant,bits_per_weight,suite,threads,kernel,backend,decode_tok_per_s,ttft_ms,weight_bytes_per_token,achieved_gbps,memcpy_gbps,roofline_pct,peak_rss_mb,joules_per_token,energy_source,status,note
+DESKTOP-HV2MQTM,2026-08-22T22:30:45Z,tritium,0.1.0,models/bitnet-2b4t.trit,ternary-1.58,2.0,benches/prompts/short.jsonl,4,avx512vnni,cpu/avx512vnnix4,15.014,454.2,1834352640,27.54,44.744246564907506,61.5538657359366,2334,,none,ok,
+DESKTOP-HV2MQTM,2026-08-22T22:30:45Z,llama.cpp,,,Q4_K_M,4.5,benches/prompts/short.jsonl,4,,,,,,,,,,,none,unavailable,no llama-bench or llama-cli on PATH; set LLAMA_CPP_BIN
+DESKTOP-HV2MQTM,2026-08-22T22:30:45Z,bitnet.cpp,,,I2_S,2.0,benches/prompts/short.jsonl,4,,,,,,,,,,,none,unavailable,no bitnet-cli on PATH; set BITNET_CPP_BIN

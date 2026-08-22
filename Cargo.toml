@@ -7,6 +7,7 @@ members = [
     "crates/tritc",
     "crates/tritd",
     "crates/tritsim",
+    "benches",
 ]
 # trit-rtl is excluded from the default set on purpose: building it runs
 # Verilator, and a plain `cargo build` of the runtime must not need an RTL
@@ -18,6 +19,7 @@ default-members = [
     "crates/tritc",
     "crates/tritd",
     "crates/tritsim",
+    "benches",
 ]
 
 [profile.release]
