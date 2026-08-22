@@ -774,7 +774,7 @@ mod tests {
     #[test]
     fn bf16_roundtrips_within_its_precision() {
         let path = tmp("bf16.trit");
-        let vals: Vec<f32> = vec![0.0, 1.0, -1.0, 0.5, 3.14159, -2.71828, 1e-8, 1e8];
+        let vals: Vec<f32> = vec![0.0, 1.0, -1.0, 0.5, 12.3456, -7.89012, 1e-8, 1e8];
         let mut w = TritWriter::create(&path, "{}").unwrap();
         w.write_bf16("e", &[vals.len()], &vals).unwrap();
         w.finish().unwrap();

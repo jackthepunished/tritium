@@ -1,3 +1,4 @@
+pub mod backend;
 pub mod matvec;
 pub mod pack;
 pub mod planes;

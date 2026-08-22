@@ -908,6 +908,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "trit-cpu"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "trit-core",
+]
+
+[[package]]
 name = "tritc"
 version = "0.1.0"
 dependencies = [

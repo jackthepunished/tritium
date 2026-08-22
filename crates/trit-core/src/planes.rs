@@ -55,7 +55,7 @@ pub const fn payload_len(rows: usize, cols: usize) -> usize {
 /// Pack row-major ternary values into the beat stream.
 pub fn pack_planes(trits: &[i8], rows: usize, cols: usize) -> Result<Vec<u8>> {
     ensure!(
-        trits.len() == rows.checked_mul(cols).unwrap_or(usize::MAX),
+        trits.len() == rows.saturating_mul(cols),
         "pack_planes: got {} trits for a {rows}x{cols} tensor",
         trits.len()
     );
