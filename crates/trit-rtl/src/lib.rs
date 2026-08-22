@@ -48,8 +48,15 @@ fn core() -> &'static Mutex<Core> {
 /// `cols` must already be a whole number of beats; `xq` must be at least that
 /// long with zeros in the padding.
 pub fn matvec_beats(beats: &[u8], rows: usize, cols: usize, xq: &[i8], y: &mut [i32]) {
-    assert_eq!(cols % trit_core::planes::LANES, 0, "cols must be a whole number of beats");
-    assert_eq!(beats.len(), rows * (cols / trit_core::planes::LANES) * trit_core::planes::BEAT_BYTES);
+    assert_eq!(
+        cols % trit_core::planes::LANES,
+        0,
+        "cols must be a whole number of beats"
+    );
+    assert_eq!(
+        beats.len(),
+        rows * (cols / trit_core::planes::LANES) * trit_core::planes::BEAT_BYTES
+    );
     assert!(xq.len() >= cols);
     assert_eq!(y.len(), rows);
 
@@ -69,7 +76,10 @@ pub fn matvec_beats(beats: &[u8], rows: usize, cols: usize, xq: &[i8], y: &mut [
         )
     };
     drop(guard);
-    assert_eq!(rc, 0, "RTL core error {rc} (1 = overlapping planes, 2 = row count mismatch)");
+    assert_eq!(
+        rc, 0,
+        "RTL core error {rc} (1 = overlapping planes, 2 = row count mismatch)"
+    );
 }
 
 /// The `MatvecBackend` implementation.
@@ -86,7 +96,13 @@ impl MatvecBackend for RtlBackend {
     fn matvec(&self, planes: &TritPlanes<'_>, xq: &[i8], y: &mut [i32]) {
         // padded_cols, not cols: the payload is already whole beats, and the
         // padding is zero in both planes so it contributes nothing.
-        matvec_beats(planes.as_bytes(), planes.rows(), planes.padded_cols(), xq, y);
+        matvec_beats(
+            planes.as_bytes(),
+            planes.rows(),
+            planes.padded_cols(),
+            xq,
+            y,
+        );
     }
 
     fn name(&self) -> &str {
@@ -127,11 +143,19 @@ mod tests {
             state ^= state << 17;
             state
         };
-        for &(rows, cols) in
-            &[(1usize, 64usize), (3, 64), (2, 100), (5, 129), (7, 640), (2, 2560), (2, 6912), (16, 61)]
-        {
-            let trits: Vec<i8> =
-                (0..rows * cols).map(|_| [-1i8, 0, 1][(next() % 3) as usize]).collect();
+        for &(rows, cols) in &[
+            (1usize, 64usize),
+            (3, 64),
+            (2, 100),
+            (5, 129),
+            (7, 640),
+            (2, 2560),
+            (2, 6912),
+            (16, 61),
+        ] {
+            let trits: Vec<i8> = (0..rows * cols)
+                .map(|_| [-1i8, 0, 1][(next() % 3) as usize])
+                .collect();
             // Full i8 range, so -128 appears: the RTL sign-extends to 32 bits
             // before negating, and the CPU kernels must match that.
             let x: Vec<i8> = (0..cols).map(|_| (next() & 0xff) as u8 as i8).collect();
@@ -141,7 +165,11 @@ mod tests {
 
             let mut y = vec![0i32; rows];
             RtlBackend.matvec(&planes, &xp, &mut y);
-            assert_eq!(y, ternary_matvec_planes_vec(&planes, &xp), "shape {rows}x{cols}");
+            assert_eq!(
+                y,
+                ternary_matvec_planes_vec(&planes, &xp),
+                "shape {rows}x{cols}"
+            );
         }
     }
 }

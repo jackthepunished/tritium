@@ -23,7 +23,11 @@ pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
 }
 
 fn argmax(l: &[f32]) -> usize {
-    l.iter().enumerate().max_by(|a, b| a.1.total_cmp(b.1)).unwrap().0
+    l.iter()
+        .enumerate()
+        .max_by(|a, b| a.1.total_cmp(b.1))
+        .unwrap()
+        .0
 }
 
 pub fn compare(model: &Model, dump_path: &Path) -> Result<CompareStats> {

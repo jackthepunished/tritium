@@ -111,7 +111,10 @@ mod tests {
         let w: Vec<i8> = vec![1, -1, 0, 0, 1, 1];
         let beats = pack_planes(&w, 2, 3).unwrap();
         let p = TritPlanes::new(&beats, 2, 3, 1.0).unwrap();
-        assert_eq!(ternary_matvec_planes_vec(&p, &padded(&[10, 20, 30], 3)), vec![-10, 50]);
+        assert_eq!(
+            ternary_matvec_planes_vec(&p, &padded(&[10, 20, 30], 3)),
+            vec![-10, 50]
+        );
     }
 
     #[test]
@@ -133,8 +136,9 @@ mod tests {
             (2, 6912),
             (16, 61),
         ] {
-            let trits: Vec<i8> =
-                (0..rows * cols).map(|_| [-1i8, 0, 1][(next() % 3) as usize]).collect();
+            let trits: Vec<i8> = (0..rows * cols)
+                .map(|_| [-1i8, 0, 1][(next() % 3) as usize])
+                .collect();
             // full i8 range, so -128 appears
             let x: Vec<i8> = (0..cols).map(|_| (next() & 0xff) as u8 as i8).collect();
             let beats = pack_planes(&trits, rows, cols).unwrap();
@@ -153,7 +157,10 @@ mod tests {
         // representable in i8 and wraps back to -128. Expect +128.
         let beats = pack_planes(&[-1], 1, 1).unwrap();
         let p = TritPlanes::new(&beats, 1, 1, 1.0).unwrap();
-        assert_eq!(ternary_matvec_planes_vec(&p, &padded(&[-128], 1)), vec![128]);
+        assert_eq!(
+            ternary_matvec_planes_vec(&p, &padded(&[-128], 1)),
+            vec![128]
+        );
     }
 
     #[test]

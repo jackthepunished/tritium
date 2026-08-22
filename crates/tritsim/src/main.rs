@@ -67,10 +67,17 @@ fn main() -> Result<()> {
 fn run(cli: Cli) -> Result<()> {
     select_backend(&cli.backend)?;
     match cli.cmd {
-        Cmd::Run { model, tokenizer, prompt, steps } => {
+        Cmd::Run {
+            model,
+            tokenizer,
+            prompt,
+            steps,
+        } => {
             let m = Model::load(&model)?;
             let tk = tokenizers::Tokenizer::from_file(&tokenizer).map_err(anyhow::Error::msg)?;
-            let eos = tk.token_to_id("<|eot_id|>").or_else(|| tk.token_to_id("</s>"));
+            let eos = tk
+                .token_to_id("<|eot_id|>")
+                .or_else(|| tk.token_to_id("</s>"));
             let text = tritsim::generate::generate(&m, &tk, &prompt, steps, eos)?;
             println!("{text}");
         }
@@ -79,7 +86,9 @@ fn run(cli: Cli) -> Result<()> {
             let s = tritsim::compare::compare(&m, &dump)?;
             println!(
                 "{} positions: mean cosine {:.4}, top1 match {:.1}%",
-                s.positions, s.mean_cosine, s.top1_match_frac * 100.0
+                s.positions,
+                s.mean_cosine,
+                s.top1_match_frac * 100.0
             );
             anyhow::ensure!(
                 s.mean_cosine >= 0.98 && s.top1_match_frac >= 0.90,

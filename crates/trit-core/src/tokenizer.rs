@@ -102,7 +102,11 @@ mod tests {
     fn holds_a_split_codepoint_until_it_completes() {
         // U+1F600 GRINNING FACE is f0 9f 98 80; split it across three pushes.
         let mut d = Detokenizer::new();
-        assert_eq!(d.push_bytes(&[0xf0, 0x9f]), "", "incomplete: emit nothing yet");
+        assert_eq!(
+            d.push_bytes(&[0xf0, 0x9f]),
+            "",
+            "incomplete: emit nothing yet"
+        );
         assert_eq!(d.push_bytes(&[0x98]), "", "still incomplete");
         assert_eq!(d.push_bytes(&[0x80]), "\u{1F600}");
         assert!(d.is_empty());

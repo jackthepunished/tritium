@@ -169,7 +169,11 @@ int main(int argc, char **argv) {
         String::from_utf8_lossy(&build.stderr)
     );
 
-    let run = Command::new(&bin).arg(&model).arg(&tokenizer).output().unwrap();
+    let run = Command::new(&bin)
+        .arg(&model)
+        .arg(&tokenizer)
+        .output()
+        .unwrap();
     assert!(
         run.status.success(),
         "C consumer failed:\nstdout: {}\nstderr: {}",

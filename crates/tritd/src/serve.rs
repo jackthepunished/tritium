@@ -31,8 +31,7 @@ pub struct ServeOptions {
 }
 
 pub fn serve(rt: Runtime, opts: &ServeOptions) -> Result<()> {
-    let listener = TcpListener::bind(&opts.addr)
-        .with_context(|| format!("bind {}", opts.addr))?;
+    let listener = TcpListener::bind(&opts.addr).with_context(|| format!("bind {}", opts.addr))?;
     let local = listener.local_addr()?;
     eprintln!(
         "tritd serving on http://{local}  backend={}  kernel={}",
@@ -98,13 +97,20 @@ fn read_request(stream: &TcpStream) -> Result<Request> {
             "chunked transfer encoding is not supported"
         );
     }
-    anyhow::ensure!(content_length <= MAX_BODY, "request body too large ({content_length} bytes)");
+    anyhow::ensure!(
+        content_length <= MAX_BODY,
+        "request body too large ({content_length} bytes)"
+    );
 
     let mut body = vec![0u8; content_length];
     if content_length > 0 {
         r.read_exact(&mut body)?;
     }
-    Ok(Request { method, path, body: String::from_utf8(body)? })
+    Ok(Request {
+        method,
+        path,
+        body: String::from_utf8(body)?,
+    })
 }
 
 fn write_response(mut s: &TcpStream, status: &str, content_type: &str, body: &str) -> Result<()> {
@@ -126,7 +132,12 @@ fn handle(stream: TcpStream, rt: &Arc<Mutex<Runtime>>, default_max: usize) -> Re
     let req = match read_request(&stream) {
         Ok(r) => r,
         Err(e) => {
-            let _ = write_response(&stream, "400 Bad Request", "text/plain", &format!("{e:#}\n"));
+            let _ = write_response(
+                &stream,
+                "400 Bad Request",
+                "text/plain",
+                &format!("{e:#}\n"),
+            );
             return Ok(());
         }
     };
@@ -205,7 +216,12 @@ fn completions(
         Ok(i) => i,
         Err(e) => {
             drop(guard);
-            return write_response(&stream, "400 Bad Request", "text/plain", &format!("{e:#}\n"));
+            return write_response(
+                &stream,
+                "400 Bad Request",
+                "text/plain",
+                &format!("{e:#}\n"),
+            );
         }
     };
     let max = req.max_tokens.unwrap_or(default_max);
@@ -214,7 +230,12 @@ fn completions(
         Ok(t) => t,
         Err(e) => {
             drop(guard);
-            return write_response(&stream, "400 Bad Request", "text/plain", &format!("{e:#}\n"));
+            return write_response(
+                &stream,
+                "400 Bad Request",
+                "text/plain",
+                &format!("{e:#}\n"),
+            );
         }
     };
 
@@ -253,7 +274,11 @@ fn completions(
     }
     let tail = ts.flush();
     if !tail.is_empty() {
-        write!(stream, "data: {{\"choices\":[{{\"index\":0,\"text\":{}}}]}}\n\n", json_escape(&tail))?;
+        write!(
+            stream,
+            "data: {{\"choices\":[{{\"index\":0,\"text\":{}}}]}}\n\n",
+            json_escape(&tail)
+        )?;
     }
     write!(stream, "data: [DONE]\n\n")?;
     stream.flush()?;

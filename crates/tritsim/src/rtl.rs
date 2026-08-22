@@ -55,7 +55,10 @@ pub fn rtl_matvec_beats(beats: &[u8], rows: usize, cols: usize, xq: &[i8]) -> Ve
         )
     };
     drop(guard);
-    assert_eq!(rc, 0, "RTL core error {rc} (overlapping planes or row underflow)");
+    assert_eq!(
+        rc, 0,
+        "RTL core error {rc} (overlapping planes or row underflow)"
+    );
     y
 }
 
@@ -110,15 +113,17 @@ mod tests {
         let shapes: Vec<(usize, usize)> = vec![
             (1, 64),
             (3, 64),
-            (2, 100),  // padding path
-            (5, 129),  // padding path, off by one
+            (2, 100), // padding path
+            (5, 129), // padding path, off by one
             (7, 640),
             (2, 2560),
             (2, 6912), // real model width
             (16, 61),
         ];
         for (rows, cols) in shapes {
-            let trits: Vec<i8> = (0..rows * cols).map(|_| [(-1i8), 0, 1][(next() % 3) as usize]).collect();
+            let trits: Vec<i8> = (0..rows * cols)
+                .map(|_| [(-1i8), 0, 1][(next() % 3) as usize])
+                .collect();
             let x: Vec<i8> = (0..cols).map(|_| (next() & 0xff) as u8 as i8).collect();
             assert_eq!(
                 rtl_matvec(&trits, rows, cols, &x),

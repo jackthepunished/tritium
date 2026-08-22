@@ -87,7 +87,10 @@ pub struct ModelConfig {
 impl ModelConfig {
     pub fn from_json(s: &str) -> Result<Self> {
         let r: Raw = serde_json::from_str(s)?;
-        anyhow::ensure!(r.hidden_size > 0 && r.num_attention_heads > 0, "degenerate config");
+        anyhow::ensure!(
+            r.hidden_size > 0 && r.num_attention_heads > 0,
+            "degenerate config"
+        );
         anyhow::ensure!(
             r.hidden_size.is_multiple_of(r.num_attention_heads),
             "hidden_size {} is not divisible by num_attention_heads {}",

@@ -110,7 +110,11 @@ impl From<TritSamplerParams> for SamplerParams {
             temperature: p.temperature,
             top_p: if p.top_p <= 0.0 { 1.0 } else { p.top_p },
             top_k: p.top_k as usize,
-            repetition_penalty: if p.repetition_penalty <= 0.0 { 1.0 } else { p.repetition_penalty },
+            repetition_penalty: if p.repetition_penalty <= 0.0 {
+                1.0
+            } else {
+                p.repetition_penalty
+            },
             seed: p.seed,
         }
     }
@@ -143,7 +147,8 @@ pub extern "C" fn trit_kernel_name() -> *const c_char {
     // intern one CString per process so the pointer stays valid.
     use std::sync::OnceLock;
     static NAME: OnceLock<CString> = OnceLock::new();
-    NAME.get_or_init(|| CString::new(trit_cpu::kernel_name()).unwrap()).as_ptr()
+    NAME.get_or_init(|| CString::new(trit_cpu::kernel_name()).unwrap())
+        .as_ptr()
 }
 
 /// The last error on this thread. Valid until the next call on this thread.
@@ -176,7 +181,9 @@ pub unsafe extern "C" fn trit_model_load(
             kernel: None,
             verify: false,
         };
-        Ok(Box::into_raw(Box::new(TritModel { runtime: Runtime::load(&opts)? })))
+        Ok(Box::into_raw(Box::new(TritModel {
+            runtime: Runtime::load(&opts)?,
+        })))
     })
 }
 
@@ -315,7 +322,10 @@ pub unsafe extern "C" fn trit_session_next(
 ) -> c_int {
     guard(|| {
         anyhow::ensure!(!s.is_null(), "session handle is NULL");
-        anyhow::ensure!(!out_buf.is_null() && buf_len > 0, "output buffer is NULL or empty");
+        anyhow::ensure!(
+            !out_buf.is_null() && buf_len > 0,
+            "output buffer is NULL or empty"
+        );
         let sess = &mut *s;
         if sess.finished {
             return Ok(0);
@@ -332,7 +342,10 @@ pub unsafe extern "C" fn trit_session_next(
 
         let bytes = text.as_bytes();
         if bytes.len() + 1 > buf_len {
-            set_error(format!("buffer of {buf_len} bytes is too small for {} + NUL", bytes.len()));
+            set_error(format!(
+                "buffer of {buf_len} bytes is too small for {} + NUL",
+                bytes.len()
+            ));
             return Ok(TRIT_ERR_BUFFER);
         }
         std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_buf as *mut u8, bytes.len());
@@ -356,7 +369,11 @@ mod tests {
     fn version_and_backend_mask_are_sane() {
         let v = unsafe { CStr::from_ptr(trit_version()) }.to_str().unwrap();
         assert_eq!(v, env!("CARGO_PKG_VERSION"));
-        assert_eq!(trit_backend_mask() & 1, 1, "a CPU backend is always compiled in");
+        assert_eq!(
+            trit_backend_mask() & 1,
+            1,
+            "a CPU backend is always compiled in"
+        );
     }
 
     #[test]

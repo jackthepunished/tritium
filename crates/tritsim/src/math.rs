@@ -91,7 +91,11 @@ pub fn int_mlp_codes(
             rg * rg * u as i64
         })
         .collect();
-    let z: Vec<f64> = t.iter().zip(gain).map(|(&ti, &gi)| ti as f64 * gi as f64).collect();
+    let z: Vec<f64> = t
+        .iter()
+        .zip(gain)
+        .map(|(&ti, &gi)| ti as f64 * gi as f64)
+        .collect();
     let (codes, qs) = trit_core::quant::absmax_codes_f64(&z);
     if qs == 1.0 && z.iter().all(|&v| v == 0.0) {
         return (codes, 1.0);
@@ -237,7 +241,8 @@ mod tests {
             })
             .collect();
         assert!(
-            t.iter().any(|&v| v.abs() > (1i64 << 53) && (v as f64) as i64 != v),
+            t.iter()
+                .any(|&v| v.abs() > (1i64 << 53) && (v as f64) as i64 != v),
             "fixture must contain a non-representable t"
         );
         let m = t.iter().map(|v| v.abs()).max().unwrap() as i128;

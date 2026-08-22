@@ -63,9 +63,9 @@ pub fn memcpy_probe_gbps(threads: usize) -> f64 {
     // matters is that every byte is loaded and the result is not optimized away,
     // which is what a weight pass looks like.
     let sum_range = |r: std::ops::Range<usize>| -> u64 {
-        src[r]
-            .chunks_exact(8)
-            .fold(0u64, |a, c| a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap())))
+        src[r].chunks_exact(8).fold(0u64, |a, c| {
+            a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap()))
+        })
     };
 
     let t = Instant::now();
@@ -79,14 +79,21 @@ pub fn memcpy_probe_gbps(threads: usize) -> f64 {
                     let src = &src;
                     s.spawn(move || {
                         let start = i * chunk;
-                        let end = if i + 1 == threads { BYTES } else { start + chunk };
+                        let end = if i + 1 == threads {
+                            BYTES
+                        } else {
+                            start + chunk
+                        };
                         src[start..end].chunks_exact(8).fold(0u64, |a, c| {
                             a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap()))
                         })
                     })
                 })
                 .collect();
-            handles.into_iter().map(|h| h.join().unwrap()).fold(0u64, u64::wrapping_add)
+            handles
+                .into_iter()
+                .map(|h| h.join().unwrap())
+                .fold(0u64, u64::wrapping_add)
         })
     };
     let secs = t.elapsed().as_secs_f64();
@@ -128,7 +135,13 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     anyhow::ensure!(!ids.is_empty(), "prompt tokenized to nothing");
 
     for _ in 0..opts.warmup {
-        let mut s = TokenStream::new(rt.model.clone(), &rt.tokenizer, &params, &ids, opts.max_tokens.min(4))?;
+        let mut s = TokenStream::new(
+            rt.model.clone(),
+            &rt.tokenizer,
+            &params,
+            &ids,
+            opts.max_tokens.min(4),
+        )?;
         for t in s.by_ref() {
             t?;
         }
@@ -142,8 +155,13 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     let t_all = Instant::now();
 
     for _ in 0..opts.runs.max(1) {
-        let mut stream =
-            TokenStream::new(rt.model.clone(), &rt.tokenizer, &params, &ids, opts.max_tokens)?;
+        let mut stream = TokenStream::new(
+            rt.model.clone(),
+            &rt.tokenizer,
+            &params,
+            &ids,
+            opts.max_tokens,
+        )?;
         let prefill_secs = stream.prefill_secs;
 
         let t0 = Instant::now();
@@ -181,7 +199,9 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
 
     let weight_bytes = rt.model.weight_bytes();
     let achieved_gbps = weight_bytes as f64 * best_decode_rate / 1e9;
-    let memcpy_gbps = opts.measure_memcpy.then(|| memcpy_probe_gbps(rt.model.backend().threads()));
+    let memcpy_gbps = opts
+        .measure_memcpy
+        .then(|| memcpy_probe_gbps(rt.model.backend().threads()));
 
     let _ = wall;
     Ok(BenchReport {

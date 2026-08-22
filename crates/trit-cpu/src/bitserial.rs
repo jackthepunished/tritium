@@ -50,8 +50,9 @@ fn transpose_beat(x: &[i8]) -> [u64; 8] {
 pub unsafe fn matvec(beats: &[u8], rows: usize, beats_per_row: usize, xq: &[i8], y: &mut [i32]) {
     // The transpose is per activation vector, not per row, so it is hoisted out
     // of the row loop -- otherwise the cost would be multiplied by `rows`.
-    let planes: Vec<[u64; 8]> =
-        (0..beats_per_row).map(|b| transpose_beat(&xq[b * LANES..(b + 1) * LANES])).collect();
+    let planes: Vec<[u64; 8]> = (0..beats_per_row)
+        .map(|b| transpose_beat(&xq[b * LANES..(b + 1) * LANES]))
+        .collect();
 
     let stride = beats_per_row * BEAT_BYTES;
     for r in 0..rows {
@@ -66,8 +67,7 @@ pub unsafe fn matvec(beats: &[u8], rows: usize, beats_per_row: usize, xq: &[i8],
             }
             let xp = &planes[b];
             for (bit, &plane) in xp.iter().enumerate() {
-                let count =
-                    (pos & plane).count_ones() as i64 - (neg & plane).count_ones() as i64;
+                let count = (pos & plane).count_ones() as i64 - (neg & plane).count_ones() as i64;
                 if count == 0 {
                     continue;
                 }
@@ -89,7 +89,9 @@ mod tests {
         // Reconstructing from the planes must recover the original value for the
         // whole i8 range, sign bit included.
         for start in [-128i32, -1, 0, 1, 127] {
-            let x: Vec<i8> = (0..LANES).map(|i| (start + i as i32).clamp(-128, 127) as i8).collect();
+            let x: Vec<i8> = (0..LANES)
+                .map(|i| (start + i as i32).clamp(-128, 127) as i8)
+                .collect();
             let planes = transpose_beat(&x);
             for (k, &v) in x.iter().enumerate() {
                 let mut got = 0i32;

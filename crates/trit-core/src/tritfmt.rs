@@ -133,10 +133,26 @@ impl TritWriter {
         })
     }
 
-    fn push(&mut self, name: &str, dtype: DType, shape: &[usize], scale: f32, bytes: &[u8]) -> Result<()> {
-        ensure!(!name.is_empty() && name.len() <= MAX_NAME_LEN, "bad tensor name length: {name}");
-        ensure!(!shape.is_empty() && shape.len() <= 4, "tensor {name}: ndim must be 1..=4");
-        ensure!(scale.is_finite() && scale > 0.0, "tensor {name}: scale {scale} must be positive and finite");
+    fn push(
+        &mut self,
+        name: &str,
+        dtype: DType,
+        shape: &[usize],
+        scale: f32,
+        bytes: &[u8],
+    ) -> Result<()> {
+        ensure!(
+            !name.is_empty() && name.len() <= MAX_NAME_LEN,
+            "bad tensor name length: {name}"
+        );
+        ensure!(
+            !shape.is_empty() && shape.len() <= 4,
+            "tensor {name}: ndim must be 1..=4"
+        );
+        ensure!(
+            scale.is_finite() && scale > 0.0,
+            "tensor {name}: scale {scale} must be positive and finite"
+        );
         ensure!(
             !self.metas.iter().any(|m| m.name == name),
             "duplicate tensor name: {name}"
@@ -157,7 +173,10 @@ impl TritWriter {
     }
 
     pub fn write_f32(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
-        ensure!(shape.iter().product::<usize>() == data.len(), "tensor {name}: shape/data mismatch");
+        ensure!(
+            shape.iter().product::<usize>() == data.len(),
+            "tensor {name}: shape/data mismatch"
+        );
         let bytes: Vec<u8> = data.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, DType::F32, shape, 1.0, &bytes)
     }
@@ -165,14 +184,32 @@ impl TritWriter {
     /// Store a dense tensor as bfloat16 (round-to-nearest-even), halving its
     /// footprint and its per-token bandwidth.
     pub fn write_bf16(&mut self, name: &str, shape: &[usize], data: &[f32]) -> Result<()> {
-        ensure!(shape.iter().product::<usize>() == data.len(), "tensor {name}: shape/data mismatch");
-        let bytes: Vec<u8> = data.iter().flat_map(|v| f32_to_bf16_bits(*v).to_le_bytes()).collect();
+        ensure!(
+            shape.iter().product::<usize>() == data.len(),
+            "tensor {name}: shape/data mismatch"
+        );
+        let bytes: Vec<u8> = data
+            .iter()
+            .flat_map(|v| f32_to_bf16_bits(*v).to_le_bytes())
+            .collect();
         self.push(name, DType::Bf16, shape, 1.0, &bytes)
     }
 
-    pub fn write_trit(&mut self, name: &str, shape: &[usize], trits: &[i8], scale: f32) -> Result<()> {
-        ensure!(shape.len() == 2, "ternary tensor {name} must be 2-D, got {shape:?}");
-        ensure!(shape.iter().product::<usize>() == trits.len(), "tensor {name}: shape/data mismatch");
+    pub fn write_trit(
+        &mut self,
+        name: &str,
+        shape: &[usize],
+        trits: &[i8],
+        scale: f32,
+    ) -> Result<()> {
+        ensure!(
+            shape.len() == 2,
+            "ternary tensor {name} must be 2-D, got {shape:?}"
+        );
+        ensure!(
+            shape.iter().product::<usize>() == trits.len(),
+            "tensor {name}: shape/data mismatch"
+        );
         let beats = planes::pack_planes(trits, shape[0], shape[1])
             .with_context(|| format!("packing {name}"))?;
         self.push(name, DType::Trit, shape, scale, &beats)
@@ -367,7 +404,10 @@ impl TritFile {
         let payload_hash = take_u64(b, &mut p)?;
 
         let clen = take_u32(b, &mut p)? as usize;
-        ensure!(clen <= MAX_CONFIG_LEN, "config JSON too large: {clen} bytes");
+        ensure!(
+            clen <= MAX_CONFIG_LEN,
+            "config JSON too large: {clen} bytes"
+        );
         let config = std::str::from_utf8(take(b, &mut p, clen)?)
             .context("config JSON is not valid UTF-8")?
             .to_string();
@@ -379,14 +419,24 @@ impl TritFile {
         let mut metas = Vec::new();
         for _ in 0..n {
             let nlen = take_u16(b, &mut p)? as usize;
-            ensure!(nlen > 0 && nlen <= MAX_NAME_LEN, "bad tensor name length {nlen}");
+            ensure!(
+                nlen > 0 && nlen <= MAX_NAME_LEN,
+                "bad tensor name length {nlen}"
+            );
             let name = std::str::from_utf8(take(b, &mut p, nlen)?)
                 .context("tensor name is not valid UTF-8")?
                 .to_string();
             let hdr = take(b, &mut p, 4)?;
-            let (dtype, ndim, r0, r1) = (DType::from_code(hdr[0])?, hdr[1] as usize, hdr[2], hdr[3]);
-            ensure!(r0 == 0 && r1 == 0, "tensor {name}: reserved bytes must be zero");
-            ensure!((1..=4).contains(&ndim), "tensor {name}: ndim {ndim} out of range 1..=4");
+            let (dtype, ndim, r0, r1) =
+                (DType::from_code(hdr[0])?, hdr[1] as usize, hdr[2], hdr[3]);
+            ensure!(
+                r0 == 0 && r1 == 0,
+                "tensor {name}: reserved bytes must be zero"
+            );
+            ensure!(
+                (1..=4).contains(&ndim),
+                "tensor {name}: ndim {ndim} out of range 1..=4"
+            );
             let mut shape = Vec::with_capacity(ndim);
             for _ in 0..ndim {
                 shape.push(take_u32(b, &mut p)? as usize);
@@ -404,14 +454,27 @@ impl TritFile {
                 offset % ALIGN as u64 == 0,
                 "tensor {name}: offset {offset} is not {ALIGN}-byte aligned"
             );
-            metas.push(TensorMeta { name, dtype, shape, scale, offset, byte_len });
+            metas.push(TensorMeta {
+                name,
+                dtype,
+                shape,
+                scale,
+                offset,
+                byte_len,
+            });
         }
 
         // Header padding to the payload boundary.
         let payload_start = p.next_multiple_of(ALIGN);
         ensure!(payload_start <= b.len(), "truncated .trit file: no payload");
 
-        let file = Self { mmap, config, metas, payload_start, payload_hash };
+        let file = Self {
+            mmap,
+            config,
+            metas,
+            payload_start,
+            payload_hash,
+        };
         file.validate_layout()?;
         Ok(std::sync::Arc::new(file))
     }
@@ -423,11 +486,19 @@ impl TritFile {
         let payload_len = self.mmap.len() - self.payload_start;
         let mut seen = std::collections::HashSet::new();
         for m in &self.metas {
-            ensure!(seen.insert(m.name.as_str()), "duplicate tensor name: {}", m.name);
+            ensure!(
+                seen.insert(m.name.as_str()),
+                "duplicate tensor name: {}",
+                m.name
+            );
             let off = usize::try_from(m.offset).context("tensor offset overflow")?;
             let len = usize::try_from(m.byte_len).context("tensor length overflow")?;
             let end = off.checked_add(len).context("tensor extent overflow")?;
-            ensure!(end <= payload_len, "tensor {} data out of file bounds", m.name);
+            ensure!(
+                end <= payload_len,
+                "tensor {} data out of file bounds",
+                m.name
+            );
 
             let elems = m.elem_count()?;
             match m.dtype {
@@ -456,13 +527,20 @@ impl TritFile {
             }
         }
         // Overlap detection: sort spans once rather than comparing all pairs.
-        let mut spans: Vec<(u64, u64, &str)> =
-            self.metas.iter().filter(|m| m.byte_len > 0).map(|m| (m.offset, m.byte_len, m.name.as_str())).collect();
+        let mut spans: Vec<(u64, u64, &str)> = self
+            .metas
+            .iter()
+            .filter(|m| m.byte_len > 0)
+            .map(|m| (m.offset, m.byte_len, m.name.as_str()))
+            .collect();
         spans.sort_unstable_by_key(|s| s.0);
         for w in spans.windows(2) {
             let (o0, l0, n0) = w[0];
             let (o1, _, n1) = w[1];
-            ensure!(o0 + l0 <= o1, "tensor {n0} overlaps tensor {n1} in the payload");
+            ensure!(
+                o0 + l0 <= o1,
+                "tensor {n0} overlaps tensor {n1} in the payload"
+            );
         }
         Ok(())
     }
@@ -527,8 +605,13 @@ impl TritFile {
     /// Borrow a ternary tensor's beat stream. Infallible: the span was validated
     /// when it was resolved, so this cannot fail at call time.
     pub fn planes(&self, s: TritSpan) -> TritPlanes<'_> {
-        TritPlanes::new_unchecked_bits(&self.mmap[s.start..s.start + s.len], s.rows, s.cols, s.scale)
-            .expect("span validated at resolve time")
+        TritPlanes::new_unchecked_bits(
+            &self.mmap[s.start..s.start + s.len],
+            s.rows,
+            s.cols,
+            s.scale,
+        )
+        .expect("span validated at resolve time")
     }
 
     /// Borrow (F32) or decode (BF16) a dense tensor.
@@ -568,12 +651,22 @@ impl TritFile {
 
     /// One row of a dense 2-D tensor -- the embedding lookup, without touching
     /// the other 128k rows.
-    pub fn dense_row(&self, s: DenseSpan, row: usize, cols: usize) -> Result<std::borrow::Cow<'_, [f32]>> {
+    pub fn dense_row(
+        &self,
+        s: DenseSpan,
+        row: usize,
+        cols: usize,
+    ) -> Result<std::borrow::Cow<'_, [f32]>> {
         let es = s.dtype.elem_size().context("not a dense tensor")?;
         let start = s.start + row * cols * es;
         let end = start + cols * es;
         ensure!(end <= s.start + s.len, "row {row} out of bounds");
-        let sub = DenseSpan { start, len: cols * es, dtype: s.dtype, elems: cols };
+        let sub = DenseSpan {
+            start,
+            len: cols * es,
+            dtype: s.dtype,
+            elems: cols,
+        };
         Ok(self.dense(sub))
     }
 
@@ -593,8 +686,11 @@ impl TritFile {
             rep.total_trits += (rows as u64) * (cols as u64);
             rep.zeros += p.zero_count();
         }
-        rep.zero_fraction =
-            if rep.total_trits > 0 { rep.zeros as f64 / rep.total_trits as f64 } else { 0.0 };
+        rep.zero_fraction = if rep.total_trits > 0 {
+            rep.zeros as f64 / rep.total_trits as f64
+        } else {
+            0.0
+        };
         rep.hash_ok = if self.payload_hash == 0 {
             None
         } else {
@@ -630,8 +726,10 @@ mod tests {
 
     fn write_sample(path: &Path) {
         let mut w = TritWriter::create(path, r#"{"hidden_size":4}"#).unwrap();
-        w.write_f32("norm.weight", &[4], &[1.0, 2.0, 3.0, 4.0]).unwrap();
-        w.write_trit("w.weight", &[2, 3], &[1, -1, 0, 0, 1, 1], 0.5).unwrap();
+        w.write_f32("norm.weight", &[4], &[1.0, 2.0, 3.0, 4.0])
+            .unwrap();
+        w.write_trit("w.weight", &[2, 3], &[1, -1, 0, 0, 1, 1], 0.5)
+            .unwrap();
         w.finish().unwrap();
     }
 
@@ -643,7 +741,10 @@ mod tests {
         let r = TritFile::open(&path).unwrap();
         assert_eq!(r.config_json(), r#"{"hidden_size":4}"#);
         assert_eq!(r.metas().len(), 2);
-        assert_eq!(&*r.dense(r.dense_span("norm.weight").unwrap()), &[1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(
+            &*r.dense(r.dense_span("norm.weight").unwrap()),
+            &[1.0, 2.0, 3.0, 4.0]
+        );
 
         let s = r.trit_span("w.weight").unwrap();
         assert_eq!((s.rows(), s.cols()), (2, 3));
@@ -651,8 +752,14 @@ mod tests {
         assert_eq!(r.planes(s).to_trits(), vec![1, -1, 0, 0, 1, 1]);
 
         assert!(r.dense_span("nope").is_err());
-        assert!(r.trit_span("norm.weight").is_err(), "dtype mismatch is an error");
-        assert!(r.dense_span("w.weight").is_err(), "dtype mismatch is an error");
+        assert!(
+            r.trit_span("norm.weight").is_err(),
+            "dtype mismatch is an error"
+        );
+        assert!(
+            r.dense_span("w.weight").is_err(),
+            "dtype mismatch is an error"
+        );
     }
 
     #[test]
@@ -672,7 +779,10 @@ mod tests {
         write_sample(&path);
         let r = TritFile::open(&path).unwrap();
         let got = r.dense(r.dense_span("norm.weight").unwrap());
-        assert!(matches!(got, std::borrow::Cow::Borrowed(_)), "alignment should permit borrowing");
+        assert!(
+            matches!(got, std::borrow::Cow::Borrowed(_)),
+            "alignment should permit borrowing"
+        );
     }
 
     #[test]
@@ -703,7 +813,10 @@ mod tests {
 
     #[test]
     fn future_versions_and_unknown_flags_are_refused() {
-        for (ver, flags, needle) in [(2u32, 0u32, "unsupported .trit version"), (VERSION, 1, "unknown header flags")] {
+        for (ver, flags, needle) in [
+            (2u32, 0u32, "unsupported .trit version"),
+            (VERSION, 1, "unknown header flags"),
+        ] {
             let path = tmp(&format!("ver{ver}_{flags}.trit"));
             let mut b = Vec::new();
             b.extend_from_slice(b"TRIT");
@@ -750,7 +863,10 @@ mod tests {
         bytes[last] ^= 0xff;
         std::fs::write(&path, &bytes).unwrap();
         let err = format!("{:#}", TritFile::open(&path).unwrap().verify().unwrap_err());
-        assert!(err.contains("hash mismatch") || err.contains("padding bits"), "{err}");
+        assert!(
+            err.contains("hash mismatch") || err.contains("padding bits"),
+            "{err}"
+        );
     }
 
     #[test]

@@ -10,7 +10,12 @@ fn argmax(l: &[f32]) -> u32 {
 }
 
 /// Feed `prompt_ids`, then greedily decode `steps` tokens (stops early on eos).
-pub fn greedy_ids(model: &Model, prompt_ids: &[u32], steps: usize, eos_id: Option<u32>) -> Result<Vec<u32>> {
+pub fn greedy_ids(
+    model: &Model,
+    prompt_ids: &[u32],
+    steps: usize,
+    eos_id: Option<u32>,
+) -> Result<Vec<u32>> {
     anyhow::ensure!(!prompt_ids.is_empty(), "empty prompt");
     let cfg = &model.cfg;
     anyhow::ensure!(

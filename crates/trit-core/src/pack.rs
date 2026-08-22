@@ -18,7 +18,10 @@ pub fn pack_trits(trits: &[i8]) -> Vec<u8> {
 pub fn unpack_trits(bytes: &[u8], n: usize) -> anyhow::Result<Vec<i8>> {
     let required = n.div_ceil(4);
     if bytes.len() < required {
-        bail!("truncated trit data: need {required} bytes for {n} trits, got {}", bytes.len());
+        bail!(
+            "truncated trit data: need {required} bytes for {n} trits, got {}",
+            bytes.len()
+        );
     }
     let mut out = Vec::with_capacity(n);
     for i in 0..n {

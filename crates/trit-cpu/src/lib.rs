@@ -63,7 +63,11 @@ fn all_kernels() -> Vec<(&'static str, MatvecFn, bool)> {
             x86::matvec_avx512bw as MatvecFn,
             is_x86_feature_detected!("avx512f") && is_x86_feature_detected!("avx512bw"),
         ));
-        v.push(("avx2", x86::matvec as MatvecFn, is_x86_feature_detected!("avx2")));
+        v.push((
+            "avx2",
+            x86::matvec as MatvecFn,
+            is_x86_feature_detected!("avx2"),
+        ));
     }
     #[cfg(target_arch = "aarch64")]
     {
@@ -90,7 +94,11 @@ unsafe fn scalar_shim(b: &[u8], rows: usize, bpr: usize, xq: &[i8], y: &mut [i32
 
 /// Names of the kernels this build contains that this CPU can actually run.
 pub fn available_kernels() -> Vec<&'static str> {
-    all_kernels().into_iter().filter(|k| k.2).map(|k| k.0).collect()
+    all_kernels()
+        .into_iter()
+        .filter(|k| k.2)
+        .map(|k| k.0)
+        .collect()
 }
 
 #[derive(Debug)]
@@ -194,11 +202,16 @@ impl CpuBackend {
     /// `threads = 0` means one thread per available core.
     pub fn new(threads: usize) -> Self {
         let threads = if threads == 0 {
-            std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1)
+            std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1)
         } else {
             threads
         };
-        Self { name: format!("cpu/{}x{}", kernel_name(), threads), threads }
+        Self {
+            name: format!("cpu/{}x{}", kernel_name(), threads),
+            threads,
+        }
     }
 }
 

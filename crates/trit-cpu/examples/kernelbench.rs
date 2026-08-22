@@ -44,9 +44,16 @@ fn main() {
     }
 
     let bytes = beats.len() as f64;
-    println!("tensor {rows}x{cols}, {:.1} MB of planes, kernels: {:?}", bytes / 1e6, trit_cpu::available_kernels());
+    println!(
+        "tensor {rows}x{cols}, {:.1} MB of planes, kernels: {:?}",
+        bytes / 1e6,
+        trit_cpu::available_kernels()
+    );
     println!();
-    println!("{:<14} {:>10} {:>10} {:>12}", "kernel", "ms", "GB/s", "vs scalar");
+    println!(
+        "{:<14} {:>10} {:>10} {:>12}",
+        "kernel", "ms", "GB/s", "vs scalar"
+    );
 
     // Scalar first so the ratio column has a baseline before the others run.
     let mut order = trit_cpu::available_kernels();
@@ -62,13 +69,19 @@ fn main() {
             #[cfg(target_arch = "x86_64")]
             "avx2" => |b, r, s, xq, y| unsafe { trit_cpu::x86::matvec(b, r, s, xq, y) },
             #[cfg(target_arch = "x86_64")]
-            "avx512bw" => |b, r, s, xq, y| unsafe { trit_cpu::x86::matvec_avx512bw(b, r, s, xq, y) },
+            "avx512bw" => {
+                |b, r, s, xq, y| unsafe { trit_cpu::x86::matvec_avx512bw(b, r, s, xq, y) }
+            }
             #[cfg(target_arch = "x86_64")]
-            "avx512vnni" => |b, r, s, xq, y| unsafe { trit_cpu::x86::matvec_avx512vnni(b, r, s, xq, y) },
+            "avx512vnni" => {
+                |b, r, s, xq, y| unsafe { trit_cpu::x86::matvec_avx512vnni(b, r, s, xq, y) }
+            }
             #[cfg(target_arch = "aarch64")]
             "neon" => |b, r, s, xq, y| unsafe { trit_cpu::aarch64::matvec(b, r, s, xq, y) },
             #[cfg(target_arch = "aarch64")]
-            "neon-dotprod" => |b, r, s, xq, y| unsafe { trit_cpu::aarch64::matvec_dotprod(b, r, s, xq, y) },
+            "neon-dotprod" => {
+                |b, r, s, xq, y| unsafe { trit_cpu::aarch64::matvec_dotprod(b, r, s, xq, y) }
+            }
             #[cfg(feature = "bitserial")]
             "bitserial" => |b, r, s, xq, y| unsafe { trit_cpu::bitserial::matvec(b, r, s, xq, y) },
             _ => continue,
@@ -95,7 +108,10 @@ fn main() {
     }
 
     println!();
-    println!("Note: {:.1} MB of planes fits in L3, so the table above measures", bytes / 1e6);
+    println!(
+        "Note: {:.1} MB of planes fits in L3, so the table above measures",
+        bytes / 1e6
+    );
     println!("compute throughput, not memory throughput. Real decoding streams");
     println!("521 MB of weights per token from DRAM; see the streaming pass below.");
 
@@ -111,7 +127,12 @@ fn main() {
             be.matvec(&planes, &x, &mut y);
         }
         let ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
-        println!("{:<14} {:>10.2} {:>10.1}", threads, ms, bytes / (ms / 1000.0) / 1e9);
+        println!(
+            "{:<14} {:>10.2} {:>10.1}",
+            threads,
+            ms,
+            bytes / (ms / 1000.0) / 1e9
+        );
     }
 
     streaming_pass();
@@ -126,7 +147,13 @@ fn streaming_pass() {
     let trits: Vec<i8> = (0..rows * cols)
         .map(|_| {
             let r = rng.next() % 10000;
-            if r < 4219 { 0 } else if r < 7110 { 1 } else { -1 }
+            if r < 4219 {
+                0
+            } else if r < 7110 {
+                1
+            } else {
+                -1
+            }
         })
         .collect();
     let beats = pack_planes(&trits, rows, cols).unwrap();
@@ -138,8 +165,14 @@ fn streaming_pass() {
     let bytes = beats.len() as f64;
 
     println!();
-    println!("Streaming pass: {rows}x{cols} = {:.0} MB of planes, well past L3", bytes / 1e6);
-    println!("{:<14} {:>10} {:>10} {:>18}", "threads", "ms", "GB/s", "implied tok/s*");
+    println!(
+        "Streaming pass: {rows}x{cols} = {:.0} MB of planes, well past L3",
+        bytes / 1e6
+    );
+    println!(
+        "{:<14} {:>10} {:>10} {:>18}",
+        "threads", "ms", "GB/s", "implied tok/s*"
+    );
     for threads in [1usize, 2, 4, 8, 16, 32] {
         let be = trit_cpu::CpuBackend::new(threads);
         let mut y = vec![0i32; rows];
@@ -149,7 +182,13 @@ fn streaming_pass() {
         let ms = t.elapsed().as_secs_f64() * 1000.0;
         let gbps = bytes / (ms / 1000.0) / 1e9;
         // 521 MB of ternary + 1315 MB of dense per token on BitNet 2B4T.
-        println!("{:<14} {:>10.2} {:>10.1} {:>17.1}", threads, ms, gbps, gbps * 1e9 / 1.836e9);
+        println!(
+            "{:<14} {:>10.2} {:>10.1} {:>17.1}",
+            threads,
+            ms,
+            gbps,
+            gbps * 1e9 / 1.836e9
+        );
     }
     println!("*at this bandwidth against the full 1836 MB/token, ternary + dense.");
 }

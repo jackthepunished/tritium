@@ -89,7 +89,9 @@ fn bench_kernels(c: &mut Criterion) {
 fn bench_lm_head(c: &mut Criterion) {
     // A slice of the real head: full vocab would be 1.3 GB.
     let (rows, cols) = (16384usize, 2560usize);
-    let w: Vec<f32> = (0..rows * cols).map(|i| ((i % 251) as f32 - 125.0) * 0.001).collect();
+    let w: Vec<f32> = (0..rows * cols)
+        .map(|i| ((i % 251) as f32 - 125.0) * 0.001)
+        .collect();
     let x: Vec<f32> = (0..cols).map(|i| ((i % 97) as f32 - 48.0) * 0.01).collect();
     let mut y = vec![0.0f32; rows];
 

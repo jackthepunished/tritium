@@ -26,8 +26,12 @@ impl KvCache {
         let per_pos = cfg.num_kv_heads * cfg.head_dim();
         let per_layer = cfg.max_seq * per_pos;
         Self {
-            k: (0..cfg.num_layers).map(|_| vec![0.0; per_layer].into_boxed_slice()).collect(),
-            v: (0..cfg.num_layers).map(|_| vec![0.0; per_layer].into_boxed_slice()).collect(),
+            k: (0..cfg.num_layers)
+                .map(|_| vec![0.0; per_layer].into_boxed_slice())
+                .collect(),
+            v: (0..cfg.num_layers)
+                .map(|_| vec![0.0; per_layer].into_boxed_slice())
+                .collect(),
             per_pos,
             max_seq: cfg.max_seq,
             len: 0,

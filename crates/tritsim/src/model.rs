@@ -136,7 +136,9 @@ impl Model {
         // its job is to be obviously correct, not fast. The production path in
         // trit-core reads the same planes in place.
         let bl = |name: &str| -> Result<BitLinear> {
-            let span = r.trit_span(name).with_context(|| format!("missing {name}"))?;
+            let span = r
+                .trit_span(name)
+                .with_context(|| format!("missing {name}"))?;
             Ok(BitLinear {
                 trits: r.planes(span).to_trits(),
                 rows: span.rows(),
@@ -145,7 +147,9 @@ impl Model {
             })
         };
         let f32_of = |name: &str| -> Result<Vec<f32>> {
-            let span = r.dense_span(name).with_context(|| format!("missing {name}"))?;
+            let span = r
+                .dense_span(name)
+                .with_context(|| format!("missing {name}"))?;
             Ok(r.dense(span).into_owned())
         };
         let f32_opt = |name: &str| f32_of(name).ok();
@@ -201,7 +205,11 @@ impl Model {
             "token {token} out of vocab ({})",
             cfg.vocab_size
         );
-        assert!(pos < cfg.max_seq, "pos {pos} exceeds max_seq {}", cfg.max_seq);
+        assert!(
+            pos < cfg.max_seq,
+            "pos {pos} exceeds max_seq {}",
+            cfg.max_seq
+        );
         let mut x = self.embed[token as usize * h..(token as usize + 1) * h].to_vec();
 
         let trace = std::env::var_os("TRITSIM_TRACE").is_some();
@@ -209,7 +217,11 @@ impl Model {
         // Architecture requirement for the int path, checked once per call
         // (not per layer): relu2 with per-layer ffn sub-norms.
         if int_mlp {
-            assert_eq!(cfg.act, crate::math::Act::Relu2, "int MLP path is relu2-specific");
+            assert_eq!(
+                cfg.act,
+                crate::math::Act::Relu2,
+                "int MLP path is relu2-specific"
+            );
         }
         let dump = |tag: &str, v: &[f32]| {
             let norm = v.iter().map(|a| a * a).sum::<f32>().sqrt();
@@ -405,7 +417,12 @@ mod tests {
         // dequant W = [[0.5,-0.5],[0,0.5]]; exact y = [1.5, -1.0]
         // int path: absmax x -> scale 2/127, xq=[64,-127]
         // acc = [64+127, -127] = [191, -127]; y = acc * 0.5 * (2/127) = [1.50394, -1.0]
-        let bl = BitLinear { trits: vec![1, -1, 0, 1], rows: 2, cols: 2, w_scale: 0.5 };
+        let bl = BitLinear {
+            trits: vec![1, -1, 0, 1],
+            rows: 2,
+            cols: 2,
+            w_scale: 0.5,
+        };
         let y = bl.apply(&[1.0, -2.0]);
         assert!((y[0] - 1.5).abs() < 0.01, "y0={}", y[0]);
         assert!((y[1] - -1.0).abs() < 0.01, "y1={}", y[1]);

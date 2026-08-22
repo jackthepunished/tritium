@@ -160,7 +160,12 @@ pub fn int_mlp_codes_into(
         rg * rg * u as i64
     }));
     z_buf.clear();
-    z_buf.extend(t_buf.iter().zip(gain).map(|(&ti, &gi)| ti as f64 * gi as f64));
+    z_buf.extend(
+        t_buf
+            .iter()
+            .zip(gain)
+            .map(|(&ti, &gi)| ti as f64 * gi as f64),
+    );
 
     let qs = absmax_codes_f64_into(z_buf, out);
     if qs == 1.0 && z_buf.iter().all(|&v| v == 0.0) {
@@ -206,7 +211,11 @@ mod tests {
     fn absmax_pads_the_tail_with_zeros() {
         let mut out = [9i8; 8];
         absmax_codes_into(&[1.0, -1.0], &mut out);
-        assert_eq!(&out[2..], &[0; 6], "padding must be zero for whole-beat kernels");
+        assert_eq!(
+            &out[2..],
+            &[0; 6],
+            "padding must be zero for whole-beat kernels"
+        );
     }
 
     #[test]
@@ -257,17 +266,25 @@ mod tests {
         let mut total = 0usize;
         for _ in 0..500 {
             let n = 1 + (xs(&mut st) % 48) as usize;
-            let acc_g: Vec<i32> = (0..n).map(|_| (xs(&mut st) % 650_001) as i32 - 325_000).collect();
-            let acc_u: Vec<i32> = (0..n).map(|_| (xs(&mut st) % 650_001) as i32 - 325_000).collect();
+            let acc_g: Vec<i32> = (0..n)
+                .map(|_| (xs(&mut st) % 650_001) as i32 - 325_000)
+                .collect();
+            let acc_u: Vec<i32> = (0..n)
+                .map(|_| (xs(&mut st) % 650_001) as i32 - 325_000)
+                .collect();
             // Dyadic gains: exactly representable, so any disagreement is the
             // integer path's, not the test fixture's rounding.
-            let gain: Vec<f32> = (0..n).map(|_| ((xs(&mut st) % 17) as f32 - 8.0) * 0.25).collect();
+            let gain: Vec<f32> = (0..n)
+                .map(|_| ((xs(&mut st) % 17) as f32 - 8.0) * 0.25)
+                .collect();
             let (s_g, s_u) = (1.7e-4f64, 3.1e-4f64);
 
             let mut t = Vec::new();
             let mut z = Vec::new();
             let mut codes = vec![0i8; n];
-            int_mlp_codes_into(&acc_g, &acc_u, &gain, s_g, s_u, 1e-5, &mut t, &mut z, &mut codes);
+            int_mlp_codes_into(
+                &acc_g, &acc_u, &gain, s_g, s_u, 1e-5, &mut t, &mut z, &mut codes,
+            );
 
             // f32 reference: materialize the activation and fold as usual.
             let a: Vec<f32> = acc_g
@@ -284,7 +301,10 @@ mod tests {
             scaled_absmax_codes_into(&a, &gain, 1e-5, &mut scratch, &mut ref_codes);
 
             for (c, rc) in codes.iter().zip(&ref_codes) {
-                assert!((*c as i32 - *rc as i32).abs() <= 1, "code differs by more than one step");
+                assert!(
+                    (*c as i32 - *rc as i32).abs() <= 1,
+                    "code differs by more than one step"
+                );
                 if c != rc {
                     flips += 1;
                 }
@@ -293,7 +313,10 @@ mod tests {
         }
         // The f32 reference is the less accurate side; a small number of
         // boundary flips is expected and bounded.
-        assert!(flips * 1000 <= total, "too many code flips: {flips}/{total}");
+        assert!(
+            flips * 1000 <= total,
+            "too many code flips: {flips}/{total}"
+        );
     }
 
     /// At the theoretical accumulator bound the i64 product must be exact even
@@ -307,11 +330,20 @@ mod tests {
         let mut t = Vec::new();
         let mut z = Vec::new();
         let mut codes = vec![0i8; 4];
-        int_mlp_codes_into(&acc_g, &acc_u, &gain, 1e-4, 1e-4, 1e-5, &mut t, &mut z, &mut codes);
+        int_mlp_codes_into(
+            &acc_g, &acc_u, &gain, 1e-4, 1e-4, 1e-5, &mut t, &mut z, &mut codes,
+        );
         let expect = (bound as i64) * (bound as i64) * (bound as i64);
         assert_eq!(t[0], expect, "i64 product must be exact");
-        assert!(expect.unsigned_abs() > (1u64 << 53), "this case must exceed f64 integer range");
-        assert_eq!(codes, vec![127; 4], "all equal, so all saturate to the max code");
+        assert!(
+            expect.unsigned_abs() > (1u64 << 53),
+            "this case must exceed f64 integer range"
+        );
+        assert_eq!(
+            codes,
+            vec![127; 4],
+            "all equal, so all saturate to the max code"
+        );
     }
 
     /// Codes are invariant to the effective scales; only the returned scale
@@ -324,8 +356,12 @@ mod tests {
         let mut a = vec![0i8; 5];
         let mut b = vec![0i8; 5];
         let (mut t, mut z) = (Vec::new(), Vec::new());
-        let s1 = int_mlp_codes_into(&acc_g, &acc_u, &gain, 1e-4, 2e-4, 1e-5, &mut t, &mut z, &mut a);
-        let s2 = int_mlp_codes_into(&acc_g, &acc_u, &gain, 7e-3, 5e-2, 1e-5, &mut t, &mut z, &mut b);
+        let s1 = int_mlp_codes_into(
+            &acc_g, &acc_u, &gain, 1e-4, 2e-4, 1e-5, &mut t, &mut z, &mut a,
+        );
+        let s2 = int_mlp_codes_into(
+            &acc_g, &acc_u, &gain, 7e-3, 5e-2, 1e-5, &mut t, &mut z, &mut b,
+        );
         assert_eq!(a, b, "codes must be scale-invariant");
         assert!(s1 != s2, "scales must differ");
     }

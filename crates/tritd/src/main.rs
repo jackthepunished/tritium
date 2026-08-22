@@ -6,13 +6,13 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
+use trit_core::config::Numerics;
+use trit_core::sampler::SamplerParams;
+use trit_core::tokenizer::Tokenizer;
 use tritd::bench::{BenchOptions, BenchReport};
 use tritd::serve::ServeOptions;
 use tritd::stream::TokenStream;
 use tritd::{backend, LoadOptions, Runtime};
-use trit_core::config::Numerics;
-use trit_core::sampler::SamplerParams;
-use trit_core::tokenizer::Tokenizer;
 
 #[derive(Parser)]
 #[command(name = "tritd", version, about = "Tritium ternary inference runtime")]
@@ -150,7 +150,13 @@ enum Cmd {
 
 fn main() -> Result<()> {
     match Cli::parse().cmd {
-        Cmd::Run { model, sample, prompt, prompt_file, steps } => {
+        Cmd::Run {
+            model,
+            sample,
+            prompt,
+            prompt_file,
+            steps,
+        } => {
             let text = tritd::read_prompt(prompt.as_deref(), prompt_file.as_deref())?;
             let rt = model.load()?;
             let ids = rt.tokenizer.encode(&text, true)?;
@@ -191,12 +197,24 @@ fn main() -> Result<()> {
             );
         }
 
-        Cmd::Serve { model, addr, max_tokens } => {
+        Cmd::Serve {
+            model,
+            addr,
+            max_tokens,
+        } => {
             let rt = model.load()?;
             tritd::serve::serve(rt, &ServeOptions { addr, max_tokens })?;
         }
 
-        Cmd::Bench { model, prompt, tokens, warmup, runs, no_memcpy_probe, json } => {
+        Cmd::Bench {
+            model,
+            prompt,
+            tokens,
+            warmup,
+            runs,
+            no_memcpy_probe,
+            json,
+        } => {
             let path = model.model.clone();
             let rt = model.load()?;
             let mut report = tritd::bench::run(
@@ -224,10 +242,19 @@ fn main() -> Result<()> {
             println!("model           {}", model.model.display());
             println!("backend         {}", rt.backend_name);
             println!("cpu kernel      {}", rt.kernel_name);
-            println!("compiled        {}", backend::compiled_backends().join(", "));
-            println!("kernels here    {}", trit_cpu::available_kernels().join(", "));
+            println!(
+                "compiled        {}",
+                backend::compiled_backends().join(", ")
+            );
+            println!(
+                "kernels here    {}",
+                trit_cpu::available_kernels().join(", ")
+            );
             println!("layers          {}", cfg.num_layers);
-            println!("hidden / ff     {} / {}", cfg.hidden_size, cfg.intermediate_size);
+            println!(
+                "hidden / ff     {} / {}",
+                cfg.hidden_size, cfg.intermediate_size
+            );
             println!("heads / kv      {} / {}", cfg.num_heads, cfg.num_kv_heads);
             println!("vocab           {}", cfg.vocab_size);
             println!("context         {}", cfg.max_seq);
@@ -268,7 +295,10 @@ fn print_bench(r: &BenchReport) {
         None => println!("peak rss        unavailable"),
     }
     match r.joules_per_token {
-        Some(j) => println!("energy          {:.3} J/token (source: {})", j, r.energy_source),
+        Some(j) => println!(
+            "energy          {:.3} J/token (source: {})",
+            j, r.energy_source
+        ),
         // Never estimated: an invented energy number would poison the headline
         // claim this project exists to make.
         None => println!("energy          unavailable (no counter on this host)"),

@@ -66,7 +66,13 @@ fn corpus() -> Vec<Case> {
     ] {
         let trits: Vec<i8> = (0..rows * cols).map(|_| rng.trit()).collect();
         let x: Vec<i8> = (0..cols).map(|_| rng.i8()).collect();
-        cases.push(Case { name: format!("random_{rows}x{cols}"), rows, cols, trits, x });
+        cases.push(Case {
+            name: format!("random_{rows}x{cols}"),
+            rows,
+            cols,
+            trits,
+            x,
+        });
     }
 
     // The worst case for an i8-domain negation: every weight -1, every
@@ -90,9 +96,19 @@ fn corpus() -> Vec<Case> {
     // zeros anywhere, worst-case accumulator magnitude.
     {
         let mut r = Rng(0xFFF);
-        let trits: Vec<i8> = (0..4 * 128).map(|_| if r.next() & 1 == 0 { 1 } else { -1 }).collect();
-        let x: Vec<i8> = (0..128).map(|_| if r.next() & 1 == 0 { -128 } else { 127 }).collect();
-        cases.push(Case { name: "extremes_4x128".into(), rows: 4, cols: 128, trits, x });
+        let trits: Vec<i8> = (0..4 * 128)
+            .map(|_| if r.next() & 1 == 0 { 1 } else { -1 })
+            .collect();
+        let x: Vec<i8> = (0..128)
+            .map(|_| if r.next() & 1 == 0 { -128 } else { 127 })
+            .collect();
+        cases.push(Case {
+            name: "extremes_4x128".into(),
+            rows: 4,
+            cols: 128,
+            trits,
+            x,
+        });
     }
     // Degenerate planes.
     cases.push(Case {
@@ -148,10 +164,16 @@ fn check_kernel(name: &str) {
         // implementations cannot pass.
         let naive: Vec<i32> = (0..c.rows)
             .map(|r| {
-                (0..c.cols).map(|j| c.trits[r * c.cols + j] as i32 * c.x[j] as i32).sum()
+                (0..c.cols)
+                    .map(|j| c.trits[r * c.cols + j] as i32 * c.x[j] as i32)
+                    .sum()
             })
             .collect();
-        assert_eq!(got, naive, "kernel {name} disagrees with the naive dot on {}", c.name);
+        assert_eq!(
+            got, naive,
+            "kernel {name} disagrees with the naive dot on {}",
+            c.name
+        );
     }
 }
 

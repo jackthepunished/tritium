@@ -98,10 +98,16 @@ impl Model {
         let cfg = ModelConfig::from_json(file.config_json())?;
 
         let bl = |name: &str| -> Result<BitLinear> {
-            Ok(BitLinear { span: file.trit_span(name).with_context(|| format!("missing {name}"))? })
+            Ok(BitLinear {
+                span: file
+                    .trit_span(name)
+                    .with_context(|| format!("missing {name}"))?,
+            })
         };
         let dense = |name: &str| -> Result<Vec<f32>> {
-            let s = file.dense_span(name).with_context(|| format!("missing {name}"))?;
+            let s = file
+                .dense_span(name)
+                .with_context(|| format!("missing {name}"))?;
             Ok(file.dense(s).into_owned())
         };
         let dense_opt = |name: &str| -> Option<Vec<f32>> { dense(name).ok() };
@@ -177,7 +183,10 @@ impl Model {
     /// Select a numerics rung, rejecting ones this architecture cannot support.
     pub fn set_numerics(&mut self, n: Numerics) -> Result<()> {
         if n.int_mlp() {
-            anyhow::ensure!(self.cfg.act == Act::Relu2, "the integer MLP path is relu2-specific");
+            anyhow::ensure!(
+                self.cfg.act == Act::Relu2,
+                "the integer MLP path is relu2-specific"
+            );
             anyhow::ensure!(
                 self.layers.iter().all(|l| l.ffn_sub_norm.is_some()),
                 "the integer MLP path requires per-layer ffn_sub_norm"
@@ -194,8 +203,13 @@ impl Model {
             .layers
             .iter()
             .map(|l| {
-                l.q.bytes() + l.k.bytes() + l.v.bytes() + l.o.bytes()
-                    + l.gate.bytes() + l.up.bytes() + l.down.bytes()
+                l.q.bytes()
+                    + l.k.bytes()
+                    + l.v.bytes()
+                    + l.o.bytes()
+                    + l.gate.bytes()
+                    + l.up.bytes()
+                    + l.down.bytes()
             })
             .sum();
         tern as u64 + self.lm_head.bytes() as u64
@@ -205,8 +219,13 @@ impl Model {
         self.layers
             .iter()
             .map(|l| {
-                (l.q.bytes() + l.k.bytes() + l.v.bytes() + l.o.bytes()
-                    + l.gate.bytes() + l.up.bytes() + l.down.bytes()) as u64
+                (l.q.bytes()
+                    + l.k.bytes()
+                    + l.v.bytes()
+                    + l.o.bytes()
+                    + l.gate.bytes()
+                    + l.up.bytes()
+                    + l.down.bytes()) as u64
             })
             .sum()
     }
@@ -233,9 +252,19 @@ impl Model {
         let cfg = &self.cfg;
         let (hd, nh, nkv) = (cfg.head_dim(), cfg.num_heads, cfg.num_kv_heads);
         let h = cfg.hidden_size;
-        anyhow::ensure!((token as usize) < cfg.vocab_size, "token {token} out of vocab");
-        anyhow::ensure!(pos < cfg.max_seq, "pos {pos} exceeds max_seq {}", cfg.max_seq);
-        anyhow::ensure!(logits.len() == cfg.vocab_size, "logits buffer must be vocab_size");
+        anyhow::ensure!(
+            (token as usize) < cfg.vocab_size,
+            "token {token} out of vocab"
+        );
+        anyhow::ensure!(
+            pos < cfg.max_seq,
+            "pos {pos} exceeds max_seq {}",
+            cfg.max_seq
+        );
+        anyhow::ensure!(
+            logits.len() == cfg.vocab_size,
+            "logits buffer must be vocab_size"
+        );
 
         let (folded, int_mlp) = (self.numerics.folded(), self.numerics.int_mlp());
 
@@ -249,8 +278,13 @@ impl Model {
         for (li, layer) in self.layers.iter().enumerate() {
             // ---- attention ----
             let x_scale = norm_quant(
-                &s.x, &layer.input_norm, cfg.rms_eps, folded,
-                &mut s.mul, &mut s.normed, &mut s.codes,
+                &s.x,
+                &layer.input_norm,
+                cfg.rms_eps,
+                folded,
+                &mut s.mul,
+                &mut s.normed,
+                &mut s.codes,
             );
 
             self.acc_into(&layer.q, &s.codes, &mut s.acc);
@@ -274,7 +308,11 @@ impl Model {
                 s.scores.clear();
                 s.scores.extend((0..=pos).map(|t| {
                     let base = t * nkv * hd + kvh * hd;
-                    qh.iter().zip(&kc[base..base + hd]).map(|(a, b)| a * b).sum::<f32>() * attn_scale
+                    qh.iter()
+                        .zip(&kc[base..base + hd])
+                        .map(|(a, b)| a * b)
+                        .sum::<f32>()
+                        * attn_scale
                 }));
                 math::softmax_inplace(&mut s.scores);
                 let out = &mut s.ctx[head * hd..(head + 1) * hd];
@@ -288,8 +326,13 @@ impl Model {
 
             let o_scale = match &layer.attn_sub_norm {
                 Some(g) => norm_quant(
-                    &s.ctx, g, cfg.rms_eps, folded,
-                    &mut s.mul, &mut s.normed, &mut s.codes2,
+                    &s.ctx,
+                    g,
+                    cfg.rms_eps,
+                    folded,
+                    &mut s.mul,
+                    &mut s.normed,
+                    &mut s.codes2,
                 ),
                 None => math::absmax_codes_into(&s.ctx, &mut s.codes2),
             };
@@ -301,8 +344,13 @@ impl Model {
 
             // ---- mlp ----
             let x_scale = norm_quant(
-                &s.x, &layer.post_norm, cfg.rms_eps, folded,
-                &mut s.mul, &mut s.normed, &mut s.codes,
+                &s.x,
+                &layer.post_norm,
+                cfg.rms_eps,
+                folded,
+                &mut s.mul,
+                &mut s.normed,
+                &mut s.codes,
             );
 
             let down_scale = if int_mlp {
@@ -329,7 +377,11 @@ impl Model {
                 self.acc_into(&layer.gate, &s.codes, &mut s.acc);
                 let gw = layer.gate.scale();
                 s.gate_f.clear();
-                s.gate_f.extend(s.acc[..layer.gate.rows()].iter().map(|a| *a as f32 * gw * x_scale));
+                s.gate_f.extend(
+                    s.acc[..layer.gate.rows()]
+                        .iter()
+                        .map(|a| *a as f32 * gw * x_scale),
+                );
                 self.acc_into(&layer.up, &s.codes, &mut s.acc);
                 let uw = layer.up.scale();
                 s.act.clear();
@@ -341,8 +393,13 @@ impl Model {
                 );
                 match &layer.ffn_sub_norm {
                     Some(g) => norm_quant(
-                        &s.act, g, cfg.rms_eps, folded,
-                        &mut s.mul, &mut s.normed, &mut s.codes2,
+                        &s.act,
+                        g,
+                        cfg.rms_eps,
+                        folded,
+                        &mut s.mul,
+                        &mut s.normed,
+                        &mut s.codes2,
                     ),
                     None => math::absmax_codes_into(&s.act, &mut s.codes2),
                 }
@@ -358,7 +415,8 @@ impl Model {
         // ---- logits ----
         math::rmsnorm_into(&s.x, &self.final_norm, cfg.rms_eps, &mut s.normed[..h]);
         let head = self.file.dense(self.lm_head);
-        self.backend.f32_matvec(&head, cfg.vocab_size, h, &s.normed[..h], logits);
+        self.backend
+            .f32_matvec(&head, cfg.vocab_size, h, &s.normed[..h], logits);
         Ok(())
     }
 }

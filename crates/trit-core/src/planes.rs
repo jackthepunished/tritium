@@ -126,7 +126,13 @@ impl<'a> TritPlanes<'a> {
             "beat stream is {} bytes, expected {want} for {rows}x{cols}",
             beats.len()
         );
-        let p = Self { beats, rows, cols, beats_per_row: beats_per_row(cols), scale };
+        let p = Self {
+            beats,
+            rows,
+            cols,
+            beats_per_row: beats_per_row(cols),
+            scale,
+        };
         p.check_invariants()?;
         Ok(p)
     }
@@ -136,7 +142,12 @@ impl<'a> TritPlanes<'a> {
     /// Used on the load path for large tensors where the full scan is deferred
     /// to `tritd verify`. Lengths are still validated; only the per-beat scan is
     /// skipped.
-    pub fn new_unchecked_bits(beats: &'a [u8], rows: usize, cols: usize, scale: f32) -> Result<Self> {
+    pub fn new_unchecked_bits(
+        beats: &'a [u8],
+        rows: usize,
+        cols: usize,
+        scale: f32,
+    ) -> Result<Self> {
         ensure!(cols > 0, "ternary tensor must have at least one column");
         let want = payload_len(rows, cols);
         ensure!(
@@ -144,7 +155,13 @@ impl<'a> TritPlanes<'a> {
             "beat stream is {} bytes, expected {want} for {rows}x{cols}",
             beats.len()
         );
-        Ok(Self { beats, rows, cols, beats_per_row: beats_per_row(cols), scale })
+        Ok(Self {
+            beats,
+            rows,
+            cols,
+            beats_per_row: beats_per_row(cols),
+            scale,
+        })
     }
 
     #[inline]
@@ -257,7 +274,10 @@ impl<'a> TritPlanes<'a> {
                     );
                 }
                 if b == last && (pos | neg) & !tail != 0 {
-                    bail!("row {r} beat {b}: padding bits set past column {}", self.cols);
+                    bail!(
+                        "row {r} beat {b}: padding bits set past column {}",
+                        self.cols
+                    );
                 }
             }
         }
@@ -300,11 +320,16 @@ mod tests {
             (2, 6912),
             (16, 61),
         ] {
-            let trits: Vec<i8> =
-                (0..rows * cols).map(|_| [-1i8, 0, 1][(next() % 3) as usize]).collect();
+            let trits: Vec<i8> = (0..rows * cols)
+                .map(|_| [-1i8, 0, 1][(next() % 3) as usize])
+                .collect();
             let beats = pack_planes(&trits, rows, cols).unwrap();
             assert_eq!(beats.len(), payload_len(rows, cols));
-            assert_eq!(unpack_planes(&beats, rows, cols).unwrap(), trits, "{rows}x{cols}");
+            assert_eq!(
+                unpack_planes(&beats, rows, cols).unwrap(),
+                trits,
+                "{rows}x{cols}"
+            );
         }
     }
 

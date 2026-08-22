@@ -77,7 +77,10 @@ impl Runtime {
         let backend_name = backend.name().to_string();
         let model = Model::load(file, backend)?;
 
-        let tk_path = opts.tokenizer.clone().unwrap_or_else(|| default_tokenizer_path(&opts.model));
+        let tk_path = opts
+            .tokenizer
+            .clone()
+            .unwrap_or_else(|| default_tokenizer_path(&opts.model));
         let tokenizer = HfTokenizer::from_file(&tk_path)?;
 
         anyhow::ensure!(
@@ -87,7 +90,12 @@ impl Runtime {
             model.config().vocab_size
         );
 
-        Ok(Self { model, tokenizer, backend_name, kernel_name: trit_cpu::kernel_name() })
+        Ok(Self {
+            model,
+            tokenizer,
+            backend_name,
+            kernel_name: trit_cpu::kernel_name(),
+        })
     }
 }
 
@@ -122,7 +130,9 @@ pub fn read_prompt(literal: Option<&str>, file: Option<&Path>) -> Result<String>
         (None, Some(p)) if p == Path::new("-") => {
             use std::io::Read;
             let mut s = String::new();
-            std::io::stdin().read_to_string(&mut s).context("read prompt from stdin")?;
+            std::io::stdin()
+                .read_to_string(&mut s)
+                .context("read prompt from stdin")?;
             Ok(s)
         }
         (None, Some(p)) => {

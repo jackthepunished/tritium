@@ -43,27 +43,78 @@ fn build_tiny_impl(file_stem: &str, seed: u64, subnorms: bool) -> PathBuf {
     let mut rng = Rng(seed);
     let mut w = TritWriter::create(&path, CFG).unwrap();
     let (h, ff, kvh) = (16usize, 32usize, 8usize); // kvh = num_kv_heads * head_dim = 2*4
-    w.write_f32("model.embed_tokens.weight", &[32, h], &rng.vec(32 * h)).unwrap();
+    w.write_f32("model.embed_tokens.weight", &[32, h], &rng.vec(32 * h))
+        .unwrap();
     for i in 0..2 {
         let p = format!("model.layers.{i}.");
         let ones = vec![1.0f32; h];
-        w.write_f32(&format!("{p}input_layernorm.weight"), &[h], &ones).unwrap();
-        w.write_trit(&format!("{p}self_attn.q_proj.weight"), &[h, h], &rng.trits(h * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.k_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.v_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.o_proj.weight"), &[h, h], &rng.trits(h * h), 0.1).unwrap();
+        w.write_f32(&format!("{p}input_layernorm.weight"), &[h], &ones)
+            .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.q_proj.weight"),
+            &[h, h],
+            &rng.trits(h * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.k_proj.weight"),
+            &[kvh, h],
+            &rng.trits(kvh * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.v_proj.weight"),
+            &[kvh, h],
+            &rng.trits(kvh * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.o_proj.weight"),
+            &[h, h],
+            &rng.trits(h * h),
+            0.1,
+        )
+        .unwrap();
         if subnorms {
             let gains_h: Vec<f32> = (0..h).map(|j| 0.5 + 0.1 * j as f32).collect();
-            w.write_f32(&format!("{p}self_attn.attn_sub_norm.weight"), &[h], &gains_h).unwrap();
+            w.write_f32(
+                &format!("{p}self_attn.attn_sub_norm.weight"),
+                &[h],
+                &gains_h,
+            )
+            .unwrap();
         }
-        w.write_f32(&format!("{p}post_attention_layernorm.weight"), &[h], &ones).unwrap();
-        w.write_trit(&format!("{p}mlp.gate_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}mlp.up_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
+        w.write_f32(&format!("{p}post_attention_layernorm.weight"), &[h], &ones)
+            .unwrap();
+        w.write_trit(
+            &format!("{p}mlp.gate_proj.weight"),
+            &[ff, h],
+            &rng.trits(ff * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}mlp.up_proj.weight"),
+            &[ff, h],
+            &rng.trits(ff * h),
+            0.1,
+        )
+        .unwrap();
         if subnorms {
             let gains_ff: Vec<f32> = (0..ff).map(|j| 0.3 + 0.05 * j as f32).collect();
-            w.write_f32(&format!("{p}mlp.ffn_sub_norm.weight"), &[ff], &gains_ff).unwrap();
+            w.write_f32(&format!("{p}mlp.ffn_sub_norm.weight"), &[ff], &gains_ff)
+                .unwrap();
         }
-        w.write_trit(&format!("{p}mlp.down_proj.weight"), &[h, ff], &rng.trits(h * ff), 0.1).unwrap();
+        w.write_trit(
+            &format!("{p}mlp.down_proj.weight"),
+            &[h, ff],
+            &rng.trits(h * ff),
+            0.1,
+        )
+        .unwrap();
     }
     w.write_f32("model.norm.weight", &[16], &[1.0; 16]).unwrap();
     w.finish().unwrap();
@@ -168,7 +219,13 @@ fn greedy_argmax_is_stable() {
     let model = Model::load(&path).unwrap();
     let mut cache = KvCache::new(&model.cfg);
     let logits = model.forward(3, 0, &mut cache);
-    let argmax = |l: &[f32]| l.iter().enumerate().max_by(|a, b| a.1.total_cmp(b.1)).unwrap().0;
+    let argmax = |l: &[f32]| {
+        l.iter()
+            .enumerate()
+            .max_by(|a, b| a.1.total_cmp(b.1))
+            .unwrap()
+            .0
+    };
     let t1 = argmax(&logits);
     let mut cache2 = KvCache::new(&model.cfg);
     assert_eq!(argmax(&model.forward(3, 0, &mut cache2)), t1);

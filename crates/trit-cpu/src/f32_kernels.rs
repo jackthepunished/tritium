@@ -159,7 +159,10 @@ mod tests {
         f32_matvec(&w, rows, cols, &x, &mut b, 1);
         for (i, (p, q)) in a.iter().zip(&b).enumerate() {
             // Reassociation only; well inside anything that could move a top-1.
-            assert!((p - q).abs() <= 1e-4 * p.abs().max(1.0), "row {i}: {p} vs {q}");
+            assert!(
+                (p - q).abs() <= 1e-4 * p.abs().max(1.0),
+                "row {i}: {p} vs {q}"
+            );
         }
     }
 

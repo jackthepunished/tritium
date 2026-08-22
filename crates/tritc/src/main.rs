@@ -49,7 +49,11 @@ enum Cmd {
 
 fn main() -> Result<()> {
     match Cli::parse().cmd {
-        Cmd::Convert { input, output, verify } => {
+        Cmd::Convert {
+            input,
+            output,
+            verify,
+        } => {
             let r = convert::convert(&input, &output)?;
             println!(
                 "converted {} tensors ({} ternary), mean zero frac {:.3}, mean recon err {:.4}",
@@ -149,9 +153,15 @@ fn info(model: &Path, list: bool) -> Result<()> {
         }
     }
     println!("  ternary         {tern_n} tensors, {trits} weights, {tern_bytes} bytes");
-    println!("  dense           {} tensors, {dense_bytes} bytes", f.metas().len() - tern_n, );
+    println!(
+        "  dense           {} tensors, {dense_bytes} bytes",
+        f.metas().len() - tern_n,
+    );
     if trits > 0 {
-        println!("  bits/weight     {:.3}", tern_bytes as f64 * 8.0 / trits as f64);
+        println!(
+            "  bits/weight     {:.3}",
+            tern_bytes as f64 * 8.0 / trits as f64
+        );
     }
     // Decoding at batch 1 touches every weight once per token, so this sum is
     // the numerator of the bandwidth roofline: tok/s ~= BW / bytes_per_token.

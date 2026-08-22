@@ -33,7 +33,12 @@ impl RopeTable {
         let inv_freq = (0..half)
             .map(|i| theta.powf(-2.0 * i as f32 / head_dim as f32))
             .collect();
-        Self { head_dim, inv_freq, sin_cos: vec![(0.0, 0.0); half], pos: None }
+        Self {
+            head_dim,
+            inv_freq,
+            sin_cos: vec![(0.0, 0.0); half],
+            pos: None,
+        }
     }
 
     /// Load the trig for `pos`, if it is not already loaded.
@@ -101,9 +106,11 @@ mod tests {
             table.seek(pos);
             table.apply(&mut a);
             rope_reference(&mut b, head_dim, pos, theta);
-            assert_eq!(a.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
-                       b.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
-                       "pos {pos}: table differs from per-element recomputation");
+            assert_eq!(
+                a.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+                b.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+                "pos {pos}: table differs from per-element recomputation"
+            );
         }
     }
 

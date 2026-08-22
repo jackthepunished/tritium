@@ -45,7 +45,10 @@ fn take_u64(b: &[u8], p: &mut usize) -> Result<u64> {
 fn unpack_v0_trits(bytes: &[u8], n: usize) -> Result<Vec<i8>> {
     let required = n.div_ceil(4);
     if bytes.len() < required {
-        bail!("truncated trit data: need {required} bytes for {n} trits, got {}", bytes.len());
+        bail!(
+            "truncated trit data: need {required} bytes for {n} trits, got {}",
+            bytes.len()
+        );
     }
     let mut out = Vec::with_capacity(n);
     for i in 0..n {
@@ -100,7 +103,14 @@ pub fn read(path: &Path) -> Result<V0File> {
         let scale = f32::from_le_bytes(take(b, &mut p, 4)?.try_into().unwrap());
         let offset = take_u64(b, &mut p)?;
         let byte_len = take_u64(b, &mut p)?;
-        metas.push(Meta { name, is_trit, shape, scale, offset, byte_len });
+        metas.push(Meta {
+            name,
+            is_trit,
+            shape,
+            scale,
+            offset,
+            byte_len,
+        });
     }
     let payload_start = p;
 
@@ -109,8 +119,12 @@ pub fn read(path: &Path) -> Result<V0File> {
         let start = payload_start
             .checked_add(usize::try_from(m.offset)?)
             .context("tensor offset overflow")?;
-        let end = start.checked_add(usize::try_from(m.byte_len)?).context("tensor length overflow")?;
-        let data = b.get(start..end).with_context(|| format!("tensor {} out of bounds", m.name))?;
+        let end = start
+            .checked_add(usize::try_from(m.byte_len)?)
+            .context("tensor length overflow")?;
+        let data = b
+            .get(start..end)
+            .with_context(|| format!("tensor {} out of bounds", m.name))?;
         let elems: usize = m.shape.iter().product();
         if m.is_trit {
             tensors.push(V0Tensor {
@@ -122,11 +136,19 @@ pub fn read(path: &Path) -> Result<V0File> {
             });
         } else {
             if data.len() != elems * 4 {
-                bail!("{}: byte_len {} does not match shape ({elems} f32s)", m.name, data.len());
+                bail!(
+                    "{}: byte_len {} does not match shape ({elems} f32s)",
+                    m.name,
+                    data.len()
+                );
             }
             tensors.push(V0Tensor {
                 trits: None,
-                f32: Some(data.chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect()),
+                f32: Some(
+                    data.chunks_exact(4)
+                        .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
+                        .collect(),
+                ),
                 name: m.name,
                 shape: m.shape,
                 scale: m.scale,

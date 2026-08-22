@@ -56,25 +56,81 @@ fn build(stem: &str) -> PathBuf {
     let mut rng = Rng(0x0CEA_2026);
     let mut w = TritWriter::create(&path, CFG).unwrap();
     let (h, ff, kvh, vocab) = (80usize, 200usize, 16usize, 48usize);
-    w.write_f32("model.embed_tokens.weight", &[vocab, h], &rng.vec(vocab * h)).unwrap();
+    w.write_f32(
+        "model.embed_tokens.weight",
+        &[vocab, h],
+        &rng.vec(vocab * h),
+    )
+    .unwrap();
     for i in 0..3 {
         let p = format!("model.layers.{i}.");
         let ones = vec![1.0f32; h];
-        w.write_f32(&format!("{p}input_layernorm.weight"), &[h], &ones).unwrap();
-        w.write_trit(&format!("{p}self_attn.q_proj.weight"), &[h, h], &rng.trits(h * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.k_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.v_proj.weight"), &[kvh, h], &rng.trits(kvh * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}self_attn.o_proj.weight"), &[h, h], &rng.trits(h * h), 0.1).unwrap();
+        w.write_f32(&format!("{p}input_layernorm.weight"), &[h], &ones)
+            .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.q_proj.weight"),
+            &[h, h],
+            &rng.trits(h * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.k_proj.weight"),
+            &[kvh, h],
+            &rng.trits(kvh * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.v_proj.weight"),
+            &[kvh, h],
+            &rng.trits(kvh * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}self_attn.o_proj.weight"),
+            &[h, h],
+            &rng.trits(h * h),
+            0.1,
+        )
+        .unwrap();
         let gains_h: Vec<f32> = (0..h).map(|j| 0.5 + 0.01 * j as f32).collect();
-        w.write_f32(&format!("{p}self_attn.attn_sub_norm.weight"), &[h], &gains_h).unwrap();
-        w.write_f32(&format!("{p}post_attention_layernorm.weight"), &[h], &ones).unwrap();
-        w.write_trit(&format!("{p}mlp.gate_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
-        w.write_trit(&format!("{p}mlp.up_proj.weight"), &[ff, h], &rng.trits(ff * h), 0.1).unwrap();
+        w.write_f32(
+            &format!("{p}self_attn.attn_sub_norm.weight"),
+            &[h],
+            &gains_h,
+        )
+        .unwrap();
+        w.write_f32(&format!("{p}post_attention_layernorm.weight"), &[h], &ones)
+            .unwrap();
+        w.write_trit(
+            &format!("{p}mlp.gate_proj.weight"),
+            &[ff, h],
+            &rng.trits(ff * h),
+            0.1,
+        )
+        .unwrap();
+        w.write_trit(
+            &format!("{p}mlp.up_proj.weight"),
+            &[ff, h],
+            &rng.trits(ff * h),
+            0.1,
+        )
+        .unwrap();
         let gains_ff: Vec<f32> = (0..ff).map(|j| 0.3 + 0.005 * j as f32).collect();
-        w.write_f32(&format!("{p}mlp.ffn_sub_norm.weight"), &[ff], &gains_ff).unwrap();
-        w.write_trit(&format!("{p}mlp.down_proj.weight"), &[h, ff], &rng.trits(h * ff), 0.1).unwrap();
+        w.write_f32(&format!("{p}mlp.ffn_sub_norm.weight"), &[ff], &gains_ff)
+            .unwrap();
+        w.write_trit(
+            &format!("{p}mlp.down_proj.weight"),
+            &[h, ff],
+            &rng.trits(h * ff),
+            0.1,
+        )
+        .unwrap();
     }
-    w.write_f32("model.norm.weight", &[h], &vec![1.0; h]).unwrap();
+    w.write_f32("model.norm.weight", &[h], &vec![1.0; h])
+        .unwrap();
     w.finish().unwrap();
     path
 }
@@ -87,7 +143,11 @@ fn cosine(a: &[f32], b: &[f32]) -> f32 {
 }
 
 fn argmax(v: &[f32]) -> usize {
-    v.iter().enumerate().max_by(|a, b| a.1.total_cmp(b.1)).map(|(i, _)| i).unwrap()
+    v.iter()
+        .enumerate()
+        .max_by(|a, b| a.1.total_cmp(b.1))
+        .map(|(i, _)| i)
+        .unwrap()
 }
 
 /// Run the same token sequence through both and compare at every position.
@@ -99,7 +159,9 @@ fn compare_mode(stem: &str, sim_mode: ForwardMode, core_mode: Numerics, backend_
 
     let file = TritFile::open(&path).unwrap();
     let backend: Arc<dyn MatvecBackend> = Arc::new(trit_cpu::CpuBackend::new(backend_threads));
-    let mut core = Arc::try_unwrap(CoreModel::load(file, backend).unwrap()).ok().unwrap();
+    let mut core = Arc::try_unwrap(CoreModel::load(file, backend).unwrap())
+        .ok()
+        .unwrap();
     core.set_numerics(core_mode).unwrap();
     let core = Arc::new(core);
     let mut scratch = Scratch::new(core.config());
@@ -109,10 +171,14 @@ fn compare_mode(stem: &str, sim_mode: ForwardMode, core_mode: Numerics, backend_
     let tokens: Vec<u32> = vec![1, 7, 3, 42, 0, 11, 5, 30, 17, 2];
     for (pos, &t) in tokens.iter().enumerate() {
         let a = sim.forward_with_mode(t, pos, &mut sim_cache, sim_mode);
-        core.forward_into(t, pos, &mut kv, &mut scratch, &mut logits).unwrap();
+        core.forward_into(t, pos, &mut kv, &mut scratch, &mut logits)
+            .unwrap();
 
         let c = cosine(&a, &logits);
-        assert!(c > 0.9999, "{stem} pos {pos}: cosine {c} between the two implementations");
+        assert!(
+            c > 0.9999,
+            "{stem} pos {pos}: cosine {c} between the two implementations"
+        );
         assert_eq!(
             argmax(&a),
             argmax(&logits),
@@ -125,7 +191,10 @@ fn compare_mode(stem: &str, sim_mode: ForwardMode, core_mode: Numerics, backend_
             .zip(&logits)
             .map(|(x, y)| (x - y).abs() / x.abs().max(1.0))
             .fold(0.0f32, f32::max);
-        assert!(worst < 1e-3, "{stem} pos {pos}: worst relative logit difference {worst}");
+        assert!(
+            worst < 1e-3,
+            "{stem} pos {pos}: worst relative logit difference {worst}"
+        );
     }
 }
 
@@ -168,7 +237,11 @@ fn session_reset_matches_a_fresh_session() {
     a.prefill(&[42u32, 11, 5, 30, 17]).unwrap();
     a.reset();
     a.prefill(&prompt).unwrap();
-    assert_eq!(a.logits(), &first[..], "reset must leave no trace of the previous sequence");
+    assert_eq!(
+        a.logits(),
+        &first[..],
+        "reset must leave no trace of the previous sequence"
+    );
 }
 
 /// The production loader must not silently invent an LM head.
@@ -181,7 +254,8 @@ fn untied_model_missing_its_head_is_an_error() {
             "num_attention_heads":2,"vocab_size":4,"tie_word_embeddings":false}"#,
     )
     .unwrap();
-    w.write_f32("model.embed_tokens.weight", &[4, 8], &[0.1; 32]).unwrap();
+    w.write_f32("model.embed_tokens.weight", &[4, 8], &[0.1; 32])
+        .unwrap();
     w.write_f32("model.norm.weight", &[8], &[1.0; 8]).unwrap();
     w.finish().unwrap();
 
@@ -218,8 +292,13 @@ fn real_checkpoint_paths_agree() {
 
     let sim = SimModel::load(&path).unwrap();
     let file = TritFile::open(&path).unwrap();
-    let threads: usize = std::env::var("XCMP_THREADS").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
-    if let Ok(k) = std::env::var("XCMP_KERNEL") { trit_cpu::force_kernel(&k).unwrap(); }
+    let threads: usize = std::env::var("XCMP_THREADS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    if let Ok(k) = std::env::var("XCMP_KERNEL") {
+        trit_cpu::force_kernel(&k).unwrap();
+    }
     eprintln!("threads={threads} kernel={}", trit_cpu::kernel_name());
     let backend: Arc<dyn MatvecBackend> = Arc::new(trit_cpu::CpuBackend::new(threads));
     let core_base = CoreModel::load(file, backend).unwrap();
@@ -245,7 +324,8 @@ fn real_checkpoint_paths_agree() {
 
         for (pos, &t) in tokens.iter().enumerate() {
             let a = sim.forward_with_mode(t, pos, &mut sim_cache, sim_mode);
-            core.forward_into(t, pos, &mut kv, &mut scratch, &mut logits).unwrap();
+            core.forward_into(t, pos, &mut kv, &mut scratch, &mut logits)
+                .unwrap();
 
             let c = cosine(&a, &logits);
             let (ta, tb) = (argmax(&a), argmax(&logits));
@@ -263,7 +343,10 @@ fn real_checkpoint_paths_agree() {
             // not associative, and folding w_scale * x_scale into one constant
             // was enough to change the generated text at the first near-tie.
             assert!(c > 0.999999, "{core_mode:?} pos {pos}: cosine {c}");
-            assert_eq!(ta, tb, "{core_mode:?} pos {pos}: top-1 differs (margin {margin:.4})");
+            assert_eq!(
+                ta, tb,
+                "{core_mode:?} pos {pos}: top-1 differs (margin {margin:.4})"
+            );
         }
     }
 }

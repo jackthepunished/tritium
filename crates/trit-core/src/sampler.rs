@@ -17,7 +17,13 @@ pub struct SamplerParams {
 
 impl Default for SamplerParams {
     fn default() -> Self {
-        Self { temperature: 0.0, top_p: 1.0, top_k: 0, repetition_penalty: 1.0, seed: 0 }
+        Self {
+            temperature: 0.0,
+            top_p: 1.0,
+            top_k: 0,
+            repetition_penalty: 1.0,
+            seed: 0,
+        }
     }
 }
 
@@ -97,7 +103,11 @@ pub struct TopPSampler {
 
 impl TopPSampler {
     pub fn new(params: SamplerParams) -> Self {
-        Self { rng: Rng::new(params.seed), params, scratch: Vec::new() }
+        Self {
+            rng: Rng::new(params.seed),
+            params,
+            scratch: Vec::new(),
+        }
     }
 }
 
@@ -110,7 +120,11 @@ impl Sampler for TopPSampler {
                 if let Some(l) = logits.get_mut(t as usize) {
                     // Divide when positive, multiply when negative, so the
                     // penalty always moves a logit toward zero.
-                    *l = if *l > 0.0 { *l / p.repetition_penalty } else { *l * p.repetition_penalty };
+                    *l = if *l > 0.0 {
+                        *l / p.repetition_penalty
+                    } else {
+                        *l * p.repetition_penalty
+                    };
                 }
             }
         }
@@ -119,11 +133,20 @@ impl Sampler for TopPSampler {
         }
 
         self.scratch.clear();
-        self.scratch.extend(logits.iter().enumerate().map(|(i, &l)| (l / p.temperature, i as u32)));
+        self.scratch.extend(
+            logits
+                .iter()
+                .enumerate()
+                .map(|(i, &l)| (l / p.temperature, i as u32)),
+        );
         // Descending by logit.
         self.scratch.sort_unstable_by(|a, b| b.0.total_cmp(&a.0));
 
-        let k = if p.top_k == 0 { self.scratch.len() } else { p.top_k.min(self.scratch.len()) };
+        let k = if p.top_k == 0 {
+            self.scratch.len()
+        } else {
+            p.top_k.min(self.scratch.len())
+        };
         self.scratch.truncate(k);
 
         // Softmax over the surviving candidates, shifted by the max for
@@ -181,7 +204,11 @@ mod tests {
     #[test]
     fn greedy_picks_the_max_and_breaks_ties_low() {
         assert_eq!(Greedy.sample(&mut [1.0, 5.0, 2.0], &[]), 1);
-        assert_eq!(Greedy.sample(&mut [5.0, 5.0, 2.0], &[]), 0, "ties break toward the lower index");
+        assert_eq!(
+            Greedy.sample(&mut [5.0, 5.0, 2.0], &[]),
+            0,
+            "ties break toward the lower index"
+        );
     }
 
     #[test]
@@ -193,10 +220,16 @@ mod tests {
 
     #[test]
     fn same_seed_gives_the_same_sequence() {
-        let p = SamplerParams { temperature: 1.0, seed: 42, ..Default::default() };
+        let p = SamplerParams {
+            temperature: 1.0,
+            seed: 42,
+            ..Default::default()
+        };
         let draw = || {
             let mut s = TopPSampler::new(p);
-            (0..32).map(|_| s.sample(&mut [1.0, 2.0, 3.0, 0.5], &[])).collect::<Vec<_>>()
+            (0..32)
+                .map(|_| s.sample(&mut [1.0, 2.0, 3.0, 0.5], &[]))
+                .collect::<Vec<_>>()
         };
         assert_eq!(draw(), draw());
     }
@@ -204,8 +237,14 @@ mod tests {
     #[test]
     fn different_seeds_diverge() {
         let mk = |seed| {
-            let mut s = TopPSampler::new(SamplerParams { temperature: 1.0, seed, ..Default::default() });
-            (0..64).map(|_| s.sample(&mut [1.0, 1.0, 1.0, 1.0], &[])).collect::<Vec<_>>()
+            let mut s = TopPSampler::new(SamplerParams {
+                temperature: 1.0,
+                seed,
+                ..Default::default()
+            });
+            (0..64)
+                .map(|_| s.sample(&mut [1.0, 1.0, 1.0, 1.0], &[]))
+                .collect::<Vec<_>>()
         };
         assert_ne!(mk(1), mk(2));
     }
