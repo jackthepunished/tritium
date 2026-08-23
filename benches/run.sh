@@ -92,22 +92,69 @@ record_unavailable() {
     echo "    $1: unavailable ($4)"
 }
 
+# Both llama.cpp and bitnet.cpp ship `llama-bench`, whose table is the same
+# shape in each. One parser serves both.
+#
+#   | model | size | params | backend | threads | test | t/s |
+#
+# The t/s cell is "27.90 ± 0.09"; take the mean. `tg<N>` is the token-generation
+# row, which is the decode number -- `pp` rows measure prefill and are not
+# comparable to a decode figure.
+# One invocation. The t/s cell reads "27.90 +/- 0.09"; the separator is
+# multibyte, so the first decimal number in the cell is taken rather than
+# splitting on it.
+llama_bench_once() {   # bin model threads tokens
+    "$1" -m "$2" -t "$3" -n "$4" -p 0 -r 3 2>/dev/null \
+        | awk -F'|' -v want="tg$4" '
+            $0 ~ want {
+                cell = $(NF-1)
+                if (match(cell, /[0-9]+\.[0-9]+/)) print substr(cell, RSTART, RLENGTH)
+            }' \
+        | tail -1
+}
+
+# Median of BASELINE_RUNS invocations, per the methodology in
+# docs/04-BENCHMARKS.md.
+#
+# Median rather than best, and it matters here: llama-bench on this host returns
+# ~26.8 tok/s five times out of six and then a ~39 outlier, so a best-of rule
+# would publish the outlier as the baseline's score. Tritium's own numbers vary
+# by under 2% across invocations, so a best-of rule would also be asymmetric --
+# it would flatter whichever runtime is noisier. Median is robust to both.
+BASELINE_RUNS="${BASELINE_RUNS:-3}"
+llama_bench_tps() {   # bin model threads tokens
+    local vals=()
+    for _ in $(seq 1 "$BASELINE_RUNS"); do
+        local v
+        v="$(llama_bench_once "$1" "$2" "$3" "$4")"
+        [ -n "$v" ] && vals+=("$v")
+    done
+    [ ${#vals[@]} -eq 0 ] && return 0
+    printf '%s\n' "${vals[@]}" | sort -g | awk '{a[NR]=$1} END {print (NR%2) ? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2}'
+}
+
+file_mb() { [ -f "$1" ] && echo $(( $(stat -c%s "$1") / 1000000 )) || echo ""; }
+
 echo "==> llama.cpp"
-LLAMA="${LLAMA_CPP_BIN:-$(command -v llama-bench || command -v llama-cli || true)}"
+LLAMA="${LLAMA_CPP_BIN:-$(command -v llama-bench || true)}"
 if [ -z "$LLAMA" ]; then
-    record_unavailable llama.cpp Q4_K_M 4.5 "no llama-bench or llama-cli on PATH; set LLAMA_CPP_BIN"
+    record_unavailable llama.cpp Q4_K_M 4.5 "no llama-bench on PATH; set LLAMA_CPP_BIN"
 elif [ -z "${LLAMA_GGUF:-}" ]; then
     record_unavailable llama.cpp Q4_K_M 4.5 "found $LLAMA but LLAMA_GGUF is unset"
+elif [ ! -f "${LLAMA_GGUF}" ]; then
+    record_unavailable llama.cpp Q4_K_M 4.5 "LLAMA_GGUF does not exist: $LLAMA_GGUF"
 else
     echo "    running $LLAMA"
-    RAW="$("$LLAMA" -m "$LLAMA_GGUF" -n "$TOKENS" -t "$THREADS" 2>&1 || true)"
-    TPS="$(printf '%s' "$RAW" | grep -oE '[0-9]+\.[0-9]+ tokens per second' | tail -1 | grep -oE '^[0-9.]+' || true)"
+    TPS="$(llama_bench_tps "$LLAMA" "$LLAMA_GGUF" "$THREADS" "$TOKENS")"
     if [ -n "$TPS" ]; then
-        printf '%s,%s,llama.cpp,,%s,Q4_K_M,4.5,%s,%s,,cpu,%s,,,,,,,,none,ok,\n' \
-            "$HOST" "$DATE" "$LLAMA_GGUF" "$SUITE" "$THREADS" "$TPS" >> "$OUT"
+        # A DIFFERENT model at a different quality point -- see the comparability
+        # note in benches/README.md. The quant and bits/w columns carry that, and
+        # the note names the file so nobody has to guess what was measured.
+        printf '%s,%s,llama.cpp,,%s,Q4_K_M,4.5,%s,%s,,cpu,%s,,,,,,,,none,ok,%s MB file; different model and quality point\n' \
+            "$HOST" "$DATE" "$(basename "$LLAMA_GGUF")" "$SUITE" "$THREADS" "$TPS" "$(file_mb "$LLAMA_GGUF")" >> "$OUT"
         echo "    $TPS tok/s"
     else
-        record_unavailable llama.cpp Q4_K_M 4.5 "ran but no tokens-per-second line was parsed"
+        record_unavailable llama.cpp Q4_K_M 4.5 "ran but no tg$TOKENS row was parsed"
     fi
 fi
 
@@ -115,9 +162,23 @@ echo "==> bitnet.cpp"
 BITNET="${BITNET_CPP_BIN:-$(command -v bitnet-cli || true)}"
 if [ -z "$BITNET" ]; then
     record_unavailable bitnet.cpp I2_S 2.0 "no bitnet-cli on PATH; set BITNET_CPP_BIN"
+elif [ -z "${BITNET_GGUF:-}" ]; then
+    record_unavailable bitnet.cpp I2_S 2.0 "found $BITNET but BITNET_GGUF is unset"
+elif [ ! -f "${BITNET_GGUF}" ]; then
+    record_unavailable bitnet.cpp I2_S 2.0 "BITNET_GGUF does not exist: $BITNET_GGUF"
 else
-    echo "    found $BITNET but no adapter is wired up yet"
-    record_unavailable bitnet.cpp I2_S 2.0 "binary present, adapter not implemented"
+    echo "    running $BITNET"
+    TPS="$(llama_bench_tps "$BITNET" "$BITNET_GGUF" "$THREADS" "$TOKENS")"
+    if [ -n "$TPS" ]; then
+        # The one true apples-to-apples row: same checkpoint, same host, same
+        # thread count. Its embeddings are f16 where ours are f32, which is a
+        # real difference in bytes/token and is noted rather than hidden.
+        printf '%s,%s,bitnet.cpp,,%s,I2_S,2.0,%s,%s,,cpu,%s,,,,,,,,none,ok,%s MB file; same checkpoint; f16 token_embd\n' \
+            "$HOST" "$DATE" "$(basename "$BITNET_GGUF")" "$SUITE" "$THREADS" "$TPS" "$(file_mb "$BITNET_GGUF")" >> "$OUT"
+        echo "    $TPS tok/s"
+    else
+        record_unavailable bitnet.cpp I2_S 2.0 "ran but no tg$TOKENS row was parsed"
+    fi
 fi
 
 echo
