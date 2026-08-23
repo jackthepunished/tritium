@@ -48,6 +48,14 @@ impl Sampler for Greedy {
     }
 }
 
+/// Index of the largest value, **lowest index winning a tie**.
+///
+/// The tie rule is part of the contract, not an implementation detail. A bare
+/// `max_by` on values alone returns the *last* maximal index, so an oracle
+/// written that way and a runtime written this way pick different tokens the
+/// first time two logits land exactly equal -- and every parity check between
+/// them would then be certifying the wrong thing. Every argmax in this
+/// workspace routes here for that reason.
 pub fn argmax(v: &[f32]) -> usize {
     v.iter()
         .enumerate()
@@ -199,6 +207,18 @@ pub fn make_sampler(p: &SamplerParams) -> Box<dyn Sampler> {
 
 #[cfg(test)]
 mod tests {
+    /// The tie rule, asserted directly: lowest index wins.
+    #[test]
+    fn argmax_breaks_ties_toward_the_lowest_index() {
+        assert_eq!(super::argmax(&[1.0, 1.0, 1.0]), 0);
+        assert_eq!(super::argmax(&[0.0, 5.0, 5.0, 1.0]), 1);
+        assert_eq!(super::argmax(&[-1.0, -1.0]), 0);
+        // A single maximum is unaffected by the tie rule.
+        assert_eq!(super::argmax(&[1.0, 9.0, 1.0]), 1);
+        // Empty input has no index to return; the contract is 0, not a panic.
+        assert_eq!(super::argmax(&[]), 0);
+    }
+
     use super::*;
 
     #[test]

@@ -55,6 +55,15 @@ impl RopeTable {
     /// Rotate-half RoPE (HuggingFace LLaMA convention): the pair for index `i` is
     /// `(v[i], v[i + head_dim/2])`. Applies to every head in `v`.
     pub fn apply(&self, v: &mut [f32]) {
+        // Guaranteed by Model::load, which rejects any projection whose row
+        // count disagrees with the config. Stated here so the invariant is
+        // visible at the point that depends on it.
+        debug_assert!(
+            v.len().is_multiple_of(self.head_dim),
+            "{} values is not a whole number of {}-wide heads",
+            v.len(),
+            self.head_dim
+        );
         let half = self.head_dim / 2;
         for head in v.chunks_mut(self.head_dim) {
             for (i, &(sin, cos)) in self.sin_cos.iter().enumerate() {

@@ -97,47 +97,89 @@ impl Model {
     pub fn load(file: Arc<TritFile>, backend: Arc<dyn MatvecBackend>) -> Result<Arc<Self>> {
         let cfg = ModelConfig::from_json(file.config_json())?;
 
-        let bl = |name: &str| -> Result<BitLinear> {
-            Ok(BitLinear {
-                span: file
-                    .trit_span(name)
-                    .with_context(|| format!("missing {name}"))?,
-            })
+        // Shapes are checked here, at the trust boundary, rather than assumed.
+        // Every consumer downstream indexes on the config's dimensions, so a
+        // tensor that disagrees with the embedded config.json surfaces as a
+        // panic deep in the forward pass -- or, worse, as a silently wrong
+        // result. A `.trit` is a self-describing container that anything may
+        // have written; the loader is the only place that can reject it with a
+        // message naming what was wrong.
+        let bl = |name: &str, rows: usize, cols: usize| -> Result<BitLinear> {
+            let span = file
+                .trit_span(name)
+                .with_context(|| format!("missing {name}"))?;
+            anyhow::ensure!(
+                span.rows() == rows && span.cols() == cols,
+                "{name} is {}x{}, but config.json implies {rows}x{cols}",
+                span.rows(),
+                span.cols()
+            );
+            Ok(BitLinear { span })
         };
-        let dense = |name: &str| -> Result<Vec<f32>> {
+        let dense = |name: &str, elems: usize| -> Result<Vec<f32>> {
             let s = file
                 .dense_span(name)
                 .with_context(|| format!("missing {name}"))?;
+            anyhow::ensure!(
+                s.elems() == elems,
+                "{name} holds {} elements, but config.json implies {elems}",
+                s.elems()
+            );
             Ok(file.dense(s).into_owned())
         };
-        let dense_opt = |name: &str| -> Option<Vec<f32>> { dense(name).ok() };
+        // Absent is allowed; present-but-wrong-shape is not. Silently treating
+        // a malformed sub-norm as missing would pick a different numerics rung
+        // without saying so.
+        let dense_opt = |name: &str, elems: usize| -> Result<Option<Vec<f32>>> {
+            match file.dense_span(name) {
+                Err(_) => Ok(None),
+                Ok(_) => dense(name, elems).map(Some),
+            }
+        };
+
+        let (h, kv) = (cfg.hidden_size, cfg.num_kv_heads * cfg.head_dim());
+        let ffn = cfg.intermediate_size;
 
         let mut layers = Vec::with_capacity(cfg.num_layers);
         for i in 0..cfg.num_layers {
             let p = format!("model.layers.{i}.");
             layers.push(Layer {
-                input_norm: dense(&format!("{p}input_layernorm.weight"))?,
-                q: bl(&format!("{p}self_attn.q_proj.weight"))?,
-                k: bl(&format!("{p}self_attn.k_proj.weight"))?,
-                v: bl(&format!("{p}self_attn.v_proj.weight"))?,
-                o: bl(&format!("{p}self_attn.o_proj.weight"))?,
-                attn_sub_norm: dense_opt(&format!("{p}self_attn.attn_sub_norm.weight")),
-                post_norm: dense(&format!("{p}post_attention_layernorm.weight"))?,
-                gate: bl(&format!("{p}mlp.gate_proj.weight"))?,
-                up: bl(&format!("{p}mlp.up_proj.weight"))?,
-                down: bl(&format!("{p}mlp.down_proj.weight"))?,
-                ffn_sub_norm: dense_opt(&format!("{p}mlp.ffn_sub_norm.weight")),
+                input_norm: dense(&format!("{p}input_layernorm.weight"), h)?,
+                q: bl(&format!("{p}self_attn.q_proj.weight"), h, h)?,
+                k: bl(&format!("{p}self_attn.k_proj.weight"), kv, h)?,
+                v: bl(&format!("{p}self_attn.v_proj.weight"), kv, h)?,
+                o: bl(&format!("{p}self_attn.o_proj.weight"), h, h)?,
+                attn_sub_norm: dense_opt(&format!("{p}self_attn.attn_sub_norm.weight"), h)?,
+                post_norm: dense(&format!("{p}post_attention_layernorm.weight"), h)?,
+                gate: bl(&format!("{p}mlp.gate_proj.weight"), ffn, h)?,
+                up: bl(&format!("{p}mlp.up_proj.weight"), ffn, h)?,
+                down: bl(&format!("{p}mlp.down_proj.weight"), h, ffn)?,
+                ffn_sub_norm: dense_opt(&format!("{p}mlp.ffn_sub_norm.weight"), ffn)?,
             });
         }
 
+        let vocab_elems = cfg.vocab_size * cfg.hidden_size;
         let embed = file
             .dense_span("model.embed_tokens.weight")
             .context("missing model.embed_tokens.weight")?;
+        anyhow::ensure!(
+            embed.elems() == vocab_elems,
+            "model.embed_tokens.weight holds {} elements, but config.json implies \
+             vocab_size * hidden_size = {vocab_elems}",
+            embed.elems()
+        );
         // Prefer an explicit head; fall back to the tied embedding only when the
         // config says the weights are tied, so a genuinely untied checkpoint
         // missing its head is an error rather than silently wrong output.
         let (lm_head, tied) = match file.dense_span("lm_head.weight") {
-            Ok(s) => (s, false),
+            Ok(s) => {
+                anyhow::ensure!(
+                    s.elems() == vocab_elems,
+                    "lm_head.weight holds {} elements, but config.json implies {vocab_elems}",
+                    s.elems()
+                );
+                (s, false)
+            }
             Err(e) => {
                 anyhow::ensure!(
                     cfg.tie_word_embeddings,
@@ -151,7 +193,7 @@ impl Model {
         let numerics = Numerics::best_for(&cfg, has_ffn_sub_norm);
 
         Ok(Arc::new(Self {
-            final_norm: dense("model.norm.weight")?,
+            final_norm: dense("model.norm.weight", h)?,
             file,
             cfg,
             layers,
