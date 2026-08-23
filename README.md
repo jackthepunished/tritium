@@ -51,7 +51,7 @@ projections, is the thing to attack next.
 |---|---|---|
 | `crates/tritc` | Converter: HF BitNet checkpoint → packed `.trit` v1. Folds norms, quantizes, verifies. | working |
 | `crates/trit-core` | Format, transformer, KV cache, RoPE, sampler, tokenizer traits. No `unsafe` outside one mmap. | working |
-| `crates/trit-cpu` | Bit-sliced SIMD kernels: AVX-512 VNNI / AVX-512BW / AVX2 / NEON / portable scalar. | x86 verified on hardware; aarch64 compile-verified only |
+| `crates/trit-cpu` | Bit-sliced SIMD kernels: AVX-512 VNNI / AVX-512BW / AVX2 / NEON / portable scalar. | x86 and aarch64 both verified on hardware in CI |
 | `crates/tritd` | Host daemon and C runtime: `run`, `serve`, `bench`, `info`, plus a C ABI. | working |
 | `crates/trit-rtl` | Hardware-in-the-loop backend over the Verilated core. | working |
 | `crates/tritsim` | Independent golden reference. The oracle every other path is diffed against. | working |
@@ -88,8 +88,8 @@ on loopback.
 | x86-64 + AVX-512 VNNI | `avx512vnni` | `vpdpbusd` under a `k` mask | verified, 32.5x scalar |
 | x86-64 + AVX-512BW | `avx512bw` | masked `maddubs` | verified, 23.9x scalar |
 | x86-64 + AVX2 | `avx2` | byte-spread mask + `maddubs` | verified, 13.9x scalar |
-| ARM64 + `dotprod` | `neon-dotprod` | `sdot` against ones | compiles; **not yet run on hardware** |
-| ARM64 baseline | `neon` | `vtstq` mask + `vpadalq` | compiles; **not yet run on hardware** |
+| ARM64 + `dotprod` | `neon-dotprod` | `sdot` against ones | correctness verified on CI hardware; **no timing measured** |
+| ARM64 baseline | `neon` | `vtstq` mask + `vpadalq` | correctness verified on CI hardware; **no timing measured** |
 | anything | `scalar` | set-bit iteration, skips the 42% zeros | verified |
 | RTL under Verilator | `trit-rtl` | 64-lane adder tree, no multipliers | verified, 24.4 s/token |
 
@@ -164,9 +164,10 @@ Full specification, including both plane invariants and the v0 migration path:
 
 - Batch size 1. No batched prefill, no continuous batching.
 - Context capped at 2048; the KV cache is f32 and preallocated (315 MB).
-- Verified on x86-64 only. The NEON kernels compile and are written against the
-  same contract, but have not been executed — no aarch64 hardware or emulator was
-  available. No ARM performance number is claimed.
+- Performance is measured on x86-64 only. The NEON kernels are now executed on
+  real aarch64 hardware by CI and match the reference exactly across the whole
+  differential corpus, so they are correct — but no ARM *timing* has been taken,
+  and no ARM performance number is claimed.
 - No FPGA silicon yet. The RTL is simulation-first: the 64-term single-cycle
   reduction and 64 parallel activation reads are fine under Verilator and are not
   yet timing-closed on a board.

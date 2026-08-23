@@ -11,13 +11,22 @@
 //!
 //! # Verification status
 //!
-//! These kernels are **compile-verified only** in the environment they were
-//! written in (an x86_64 host with no aarch64 emulator available). They type
-//! check against the aarch64 target, but neither has been executed. The
-//! differential suite in `tests/differential.rs` is what proves them, and it
-//! must be run on real aarch64 hardware -- or under `qemu-aarch64 -cpu max` for
-//! `dotprod` and `-cpu cortex-a55` for the baseline path -- before either is
-//! trusted. Do not quote aarch64 performance numbers until that has happened.
+//! **Correctness: verified on hardware.** The `ubuntu-24.04-arm` CI job runs
+//! `tests/differential.rs` against each kernel this CPU supports, forced by
+//! name -- `force_kernel` errors rather than falling back, so a green run
+//! cannot mean the scalar path was silently retested. Both `neon` and
+//! `neon-dotprod` match the reference and a naive dense dot product across the
+//! whole corpus, including `widest_row_all_nonzero`: 6912 columns of `-1`
+//! weights against `-128` activations, which is the worst case for the `i16`
+//! accumulators in the baseline kernel.
+//!
+//! That job spent its whole existence failing at clippy before reaching a test,
+//! so these kernels went unexecuted for far longer than the CI matrix suggested.
+//! Two real defects were sitting in code the matrix claimed to cover. A job that
+//! cannot reach its assertions is not coverage.
+//!
+//! **Performance: still unmeasured.** No aarch64 timing has been taken, on CI
+//! or anywhere else. Do not quote an ARM throughput number until one has.
 
 use std::arch::aarch64::*;
 use trit_core::planes::{BEAT_BYTES, LANES};
