@@ -13,6 +13,8 @@
 //! identical to a sequential sum. Logit differences land around 1e-6 relative,
 //! far below the 1e-2 scale at which top-1 selection changes.
 
+use std::sync::OnceLock;
+
 /// Portable reference.
 pub fn f32_matvec_scalar(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32]) {
     trit_core::backend::f32_matvec_reference(w, rows, cols, x, y)
@@ -21,6 +23,36 @@ pub fn f32_matvec_scalar(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut
 #[cfg(target_arch = "x86_64")]
 mod x86 {
     use std::arch::x86_64::*;
+
+    /// # Safety
+    /// Requires `avx512f`. Lengths are checked by the safe caller.
+    ///
+    /// Worth having even though the head is a streaming read: at one thread this
+    /// is indistinguishable from the AVX2 path, because a single core saturates
+    /// around 40 GB/s either way. At four it is 1.34x, because four cores can
+    /// pull ~55 GB/s and AVX2 cannot issue loads fast enough to use it. The
+    /// bottleneck moves from the memory system to the core as threads are added,
+    /// which is why measuring this single-threaded would have found nothing.
+    #[target_feature(enable = "avx512f")]
+    pub unsafe fn dot_avx512(a: *const f32, b: *const f32, n: usize) -> f32 {
+        let (mut a0, mut a1) = (_mm512_setzero_ps(), _mm512_setzero_ps());
+        let (mut a2, mut a3) = (_mm512_setzero_ps(), _mm512_setzero_ps());
+        let chunks = n / 64;
+        for i in 0..chunks {
+            let p = a.add(i * 64);
+            let q = b.add(i * 64);
+            a0 = _mm512_fmadd_ps(_mm512_loadu_ps(p), _mm512_loadu_ps(q), a0);
+            a1 = _mm512_fmadd_ps(_mm512_loadu_ps(p.add(16)), _mm512_loadu_ps(q.add(16)), a1);
+            a2 = _mm512_fmadd_ps(_mm512_loadu_ps(p.add(32)), _mm512_loadu_ps(q.add(32)), a2);
+            a3 = _mm512_fmadd_ps(_mm512_loadu_ps(p.add(48)), _mm512_loadu_ps(q.add(48)), a3);
+        }
+        let acc = _mm512_add_ps(_mm512_add_ps(a0, a1), _mm512_add_ps(a2, a3));
+        let mut total = _mm512_reduce_add_ps(acc);
+        for i in chunks * 64..n {
+            total += *a.add(i) * *b.add(i);
+        }
+        total
+    }
 
     /// # Safety
     /// Requires `avx2` and `fma`. Lengths are checked by the safe caller.
@@ -84,6 +116,100 @@ mod arm {
     }
 }
 
+/// One row's dot product.
+///
+/// `unsafe` because the ISA-specific implementations require their target
+/// features; the safe wrapper establishes every other precondition.
+pub type F32DotFn = unsafe fn(*const f32, *const f32, usize) -> f32;
+
+/// # Safety
+/// Always safe; the signature matches [`F32DotFn`] so the portable path can sit
+/// in the same dispatch table.
+unsafe fn dot_scalar(a: *const f32, b: *const f32, n: usize) -> f32 {
+    let mut total = 0.0f32;
+    for i in 0..n {
+        total += *a.add(i) * *b.add(i);
+    }
+    total
+}
+
+/// Every dense kernel this build contains, in preference order.
+///
+/// Listed unconditionally per architecture so `available_f32_kernels` can report
+/// what the *CPU* supports separately from what the *build* contains -- the same
+/// arrangement the ternary dispatch uses.
+fn all_f32_kernels() -> Vec<(&'static str, F32DotFn, bool)> {
+    let mut v: Vec<(&'static str, F32DotFn, bool)> = Vec::new();
+    #[cfg(target_arch = "x86_64")]
+    {
+        v.push((
+            "avx512f",
+            x86::dot_avx512 as F32DotFn,
+            is_x86_feature_detected!("avx512f"),
+        ));
+        v.push((
+            "avx2",
+            x86::dot as F32DotFn,
+            is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma"),
+        ));
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        // NEON is baseline on aarch64.
+        v.push(("neon", arm::dot as F32DotFn, true));
+    }
+    v.push(("scalar", dot_scalar as F32DotFn, true));
+    v
+}
+
+/// Names of the dense kernels this build contains that this CPU can run.
+pub fn available_f32_kernels() -> Vec<&'static str> {
+    all_f32_kernels()
+        .into_iter()
+        .filter(|k| k.2)
+        .map(|k| k.0)
+        .collect()
+}
+
+fn lookup_f32(name: &str) -> Result<(&'static str, F32DotFn), crate::UnsupportedKernel> {
+    all_f32_kernels()
+        .into_iter()
+        .find(|k| k.0 == name && k.2)
+        .map(|k| (k.0, k.1))
+        .ok_or_else(|| crate::UnsupportedKernel {
+            requested: name.to_string(),
+            available: available_f32_kernels(),
+        })
+}
+
+static F32_KERNEL: OnceLock<(&'static str, F32DotFn)> = OnceLock::new();
+
+fn resolve_f32() -> (&'static str, F32DotFn) {
+    *F32_KERNEL.get_or_init(|| {
+        if let Ok(name) = std::env::var("TRIT_F32_KERNEL") {
+            // Fatal for the same reason as the ternary side: on an AVX-512
+            // runner the AVX2 path is otherwise never executed, and a silent
+            // fallback would let CI report green while testing one kernel twice.
+            return lookup_f32(&name).unwrap_or_else(|e| panic!("TRIT_F32_KERNEL: {e}"));
+        }
+        let k = all_f32_kernels();
+        let best = k.iter().find(|x| x.2).expect("scalar is always available");
+        (best.0, best.1)
+    })
+}
+
+/// Pin the dense kernel for the process. Errors -- never falls back.
+pub fn force_f32_kernel(name: &str) -> Result<&'static str, crate::UnsupportedKernel> {
+    let (n, f) = lookup_f32(name)?;
+    let _ = F32_KERNEL.set((n, f));
+    Ok(resolve_f32().0)
+}
+
+/// The dense kernel in force.
+pub fn f32_kernel_name() -> &'static str {
+    resolve_f32().0
+}
+
 /// Dispatching dense f32 matvec. Rows are independent, so this parallelizes and
 /// vectorizes without changing the summation order within any single row.
 pub fn f32_matvec(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32], threads: usize) {
@@ -91,33 +217,12 @@ pub fn f32_matvec(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32],
     assert_eq!(x.len(), cols);
     assert_eq!(y.len(), rows);
 
-    #[allow(unused)]
-    let simd: Option<unsafe fn(*const f32, *const f32, usize) -> f32> = {
-        #[cfg(target_arch = "x86_64")]
-        {
-            if is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma") {
-                Some(x86::dot)
-            } else {
-                None
-            }
-        }
-        #[cfg(target_arch = "aarch64")]
-        {
-            Some(arm::dot)
-        }
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
-        {
-            None
-        }
-    };
-
-    let Some(dot) = simd else {
-        return f32_matvec_scalar(w, rows, cols, x, y);
-    };
+    let (_, dot) = resolve_f32();
 
     let row = |r: usize| -> f32 {
         // SAFETY: r < rows, so the row lies inside w; cols matches x. The
-        // feature check above established the ISA requirement.
+        // dispatch table only ever yields kernels whose target features this CPU
+        // was detected to support.
         unsafe { dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
     };
 
