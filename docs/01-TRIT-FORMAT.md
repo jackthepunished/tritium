@@ -164,10 +164,17 @@ When `cols` is not a multiple of 64, the final beat of each row covers columns
 that do not exist. Those bits must be zero in both planes. With
 
 ```
-tail = (cols % 64 == 0) ? ~0 : (1 << (cols % 64)) - 1
+tail = (cols % 64 == 0) ? UINT64_MAX : (UINT64_C(1) << (cols % 64)) - 1
 ```
 
 every row's last beat must satisfy `(pos | neg) & ~tail == 0`.
+
+The width is part of the rule, not incidental notation. `tail` is a 64-bit
+unsigned value and the shift is performed in 64 bits: written with a
+default-width literal, `1 << r` is undefined for `r >= 32` in C and wraps to
+zero in a 32-bit language, so a reader would form the wrong mask for every
+remainder from 32 to 63 -- rejecting valid files, or accepting padding that is
+not clear. Both planes and the complement `~tail` are 64-bit likewise.
 
 P2 is what makes zero padding *exact* rather than merely conventional: a padded
 column contributes nothing to the accumulator, so a kernel may process whole
