@@ -3,7 +3,7 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
 use trit_core::config::Numerics;
@@ -126,6 +126,11 @@ enum Cmd {
         model: ModelArgs,
         #[arg(long, default_value = "The capital of France is")]
         prompt: String,
+        /// JSONL prompt suite, one `{"id":..,"text":..}` per line. Measures
+        /// every prompt in the file and names it in the report, so a recorded
+        /// result identifies the input it came from. Overrides --prompt.
+        #[arg(long)]
+        suite: Option<PathBuf>,
         #[arg(long, default_value_t = 32)]
         tokens: usize,
         #[arg(long, default_value_t = 1)]
@@ -146,6 +151,31 @@ enum Cmd {
         #[command(flatten)]
         model: ModelArgs,
     },
+}
+
+/// Read a JSONL prompt suite: one `{"id": ..., "text": ...}` object per line.
+///
+/// Blank lines are skipped. A malformed line is an error rather than a silent
+/// omission -- a suite that quietly measured fewer prompts than it names would
+/// make two runs incomparable without either of them looking wrong.
+fn read_suite(path: &std::path::Path) -> Result<Vec<String>> {
+    #[derive(serde::Deserialize)]
+    struct Entry {
+        text: String,
+    }
+    let raw = std::fs::read_to_string(path)
+        .with_context(|| format!("read prompt suite {}", path.display()))?;
+    let mut out = Vec::new();
+    for (i, line) in raw.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let e: Entry = serde_json::from_str(line)
+            .with_context(|| format!("{}:{}: not a prompt entry", path.display(), i + 1))?;
+        out.push(e.text);
+    }
+    anyhow::ensure!(!out.is_empty(), "{} has no prompts", path.display());
+    Ok(out)
 }
 
 fn main() -> Result<()> {
@@ -209,6 +239,7 @@ fn main() -> Result<()> {
         Cmd::Bench {
             model,
             prompt,
+            suite,
             tokens,
             warmup,
             runs,
@@ -216,11 +247,16 @@ fn main() -> Result<()> {
             json,
         } => {
             let path = model.model.clone();
+            let (prompts, suite_label) = match &suite {
+                Some(p) => (read_suite(p)?, p.display().to_string()),
+                None => (vec![prompt], "--prompt".to_string()),
+            };
             let rt = model.load()?;
             let mut report = tritd::bench::run(
                 &rt,
                 &BenchOptions {
-                    prompt,
+                    prompts,
+                    suite: suite_label,
                     max_tokens: tokens,
                     warmup,
                     runs,

@@ -20,6 +20,13 @@ pub struct BenchReport {
     pub backend: String,
     pub kernel: String,
     pub threads: usize,
+    /// What was measured, named: a suite file path, or `--prompt` for a literal
+    /// prompt on the command line. A report that does not identify its input
+    /// cannot be compared against another one.
+    pub suite: String,
+    /// Prompts in that input.
+    pub prompts: usize,
+    /// Prompt tokens summed across the suite.
     pub prompt_tokens: usize,
     pub decoded_tokens: usize,
     pub ttft_ms: f64,
@@ -103,15 +110,39 @@ pub fn memcpy_probe_gbps(threads: usize) -> f64 {
 
 /// Energy counters, where the platform exposes them.
 ///
-/// Returns `(joules, source)`. Intel RAPL is read directly; anything else
-/// reports no source at all rather than guessing.
+/// Intel RAPL is read directly; anything else reports no source at all rather
+/// than guessing.
+///
+/// `/sys/class/powercap` is flat: it lists every registered zone *and*
+/// subzone, so it holds `intel-rapl:0` next to its children `intel-rapl:0:0`
+/// (core) and `intel-rapl:0:1` (uncore). A package counter already includes its
+/// children, so summing the directory counts the same joules two or three times
+/// and reports an inflated `joules_per_token`. Only top-level `intel-rapl:N`
+/// package zones are accumulated.
+///
+/// `intel-rapl-mmio:N` is excluded for the same reason: it measures the same
+/// package through a different interface, so adding it double-counts as well.
 fn read_energy_uj() -> Option<u64> {
     let mut total = 0u64;
     let mut found = false;
-    let dir = std::fs::read_dir("/sys/class/powercap").ok()?;
-    for e in dir.flatten() {
-        let p = e.path().join("energy_uj");
-        if let Ok(s) = std::fs::read_to_string(&p) {
+    for e in std::fs::read_dir("/sys/class/powercap").ok()?.flatten() {
+        let file = e.file_name();
+        let Some(name) = file.to_str() else { continue };
+        // A top-level MSR package zone: "intel-rapl:N" and nothing further.
+        // A subzone is "intel-rapl:N:M", and its extra colon excludes it here.
+        let Some(idx) = name.strip_prefix("intel-rapl:") else {
+            continue;
+        };
+        if idx.contains(':') {
+            continue;
+        }
+        // Defensive: the domain should be a package, and only a package
+        // subsumes its children.
+        match std::fs::read_to_string(e.path().join("name")) {
+            Ok(d) if d.trim_start().starts_with("package") => {}
+            _ => continue,
+        }
+        if let Ok(s) = std::fs::read_to_string(e.path().join("energy_uj")) {
             if let Ok(v) = s.trim().parse::<u64>() {
                 total += v;
                 found = true;
@@ -122,7 +153,10 @@ fn read_energy_uj() -> Option<u64> {
 }
 
 pub struct BenchOptions {
-    pub prompt: String,
+    /// Every prompt to measure. A literal `--prompt` is a suite of one.
+    pub prompts: Vec<String>,
+    /// Label for `prompts` in the report.
+    pub suite: String,
     pub max_tokens: usize,
     pub warmup: usize,
     pub runs: usize,
@@ -131,19 +165,30 @@ pub struct BenchOptions {
 
 pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     let params = SamplerParams::default(); // greedy: reproducible
-    let ids = rt.tokenizer.encode(&opts.prompt, true)?;
-    anyhow::ensure!(!ids.is_empty(), "prompt tokenized to nothing");
+    anyhow::ensure!(!opts.prompts.is_empty(), "no prompts to measure");
+
+    let encoded: Vec<Vec<u32>> = opts
+        .prompts
+        .iter()
+        .map(|p| {
+            let ids = rt.tokenizer.encode(p, true)?;
+            anyhow::ensure!(!ids.is_empty(), "prompt tokenized to nothing: {p:?}");
+            Ok(ids)
+        })
+        .collect::<Result<_>>()?;
 
     for _ in 0..opts.warmup {
-        let mut s = TokenStream::new(
-            rt.model.clone(),
-            &rt.tokenizer,
-            &params,
-            &ids,
-            opts.max_tokens.min(4),
-        )?;
-        for t in s.by_ref() {
-            t?;
+        for ids in &encoded {
+            let mut s = TokenStream::new(
+                rt.model.clone(),
+                &rt.tokenizer,
+                &params,
+                ids,
+                opts.max_tokens.min(4),
+            )?;
+            for t in s.by_ref() {
+                t?;
+            }
         }
     }
 
@@ -155,36 +200,42 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     let t_all = Instant::now();
 
     for _ in 0..opts.runs.max(1) {
-        let mut stream = TokenStream::new(
-            rt.model.clone(),
-            &rt.tokenizer,
-            &params,
-            &ids,
-            opts.max_tokens,
-        )?;
-        let prefill_secs = stream.prefill_secs;
+        // Tokens decoded across the whole suite in this run. The energy
+        // denominator below counts every one of them.
+        let mut run_decoded = 0usize;
+        for ids in &encoded {
+            let mut stream = TokenStream::new(
+                rt.model.clone(),
+                &rt.tokenizer,
+                &params,
+                ids,
+                opts.max_tokens,
+            )?;
+            let prefill_secs = stream.prefill_secs;
 
-        let t0 = Instant::now();
-        let mut first: Option<f64> = None;
-        let mut n = 0usize;
-        for tok in stream.by_ref() {
-            tok?;
-            if first.is_none() {
-                first = Some(t0.elapsed().as_secs_f64());
+            let t0 = Instant::now();
+            let mut first: Option<f64> = None;
+            let mut n = 0usize;
+            for tok in stream.by_ref() {
+                tok?;
+                if first.is_none() {
+                    first = Some(t0.elapsed().as_secs_f64());
+                }
+                n += 1;
             }
-            n += 1;
-        }
-        let decode_secs = t0.elapsed().as_secs_f64();
-        kv_bytes = stream.session().kv_bytes();
+            let decode_secs = t0.elapsed().as_secs_f64();
+            kv_bytes = stream.session().kv_bytes();
 
-        if n > 0 {
-            // Report the best run, not the mean: a slow run measures the
-            // scheduler, a fast one measures the code.
-            best_decode_rate = best_decode_rate.max(n as f64 / decode_secs);
-            let t = (prefill_secs + first.unwrap_or(0.0)) * 1000.0;
-            ttft_ms = ttft_ms.min(t);
-            decoded_total = n;
+            if n > 0 {
+                // Best over every (run, prompt) pair, not the mean: a slow one
+                // measures the scheduler, a fast one measures the code.
+                best_decode_rate = best_decode_rate.max(n as f64 / decode_secs);
+                let t = (prefill_secs + first.unwrap_or(0.0)) * 1000.0;
+                ttft_ms = ttft_ms.min(t);
+                run_decoded += n;
+            }
         }
+        decoded_total = decoded_total.max(run_decoded);
     }
     let wall = t_all.elapsed().as_secs_f64();
 
@@ -209,7 +260,9 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
         backend: rt.backend_name.clone(),
         kernel: rt.kernel_name.to_string(),
         threads: rt.model.backend().threads(),
-        prompt_tokens: ids.len(),
+        suite: opts.suite.clone(),
+        prompts: encoded.len(),
+        prompt_tokens: encoded.iter().map(Vec::len).sum(),
         decoded_tokens: decoded_total,
         ttft_ms: if ttft_ms == f64::MAX { 0.0 } else { ttft_ms },
         prefill_tok_per_s: 0.0,

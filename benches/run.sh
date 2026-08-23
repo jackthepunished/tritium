@@ -54,15 +54,19 @@ cargo build --release -p tritd >/dev/null || { echo "build failed" >&2; exit 1; 
 echo "==> tritium"
 JSON="$(mktemp)"
 BENCH_ERR="$(mktemp)"
-if "$TRITD" bench --model "$MODEL" --tokens "$TOKENS" --threads "$THREADS" --json "$JSON" >/dev/null 2>"$BENCH_ERR"; then
-    python3 - "$JSON" "$OUT" "$HOST" "$DATE" "$MODEL" "$SUITE" <<'PY'
+[ -f "$SUITE" ] || { echo "no such prompt suite: $SUITE" >&2; exit 2; }
+
+if "$TRITD" bench --model "$MODEL" --suite "$SUITE" --tokens "$TOKENS" --threads "$THREADS" --json "$JSON" >/dev/null 2>"$BENCH_ERR"; then
+    python3 - "$JSON" "$OUT" "$HOST" "$DATE" "$MODEL" <<'PY'
 import json, sys, csv
-report, out, host, date, model, suite = sys.argv[1:7]
+report, out, host, date, model = sys.argv[1:6]
 r = json.load(open(report))
 def n(v): return "" if v is None else v
 with open(out, "a", newline="") as f:
     csv.writer(f).writerow([
-        host, date, "tritium", "0.1.0", model, "ternary-1.58", 2.0, suite,
+        # The suite comes from the report, not the shell: the CSV then names
+        # the input tritd actually measured rather than one passed alongside it.
+        host, date, "tritium", "0.1.0", model, "ternary-1.58", 2.0, r["suite"],
         r["threads"], r["kernel"], r["backend"],
         round(r["decode_tok_per_s"], 3), round(r["ttft_ms"], 1),
         r["weight_bytes_per_token"], round(r["achieved_gbps"], 2),
