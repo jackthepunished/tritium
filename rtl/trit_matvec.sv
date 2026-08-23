@@ -1,6 +1,16 @@
 // trit_matvec: streaming ternary matrix-vector core.
-// Weights arrive as 64x 2-bit trits per beat; activations are preloaded int8.
+// Weights arrive as two 64-bit bit planes per beat -- w_pos and w_neg, one bit
+// per lane -- matching the .trit v1 payload byte for byte, so a memory-mapped
+// model file is the beat stream with no repacking anywhere in between.
+// Activations are preloaded int8.
 // No multipliers: each lane muxes {+x, -x, 0} into a combinational adder tree.
+//
+// A lane set in BOTH planes is invalid and raises the sticky err flag. It is
+// the planar successor to v1's predecessor encoding, where the 2-bit code 0b11
+// was illegal. Treating it as an error rather than defining a winner is what
+// keeps this core and the CPU kernels from disagreeing: a mux that tests pos
+// first would yield +x, while a kernel that accumulates the planes separately
+// and subtracts would yield zero.
 // Simulation-first: the single-cycle 64-term reduction and 64 parallel x_mem
 // reads are fine under Verilator; FPGA timing/banking is addressed in the
 // board bring-up phase.
@@ -18,9 +28,10 @@ module trit_matvec #(
     // control
     input  logic [$clog2(MAX_COLS):0]     num_cols,  // multiple of LANES
     input  logic                          start,
-    // weight stream
+    // weight stream: one beat = {w_pos, w_neg}, bit l selects lane l
     input  logic                          w_valid,
-    input  logic [2*LANES-1:0]            w_data,
+    input  logic [LANES-1:0]              w_pos,
+    input  logic [LANES-1:0]              w_neg,
     output logic                          w_ready,
     // row results
     output logic                          y_valid,
@@ -44,15 +55,19 @@ module trit_matvec #(
         beat_sum = '0;
         beat_err = 1'b0;
         for (int l = 0; l < LANES; l++) begin
-            logic [1:0] code;
             logic signed [7:0] xv;
-            code = w_data[2 * l +: 2];
             xv = x_mem[($clog2(MAX_COLS))'(32'(beat_q) * LANES + l)];
-            unique case (code)
-                2'b01:   beat_sum += ACCW'(xv);
-                2'b10:   beat_sum -= ACCW'(xv);
+            // unique case, not a nested if: it tells synthesis the four states
+            // are mutually exclusive, so each lane lowers to a flat select
+            // rather than a priority chain. Written as an if-chain this module
+            // synthesizes to 48.4k cells instead of 33.7k.
+            // Sign-extend to ACCW before negating: xv = -128 has no positive
+            // counterpart in 8 bits, and the CPU kernels are exact there too.
+            unique case ({w_pos[l], w_neg[l]})
+                2'b10:   beat_sum += ACCW'(xv);
+                2'b01:   beat_sum -= ACCW'(xv);
                 2'b00:   ;
-                default: beat_err = 1'b1;
+                default: beat_err = 1'b1;  // 2'b11: lane set in both planes
             endcase
         end
     end

@@ -4,13 +4,17 @@
 use std::ffi::c_void;
 use std::sync::{Mutex, OnceLock};
 
-use trit_core::pack::pack_trits;
+use trit_core::planes::{pack_planes, BEAT_BYTES, LANES};
+
+/// Activation-memory depth of the Verilated core (`MAX_COLS` in
+/// `rtl/trit_matvec.sv`).
+pub const MAX_COLS: usize = 8192;
 
 extern "C" {
     fn trit_rtl_new() -> *mut c_void;
     #[allow(dead_code)]
     fn trit_rtl_free(h: *mut c_void);
-    fn trit_rtl_matvec(
+    fn trit_rtl_matvec_v1(
         h: *mut c_void,
         beats: *const u8,
         x: *const i8,
@@ -31,33 +35,68 @@ fn core() -> &'static Mutex<Core> {
     CORE.get_or_init(|| Mutex::new(Core(unsafe { trit_rtl_new() })))
 }
 
-/// Exact drop-in for `trit_core::matvec::ternary_matvec`, executed by the RTL.
-/// Pads cols to a multiple of 64 (zero trits, zero activations) — exact, since
-/// padded terms contribute nothing.
-pub fn rtl_matvec(trits: &[i8], rows: usize, cols: usize, xq: &[i8]) -> Vec<i32> {
-    assert_eq!(trits.len(), rows * cols);
+/// Stream a `.trit` v1 beat slice straight through the RTL core.
+///
+/// The beats are handed over as-is: v1's payload layout is exactly the core's
+/// weight input, so a memory-mapped model needs no repacking on this path. The
+/// caller is responsible for `beats.len() == rows * (cols / 64) * 16` with
+/// `cols` already a multiple of 64.
+pub fn rtl_matvec_beats(beats: &[u8], rows: usize, cols: usize, xq: &[i8]) -> Vec<i32> {
+    assert_eq!(cols % LANES, 0, "cols must be a whole number of beats");
+    assert_eq!(beats.len(), rows * (cols / LANES) * BEAT_BYTES);
     assert_eq!(xq.len(), cols);
-    let cp = cols.div_ceil(64) * 64;
-
-    let mut x = vec![0i8; cp];
-    x[..cols].copy_from_slice(xq);
-
-    // Row-major padded packing; identical byte layout to the .trit payload.
-    let mut beats = Vec::with_capacity(rows * cp / 4);
-    let mut row_buf = vec![0i8; cp];
-    for r in 0..rows {
-        row_buf[..cols].copy_from_slice(&trits[r * cols..(r + 1) * cols]);
-        beats.extend_from_slice(&pack_trits(&row_buf));
-    }
+    // MAX_COLS in rtl/trit_matvec.sv. Beyond it the shim's activation preload
+    // wraps on a 13-bit x_addr and the core returns success with wrong data.
+    assert!(
+        cols <= MAX_COLS,
+        "{cols} columns exceeds the core's {MAX_COLS}-deep activation memory"
+    );
 
     let mut y = vec![0i32; rows];
     let guard = core().lock().unwrap();
     let rc = unsafe {
-        trit_rtl_matvec(guard.0, beats.as_ptr(), x.as_ptr(), rows as u32, cp as u32, y.as_mut_ptr())
+        trit_rtl_matvec_v1(
+            guard.0,
+            beats.as_ptr(),
+            xq.as_ptr(),
+            rows as u32,
+            cols as u32,
+            y.as_mut_ptr(),
+        )
     };
     drop(guard);
-    assert_eq!(rc, 0, "RTL core error {rc} (invalid trit code or row underflow)");
+    assert_eq!(
+        rc, 0,
+        "RTL core error {rc} (overlapping planes or row underflow)"
+    );
     y
+}
+
+/// Exact drop-in for `trit_core::matvec::ternary_matvec`, executed by the RTL.
+///
+/// The oracle holds weights as one `i8` per trit, so this path still packs them
+/// per call. That repack is not the reason the RTL path is slow: for a
+/// 2560x6912 tensor it is a few tens of milliseconds against roughly 100k
+/// Verilator ticks. It disappears entirely for callers that already hold v1
+/// beats -- see `rtl_matvec_beats`.
+///
+/// Pads cols to a multiple of 64 (zero planes, zero activations) -- exact, since
+/// padded terms contribute nothing.
+pub fn rtl_matvec(trits: &[i8], rows: usize, cols: usize, xq: &[i8]) -> Vec<i32> {
+    assert_eq!(trits.len(), rows * cols);
+    assert_eq!(xq.len(), cols);
+    let cp = cols.div_ceil(LANES) * LANES;
+
+    let mut x = vec![0i8; cp];
+    x[..cols].copy_from_slice(xq);
+
+    let mut padded = vec![0i8; rows * cp];
+    for r in 0..rows {
+        padded[r * cp..r * cp + cols].copy_from_slice(&trits[r * cols..(r + 1) * cols]);
+    }
+    let beats = pack_planes(&padded, rows, cp).expect("ternary input");
+
+    rtl_matvec_beats(&beats, rows, cp, &x)
 }
 
 #[cfg(test)]
@@ -84,15 +123,17 @@ mod tests {
         let shapes: Vec<(usize, usize)> = vec![
             (1, 64),
             (3, 64),
-            (2, 100),  // padding path
-            (5, 129),  // padding path, off by one
+            (2, 100), // padding path
+            (5, 129), // padding path, off by one
             (7, 640),
             (2, 2560),
             (2, 6912), // real model width
             (16, 61),
         ];
         for (rows, cols) in shapes {
-            let trits: Vec<i8> = (0..rows * cols).map(|_| [(-1i8), 0, 1][(next() % 3) as usize]).collect();
+            let trits: Vec<i8> = (0..rows * cols)
+                .map(|_| [(-1i8), 0, 1][(next() % 3) as usize])
+                .collect();
             let x: Vec<i8> = (0..cols).map(|_| (next() & 0xff) as u8 as i8).collect();
             assert_eq!(
                 rtl_matvec(&trits, rows, cols, &x),

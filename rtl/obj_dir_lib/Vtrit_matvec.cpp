@@ -20,8 +20,9 @@ Vtrit_matvec::Vtrit_matvec(VerilatedContext* _vcontextp__, const char* _vcname__
     , err{vlSymsp->TOP.err}
     , x_addr{vlSymsp->TOP.x_addr}
     , num_cols{vlSymsp->TOP.num_cols}
-    , w_data{vlSymsp->TOP.w_data}
     , y_data{vlSymsp->TOP.y_data}
+    , w_pos{vlSymsp->TOP.w_pos}
+    , w_neg{vlSymsp->TOP.w_neg}
     , rootp{&(vlSymsp->TOP)}
 {
     // Register model with the context

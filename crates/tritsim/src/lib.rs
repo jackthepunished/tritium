@@ -1,10 +1,10 @@
 pub mod backend;
 pub mod compare;
 pub mod config;
-#[cfg(feature = "rtl")]
-pub mod rtl;
 pub mod generate;
 pub mod math;
 pub mod model;
+#[cfg(feature = "rtl")]
+pub mod rtl;
 pub mod stats;
 pub mod vectors;

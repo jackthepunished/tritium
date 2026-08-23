@@ -5,7 +5,7 @@ use crate::math::{
 use anyhow::{Context, Result};
 use std::path::Path;
 use trit_core::quant::absmax_quantize;
-use trit_core::tritfmt::TritReader;
+use trit_core::tritfmt::TritFile;
 
 /// Numerics mode as an ordered ladder, so the invalid "int MLP without
 /// folding" state is unrepresentable: IntMlp extends Folded extends Reference.
@@ -130,41 +130,74 @@ impl KvCache {
 
 impl Model {
     pub fn load(path: &Path) -> Result<Self> {
-        let r = TritReader::open(path)?;
+        let r = TritFile::open(path)?;
         let cfg = ModelConfig::from_json(r.config_json())?;
+        // The oracle deliberately expands the bit planes to one i8 per weight:
+        // its job is to be obviously correct, not fast. The production path in
+        // trit-core reads the same planes in place.
         let bl = |name: &str| -> Result<BitLinear> {
-            let m = r
-                .metas()
-                .iter()
-                .find(|m| m.name == name)
+            let span = r
+                .trit_span(name)
                 .with_context(|| format!("missing {name}"))?;
-            let (rows, cols) = (m.shape[0], m.shape[1]);
-            let (trits, w_scale) = r.read_trit(name)?;
-            Ok(BitLinear { trits, rows, cols, w_scale })
+            Ok(BitLinear {
+                trits: r.planes(span).to_trits(),
+                rows: span.rows(),
+                cols: span.cols(),
+                w_scale: span.scale(),
+            })
         };
-        let f32_opt = |name: &str| r.read_f32(name).ok();
+        let f32_of = |name: &str| -> Result<Vec<f32>> {
+            let span = r
+                .dense_span(name)
+                .with_context(|| format!("missing {name}"))?;
+            Ok(r.dense(span).into_owned())
+        };
+        // Absent is allowed; present-but-not-dense is not. `.ok()` alone would
+        // turn a sub-norm stored with the wrong dtype into "no sub-norm", which
+        // silently selects a different numerics rung -- and the oracle would
+        // then be certifying a model the runtime would refuse to load.
+        let f32_opt = |name: &str| -> Result<Option<Vec<f32>>> {
+            if r.has(name) {
+                f32_of(name).map(Some)
+            } else {
+                Ok(None)
+            }
+        };
 
         let mut layers = Vec::with_capacity(cfg.num_layers);
         for i in 0..cfg.num_layers {
             let p = format!("model.layers.{i}.");
             layers.push(Layer {
-                input_norm: r.read_f32(&format!("{p}input_layernorm.weight"))?,
+                input_norm: f32_of(&format!("{p}input_layernorm.weight"))?,
                 q: bl(&format!("{p}self_attn.q_proj.weight"))?,
                 k: bl(&format!("{p}self_attn.k_proj.weight"))?,
                 v: bl(&format!("{p}self_attn.v_proj.weight"))?,
                 o: bl(&format!("{p}self_attn.o_proj.weight"))?,
-                attn_sub_norm: f32_opt(&format!("{p}self_attn.attn_sub_norm.weight")),
-                post_norm: r.read_f32(&format!("{p}post_attention_layernorm.weight"))?,
+                attn_sub_norm: f32_opt(&format!("{p}self_attn.attn_sub_norm.weight"))?,
+                post_norm: f32_of(&format!("{p}post_attention_layernorm.weight"))?,
                 gate: bl(&format!("{p}mlp.gate_proj.weight"))?,
                 up: bl(&format!("{p}mlp.up_proj.weight"))?,
                 down: bl(&format!("{p}mlp.down_proj.weight"))?,
-                ffn_sub_norm: f32_opt(&format!("{p}mlp.ffn_sub_norm.weight")),
+                ffn_sub_norm: f32_opt(&format!("{p}mlp.ffn_sub_norm.weight"))?,
             });
         }
-        let embed = r.read_f32("model.embed_tokens.weight")?;
-        let lm_head = r.read_f32("lm_head.weight").unwrap_or_else(|_| embed.clone());
+        let embed = f32_of("model.embed_tokens.weight")?;
+        // Same rule the production loader applies: fall back to the embedding
+        // only when the config says the weights are tied. A genuinely untied
+        // checkpoint that is missing its head is an error, not a licence to
+        // invent one -- and the two implementations must agree about that, or
+        // the cross-implementation gate is comparing different models.
+        let lm_head = if r.has("lm_head.weight") {
+            f32_of("lm_head.weight")?
+        } else {
+            anyhow::ensure!(
+                cfg.tie_word_embeddings,
+                "lm_head.weight is absent and config does not set tie_word_embeddings"
+            );
+            embed.clone()
+        };
         Ok(Self {
-            final_norm: r.read_f32("model.norm.weight")?,
+            final_norm: f32_of("model.norm.weight")?,
             embed,
             lm_head,
             layers,
@@ -195,7 +228,11 @@ impl Model {
             "token {token} out of vocab ({})",
             cfg.vocab_size
         );
-        assert!(pos < cfg.max_seq, "pos {pos} exceeds max_seq {}", cfg.max_seq);
+        assert!(
+            pos < cfg.max_seq,
+            "pos {pos} exceeds max_seq {}",
+            cfg.max_seq
+        );
         let mut x = self.embed[token as usize * h..(token as usize + 1) * h].to_vec();
 
         let trace = std::env::var_os("TRITSIM_TRACE").is_some();
@@ -203,7 +240,11 @@ impl Model {
         // Architecture requirement for the int path, checked once per call
         // (not per layer): relu2 with per-layer ffn sub-norms.
         if int_mlp {
-            assert_eq!(cfg.act, crate::math::Act::Relu2, "int MLP path is relu2-specific");
+            assert_eq!(
+                cfg.act,
+                crate::math::Act::Relu2,
+                "int MLP path is relu2-specific"
+            );
         }
         let dump = |tag: &str, v: &[f32]| {
             let norm = v.iter().map(|a| a * a).sum::<f32>().sqrt();
@@ -399,7 +440,12 @@ mod tests {
         // dequant W = [[0.5,-0.5],[0,0.5]]; exact y = [1.5, -1.0]
         // int path: absmax x -> scale 2/127, xq=[64,-127]
         // acc = [64+127, -127] = [191, -127]; y = acc * 0.5 * (2/127) = [1.50394, -1.0]
-        let bl = BitLinear { trits: vec![1, -1, 0, 1], rows: 2, cols: 2, w_scale: 0.5 };
+        let bl = BitLinear {
+            trits: vec![1, -1, 0, 1],
+            rows: 2,
+            cols: 2,
+            w_scale: 0.5,
+        };
         let y = bl.apply(&[1.0, -2.0]);
         assert!((y[0] - 1.5).abs() < 0.01, "y0={}", y[0]);
         assert!((y[1] - -1.0).abs() < 0.01, "y1={}", y[1]);

@@ -8,7 +8,14 @@ use trit_core::matvec::ternary_matvec;
 /// terms contribute nothing to the accumulator.
 pub const LANES: usize = 64;
 
-pub fn write_set(dir: &Path, name: &str, rows: usize, cols: usize, trits: &[i8], x: &[i8]) -> Result<()> {
+pub fn write_set(
+    dir: &Path,
+    name: &str,
+    rows: usize,
+    cols: usize,
+    trits: &[i8],
+    x: &[i8],
+) -> Result<()> {
     assert_eq!(trits.len(), rows * cols);
     assert_eq!(x.len(), cols);
     let cp = cols.div_ceil(LANES) * LANES; // cols padded
@@ -17,28 +24,31 @@ pub fn write_set(dir: &Path, name: &str, rows: usize, cols: usize, trits: &[i8],
     std::fs::write(d.join("meta.txt"), format!("{rows} {cp}\n"))?;
 
     let mut xh = String::new();
+    // Padded columns are written as zero activations; combined with zero planes
+    // they contribute nothing, which is what makes padding exact.
     for c in 0..cp {
-        let v = if c < cols { x[c] } else { 0 };
+        let v = x.get(c).copied().unwrap_or(0);
         writeln!(xh, "{:02x}", v as u8)?;
     }
     std::fs::write(d.join("x.hex"), xh)?;
 
+    // One line per beat, "<pos:016x> <neg:016x>" -- the same two 64-bit words
+    // the .trit v1 payload stores and the RTL core consumes.
     let mut wh = String::new();
     for r in 0..rows {
         for beat in 0..cp / LANES {
-            let mut word: u128 = 0;
+            let (mut pos, mut neg) = (0u64, 0u64);
             for l in 0..LANES {
                 let c = beat * LANES + l;
                 let t = if c < cols { trits[r * cols + c] } else { 0 };
-                let code: u128 = match t {
-                    0 => 0b00,
-                    1 => 0b01,
-                    -1 => 0b10,
+                match t {
+                    0 => {}
+                    1 => pos |= 1u64 << l,
+                    -1 => neg |= 1u64 << l,
                     _ => panic!("non-ternary {t}"),
-                };
-                word |= code << (2 * l);
+                }
             }
-            writeln!(wh, "{word:032x}")?;
+            writeln!(wh, "{pos:016x} {neg:016x}")?;
         }
     }
     std::fs::write(d.join("w.hex"), wh)?;
@@ -81,10 +91,21 @@ pub fn generate_all(out: &Path) -> Result<()> {
     rand_set(out, "wide_2x6912", 2, 6912, 0x5EED)?;
     // extremes: worst-case accumulator magnitude, no zeros anywhere
     let mut rng = Rng(0xFFF);
-    let trits: Vec<i8> = (0..4 * 128).map(|_| if rng.next() & 1 == 0 { 1 } else { -1 }).collect();
-    let x: Vec<i8> = (0..128).map(|_| if rng.next() & 1 == 0 { -128 } else { 127 }).collect();
+    let trits: Vec<i8> = (0..4 * 128)
+        .map(|_| if rng.next() & 1 == 0 { 1 } else { -1 })
+        .collect();
+    let x: Vec<i8> = (0..128)
+        .map(|_| if rng.next() & 1 == 0 { -128 } else { 127 })
+        .collect();
     write_set(out, "extremes_4x128", 4, 128, &trits, &x)?;
-    write_set(out, "zeros_3x64", 3, 64, &vec![0i8; 3 * 64], &(0..64).map(|i| i as i8).collect::<Vec<_>>())?;
+    write_set(
+        out,
+        "zeros_3x64",
+        3,
+        64,
+        &[0i8; 3 * 64],
+        &(0..64).map(|i| i as i8).collect::<Vec<_>>(),
+    )?;
     Ok(())
 }
 
@@ -92,16 +113,14 @@ pub fn generate_all(out: &Path) -> Result<()> {
 /// against a deterministic random activation, using the exact trits the model
 /// runs. Guards against generator-side packing bugs that random sets share.
 pub fn model_tile_set(out: &Path, model: &Path, name: &str, max_rows: usize) -> Result<()> {
-    let r = trit_core::tritfmt::TritReader::open(model)?;
+    let r = trit_core::tritfmt::TritFile::open(model)?;
     let tname = "model.layers.0.self_attn.k_proj.weight";
-    let meta = r
-        .metas()
-        .iter()
-        .find(|m| m.name == tname)
+    let span = r
+        .trit_span(tname)
         .with_context(|| format!("{tname} not in model"))?;
-    let (all, _scale) = r.read_trit(tname)?;
-    let cols = meta.shape[1];
-    let rows = meta.shape[0].min(max_rows);
+    let all = r.planes(span).to_trits();
+    let cols = span.cols();
+    let rows = span.rows().min(max_rows);
     let trits = &all[..rows * cols];
     let mut rng = Rng(0xD1CE);
     let x: Vec<i8> = (0..cols).map(|_| rng.i8()).collect();
@@ -124,18 +143,30 @@ mod tests {
         let meta = std::fs::read_to_string(dir.join("t/meta.txt")).unwrap();
         assert_eq!(meta.trim(), "2 64");
         let xh: Vec<String> = std::fs::read_to_string(dir.join("t/x.hex"))
-            .unwrap().lines().map(String::from).collect();
+            .unwrap()
+            .lines()
+            .map(String::from)
+            .collect();
         assert_eq!(xh.len(), 64);
         assert_eq!(xh[0], "0a");
         assert_eq!(xh[1], "14");
         assert_eq!(xh[5], "00"); // padding
         let wh: Vec<String> = std::fs::read_to_string(dir.join("t/w.hex"))
-            .unwrap().lines().map(String::from).collect();
+            .unwrap()
+            .lines()
+            .map(String::from)
+            .collect();
         assert_eq!(wh.len(), 2); // one beat per row
-        // row 0: trit0=+1 (bits 1:0 = 01), trit1=-1 (bits 3:2 = 10) -> low byte 0b1001 = 0x09
-        assert!(wh[0].ends_with("09"), "beat {}", wh[0]);
+                                 // Each line is "<pos:016x> <neg:016x>".
+                                 // row 0 = [+1,-1,0,0,0]: pos bit 0, neg bit 1
+        assert_eq!(wh[0], "0000000000000001 0000000000000002", "beat {}", wh[0]);
+        // row 1 = [0,0,1,0,1]: pos bits 2 and 4, neg empty
+        assert_eq!(wh[1], "0000000000000014 0000000000000000", "beat {}", wh[1]);
         let yh: Vec<String> = std::fs::read_to_string(dir.join("t/y.hex"))
-            .unwrap().lines().map(String::from).collect();
+            .unwrap()
+            .lines()
+            .map(String::from)
+            .collect();
         assert_eq!(yh, vec!["fffffff6", "00000050"]); // -10, 80
     }
 
@@ -147,7 +178,13 @@ mod tests {
         let mp = dir.join("m.trit");
         let mut w = TritWriter::create(&mp, "{}").unwrap();
         let trits: Vec<i8> = (0..2 * 64).map(|i| [(1i8), 0, -1][i % 3]).collect();
-        w.write_trit("model.layers.0.self_attn.k_proj.weight", &[2, 64], &trits, 0.5).unwrap();
+        w.write_trit(
+            "model.layers.0.self_attn.k_proj.weight",
+            &[2, 64],
+            &trits,
+            0.5,
+        )
+        .unwrap();
         w.finish().unwrap();
         model_tile_set(&dir, &mp, "model_k_proj_l0", 8).unwrap();
         let meta = std::fs::read_to_string(dir.join("model_k_proj_l0/meta.txt")).unwrap();
@@ -159,7 +196,13 @@ mod tests {
         let dir = std::env::temp_dir().join("tritsim_vectors_all");
         let _ = std::fs::remove_dir_all(&dir);
         generate_all(&dir).unwrap();
-        for set in ["exact_64x64", "padded_5x100", "extremes_4x128", "zeros_3x64", "wide_2x6912"] {
+        for set in [
+            "exact_64x64",
+            "padded_5x100",
+            "extremes_4x128",
+            "zeros_3x64",
+            "wide_2x6912",
+        ] {
             assert!(dir.join(set).join("y.hex").exists(), "missing {set}");
         }
     }

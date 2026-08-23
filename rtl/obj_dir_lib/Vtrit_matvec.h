@@ -35,8 +35,9 @@ class alignas(VL_CACHE_LINE_BYTES) Vtrit_matvec VL_NOT_FINAL : public VerilatedM
     VL_OUT8(&err,0,0);
     VL_IN16(&x_addr,12,0);
     VL_IN16(&num_cols,13,0);
-    VL_INW(&w_data,127,0,4);
     VL_OUT(&y_data,31,0);
+    VL_IN64(&w_pos,63,0);
+    VL_IN64(&w_neg,63,0);
 
     // CELLS
     // Public to allow access to /* verilator public */ items.

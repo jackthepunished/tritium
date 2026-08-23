@@ -44,7 +44,11 @@ impl Recorder {
             .iter()
             .map(|(k, (s, abs_sum, elems))| {
                 let mut s = s.clone();
-                s.mean_abs = if *elems > 0 { abs_sum / *elems as f64 } else { 0.0 };
+                s.mean_abs = if *elems > 0 {
+                    abs_sum / *elems as f64
+                } else {
+                    0.0
+                };
                 (k.clone(), s)
             })
             .collect()
@@ -54,9 +58,8 @@ impl Recorder {
 static GLOBAL: OnceLock<Option<Mutex<Recorder>>> = OnceLock::new();
 
 fn global() -> &'static Option<Mutex<Recorder>> {
-    GLOBAL.get_or_init(|| {
-        std::env::var_os("TRITSIM_STATS").map(|_| Mutex::new(Recorder::default()))
-    })
+    GLOBAL
+        .get_or_init(|| std::env::var_os("TRITSIM_STATS").map(|_| Mutex::new(Recorder::default())))
 }
 
 /// No-op unless TRITSIM_STATS is set.
@@ -93,8 +96,12 @@ mod tests {
 
     #[test]
     fn disabled_global_is_noop() {
-        // TRITSIM_STATS unset in the test env: record must not panic or allocate a recorder
+        // TRITSIM_STATS unset in the test env: record must not panic, and must
+        // not bring a recorder into existence.
         record("whatever", &[1.0]);
-        assert!(global().is_none() || true); // reaching here without panic is the assertion
+        assert!(
+            global().is_none(),
+            "recording with TRITSIM_STATS unset must not allocate a recorder"
+        );
     }
 }

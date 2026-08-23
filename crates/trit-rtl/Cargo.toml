@@ -1,0 +1,9 @@
+[package]
+name = "trit-rtl"
+version = "0.1.0"
+edition = "2021"
+description = "Hardware-in-the-loop matvec backend: the Verilated tritcore engine"
+build = "build.rs"
+
+[dependencies]
+trit-core = { path = "../trit-core" }

@@ -55,9 +55,10 @@ bool run_set(Dut& d, const std::string& dir) {
 
     std::vector<int32_t> got;
     for (unsigned b = 0; b < rows * beats; b++) {
-        const std::string& beat = wh.at(b); // 32 hex chars, MSB first
-        for (int w = 0; w < 4; w++)         // w_data is 4x 32-bit words, LSW = chars 24..31
-            d.top.w_data[w] = std::stoul(beat.substr(24 - 8 * w, 8), nullptr, 16);
+        // "<pos:016x> <neg:016x>": the two bit planes of one beat.
+        const std::string& beat = wh.at(b);
+        d.top.w_pos = std::stoull(beat.substr(0, 16), nullptr, 16);
+        d.top.w_neg = std::stoull(beat.substr(17, 16), nullptr, 16);
         d.top.w_valid = 1;
         d.tick();
         if (d.top.y_valid) got.push_back(static_cast<int32_t>(d.top.y_data));
@@ -80,17 +81,31 @@ bool run_set(Dut& d, const std::string& dir) {
     return ok;
 }
 
-// invalid 0b11 code must raise the sticky err flag
-bool run_invalid_code_check(Dut& d) {
+// A lane set in both planes is invalid and must raise the sticky err flag.
+// This is the planar successor to the illegal 2-bit code 0b11.
+bool run_overlap_check(Dut& d) {
     d.reset();
     d.top.x_we = 1; d.top.x_addr = 0; d.top.x_data = 1; d.tick(); d.top.x_we = 0;
     d.top.num_cols = 64;
     d.top.start = 1; d.tick(); d.top.start = 0;
-    d.top.w_data[0] = 0x3; // code 0b11 in lane 0
-    d.top.w_data[1] = d.top.w_data[2] = d.top.w_data[3] = 0;
+    d.top.w_pos = 0x1; // lane 0 set in BOTH planes
+    d.top.w_neg = 0x1;
     d.top.w_valid = 1; d.tick(); d.top.w_valid = 0;
-    if (!d.top.err) { std::fprintf(stderr, "invalid-code check: err not raised\n"); return false; }
-    std::printf("SET <invalid-code>: err raised OK\n");
+    if (!d.top.err) { std::fprintf(stderr, "overlap check: err not raised\n"); return false; }
+    std::printf("SET <plane-overlap>: err raised OK\n");
+    return true;
+}
+
+// A lane set in neither plane is a zero weight and must NOT raise err.
+bool run_zero_is_not_an_error_check(Dut& d) {
+    d.reset();
+    d.top.x_we = 1; d.top.x_addr = 0; d.top.x_data = 1; d.tick(); d.top.x_we = 0;
+    d.top.num_cols = 64;
+    d.top.start = 1; d.tick(); d.top.start = 0;
+    d.top.w_pos = 0; d.top.w_neg = 0;
+    d.top.w_valid = 1; d.tick(); d.top.w_valid = 0;
+    if (d.top.err) { std::fprintf(stderr, "zero-weight check: err wrongly raised\n"); return false; }
+    std::printf("SET <all-zero-beat>: no err OK\n");
     return true;
 }
 
@@ -104,7 +119,8 @@ int main(int argc, char** argv) {
         d.reset();
         ok &= run_set(d, argv[i]);
     }
-    ok &= run_invalid_code_check(d);
+    ok &= run_overlap_check(d);
+    ok &= run_zero_is_not_an_error_check(d);
     d.top.final();
     return ok ? 0 : 1;
 }

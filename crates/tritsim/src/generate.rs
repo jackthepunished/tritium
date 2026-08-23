@@ -1,16 +1,19 @@
 use crate::model::{KvCache, Model};
 use anyhow::Result;
 
+/// Greedy choice, using the production sampler's tie rule (lowest index wins)
+/// so `greedy_ids` cannot diverge from the runtime on a tied logit vector.
 fn argmax(l: &[f32]) -> u32 {
-    l.iter()
-        .enumerate()
-        .max_by(|a, b| a.1.total_cmp(b.1))
-        .unwrap()
-        .0 as u32
+    trit_core::sampler::argmax(l) as u32
 }
 
 /// Feed `prompt_ids`, then greedily decode `steps` tokens (stops early on eos).
-pub fn greedy_ids(model: &Model, prompt_ids: &[u32], steps: usize, eos_id: Option<u32>) -> Result<Vec<u32>> {
+pub fn greedy_ids(
+    model: &Model,
+    prompt_ids: &[u32],
+    steps: usize,
+    eos_id: Option<u32>,
+) -> Result<Vec<u32>> {
     anyhow::ensure!(!prompt_ids.is_empty(), "empty prompt");
     let cfg = &model.cfg;
     anyhow::ensure!(
@@ -28,18 +31,16 @@ pub fn greedy_ids(model: &Model, prompt_ids: &[u32], steps: usize, eos_id: Optio
         logits = model.forward(*tok, pos, &mut cache);
     }
     let mut out = Vec::new();
-    let mut pos = prompt_ids.len();
     // Stop at the context limit rather than asking forward() for an
     // out-of-range position.
     let steps = steps.min(cfg.max_seq.saturating_sub(prompt_ids.len()));
-    for _ in 0..steps {
+    for pos in prompt_ids.len()..prompt_ids.len() + steps {
         let next = argmax(&logits);
         if Some(next) == eos_id {
             break;
         }
         out.push(next);
         logits = model.forward(next, pos, &mut cache);
-        pos += 1;
     }
     Ok(out)
 }

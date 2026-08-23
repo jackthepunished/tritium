@@ -1,0 +1,89 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+# Read-only by default. Nothing in this workflow writes to the repository, and
+# the jobs run build scripts and a test suite -- code that should not be able to
+# reach a credential that happens to be lying around in the git config.
+permissions:
+  contents: read
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
+      - run: cargo fmt --all -- --check
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # x86-64 exercises scalar, avx2 and (on most runners) avx512.
+        # ubuntu-24.04-arm exercises the NEON kernels, which have no other
+        # verification: they are written on x86 hosts and compile-checked only.
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
+      - run: cargo clippy --workspace --exclude trit-rtl --all-targets -- -D warnings
+      # trit-rtl is excluded: building it runs Verilator, which the rtl job owns.
+      - run: cargo test --workspace --exclude trit-rtl --release
+
+      - name: differential tests, once per available kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release -p trit-cpu --tests
+          BIN=$(ls -t target/release/deps/differential-* | grep -v '\.d$' | head -1)
+          # Ask the binary which kernels this CPU can actually run, rather than
+          # guessing from the runner name. force_kernel errors on an unsupported
+          # kernel, so a silent fallback cannot make this pass vacuously.
+          for K in $("$BIN" --list 2>/dev/null >/dev/null; \
+                     cargo run --release -q -p trit-cpu --example kernelbench 2>/dev/null \
+                       | sed -n 's/.*kernels: \[\(.*\)\]/\1/p' | tr -d '"' | tr ',' ' '); do
+            echo "== kernel $K =="
+            TRIT_CPU_KERNEL="$K" "$BIN" --exact forced_kernel_matches_the_reference
+          done
+
+  aarch64-crosscheck:
+    # The NEON kernels are written on x86 hosts. This proves they at least still
+    # type-check against the aarch64 target even if no ARM runner is available.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
+      - run: rustup target add aarch64-unknown-linux-gnu
+      - run: cargo check -p trit-cpu --target aarch64-unknown-linux-gnu
+
+  rtl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y verilator yosys
+      - run: make -C rtl lint
+      - run: make -C rtl test
+      - run: make -C rtl synth
+      - run: cargo test -p tritsim --features rtl --release
+      - run: cargo test -p trit-rtl --release

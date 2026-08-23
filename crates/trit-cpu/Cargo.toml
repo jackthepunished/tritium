@@ -1,0 +1,16 @@
+[package]
+name = "trit-cpu"
+version = "0.1.0"
+edition = "2021"
+description = "Bit-sliced ternary matvec kernels for commodity SIMD silicon"
+
+[dependencies]
+trit-core = { path = "../trit-core" }
+rayon = "1"
+
+[features]
+default = []
+# Bit-serial popcount kernel. Off the production dispatch table by design (it is
+# 3-4x slower than mask-select at int8 activations); built for differential
+# testing and for the day activations drop below 8 bits.
+bitserial = []

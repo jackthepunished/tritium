@@ -58,7 +58,7 @@ VL_ATTR_COLD void Vtrit_matvec___024root___eval_settle(Vtrit_matvec___024root* v
 #ifdef VL_DEBUG
             Vtrit_matvec___024root___dump_triggers__stl(vlSelf);
 #endif
-            VL_FATAL_MT("trit_matvec.sv", 7, "", "Settle region did not converge.");
+            VL_FATAL_MT("trit_matvec.sv", 17, "", "Settle region did not converge.");
         }
         __VstlIterCount = ((IData)(1U) + __VstlIterCount);
         __VstlContinue = 0U;
@@ -171,7 +171,8 @@ VL_ATTR_COLD void Vtrit_matvec___024root___ctor_var_reset(Vtrit_matvec___024root
     vlSelf->num_cols = VL_RAND_RESET_I(14);
     vlSelf->start = VL_RAND_RESET_I(1);
     vlSelf->w_valid = VL_RAND_RESET_I(1);
-    VL_RAND_RESET_W(128, vlSelf->w_data);
+    vlSelf->w_pos = VL_RAND_RESET_Q(64);
+    vlSelf->w_neg = VL_RAND_RESET_Q(64);
     vlSelf->w_ready = VL_RAND_RESET_I(1);
     vlSelf->y_valid = VL_RAND_RESET_I(1);
     vlSelf->y_data = VL_RAND_RESET_I(32);

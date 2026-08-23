@@ -1,0 +1,17 @@
+[package]
+name = "tritbench"
+version = "0.1.0"
+edition = "2021"
+description = "Measurement harness for the Tritium ternary runtime"
+publish = false
+
+[dependencies]
+trit-core = { path = "../crates/trit-core" }
+trit-cpu = { path = "../crates/trit-cpu" }
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "kernels"
+harness = false

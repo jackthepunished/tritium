@@ -33,11 +33,12 @@ class alignas(VL_CACHE_LINE_BYTES) Vtrit_matvec___024root final : public Verilat
     CData/*0:0*/ __VactContinue;
     VL_IN16(x_addr,12,0);
     VL_IN16(num_cols,13,0);
-    VL_INW(w_data,127,0,4);
     VL_OUT(y_data,31,0);
     IData/*31:0*/ trit_matvec__DOT__acc_q;
     IData/*31:0*/ trit_matvec__DOT__beat_sum;
     IData/*31:0*/ __VactIterCount;
+    VL_IN64(w_pos,63,0);
+    VL_IN64(w_neg,63,0);
     VlUnpacked<CData/*7:0*/, 8192> trit_matvec__DOT__x_mem;
     VlTriggerVec<1> __VstlTriggered;
     VlTriggerVec<1> __VicoTriggered;
