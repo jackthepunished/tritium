@@ -150,12 +150,23 @@ fn resolve() -> (&'static str, MatvecFn) {
 /// Pin the kernel for the process. Errors -- never falls back -- if this CPU
 /// cannot run it.
 ///
-/// Takes effect only if no kernel has been resolved yet, since the choice is
-/// cached for the process; returns the name actually in force.
+/// The choice is cached for the process, so this can only take effect before
+/// anything has resolved a kernel. Asking for the one already in force is fine;
+/// asking for a *different* one after the fact is an error rather than a
+/// silently ignored request. Returning `Ok` with someone else's kernel would
+/// let a CI job believe it had tested `scalar` while it re-tested `avx512vnni`,
+/// which is the exact failure this whole forcing mechanism exists to prevent.
 pub fn force_kernel(name: &str) -> Result<&'static str, UnsupportedKernel> {
     let (n, f) = lookup(name)?;
     let _ = KERNEL.set((n, f));
-    Ok(resolve().0)
+    let in_force = resolve().0;
+    if in_force != n {
+        return Err(UnsupportedKernel {
+            requested: format!("{name} (already resolved to {in_force} earlier in this process)"),
+            available: available_kernels(),
+        });
+    }
+    Ok(in_force)
 }
 
 /// The kernel in force.

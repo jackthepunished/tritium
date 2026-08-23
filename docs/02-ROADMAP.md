@@ -72,31 +72,40 @@ greedy, 32 tokens, median of three invocations:
 
 | threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
 |---|---|---|---|
-| 1  | **14.98** | 14.36 | 11.65 |
-| 2  | 14.92 | **22.84** | 19.44 |
-| 4  | 15.84 | 26.17 | **27.89** |
-| 8  | 15.85 | 25.61 | **32.58** |
-| 16 | 15.55 | 24.46 | **31.16** |
+| 1  | 13.28 | **13.91** | 12.54 |
+| 2  | 14.61 | **20.01** | 19.64 |
+| 4  | 15.23 | 25.54 | **27.29** |
+| 8  | 15.23 | 24.72 | **31.90** |
+| 16 | 14.98 | 22.84 | **30.51** |
 
 bitnet.cpp runs the identical checkpoint, so that is the apples-to-apples
 column. llama.cpp runs Qwen2.5-3B Q4_K_M — mainline cannot load the `i2_s`
 type and its converter has no BitNet entry — so it is a different model at a
 different quality point, and the bits/w column carries that.
 
-**The answer was unflattering, which is what this item was for.** Tritium has
-the best single-thread number of the three and beats bitnet.cpp by 1.29x on the
-same checkpoint. Then it does not scale: 1.06x from one thread to eight against
-bitnet.cpp's 2.80x, ending 2.06x behind. Nothing here says the kernels are bad.
-Everything here says the runtime cannot use a machine.
+**The answer was unflattering, which is what this item was for.** All three
+runtimes land within 11% of each other at one thread. Only Tritium fails to
+scale: 1.15x from one thread to eight, against bitnet.cpp's 2.54x and
+llama.cpp's 1.78x, ending 2.09x behind bitnet.cpp.
+
+Nothing here says the kernels are bad; per core we are unremarkable rather than
+ahead. Everything here says the runtime cannot use a machine.
+
+An earlier version of this table claimed Tritium was the fastest of the three
+per core, by 1.29x. That was a measurement artifact: our model file had been hot
+in page cache for an hour of testing while the baseline GGUFs were freshly
+downloaded and cold. `benches/run.sh` now pre-warms every model before
+measuring, and `tritd bench` reports a median rather than its best run, so its
+figure is produced the same way the baselines' are.
 
 Two levers fall out of it, and they reorder the rest of this track.
 
 ## A2. Parallel scaling
 
-**The largest lever in the project, by a wide margin.** Tritium is the fastest
-of the three per core and the slowest in aggregate. If it scaled like
-bitnet.cpp, 14.98 tok/s at one thread becomes roughly 42 at eight — before any
-other change.
+**The largest lever in the project, by a wide margin.** Tritium is ordinary per
+core and last by a factor of two in aggregate. If it scaled like bitnet.cpp,
+13.28 tok/s at one thread becomes roughly 34 at eight — before any other
+change, and past bitnet.cpp's 31.90.
 
 The cause is measured, not guessed. A decode step issues 210 ternary matvecs
 whose largest is 4.4 MB, and each one currently pays a rayon fork/join.

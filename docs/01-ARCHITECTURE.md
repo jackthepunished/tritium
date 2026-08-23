@@ -311,9 +311,9 @@ Batched prefill, or a model whose projections are an order of magnitude larger,
 would want this revisited — again with a measurement.
 
 **This is the project's largest open defect, and it is now quantified.** Against
-bitnet.cpp on the identical checkpoint, Tritium is 1.29x faster at one thread
-and 2.06x slower at eight, because bitnet.cpp scales 2.80x across that range and
-Tritium scales 1.06x. Lowering the threshold does not help — the layer time goes
+bitnet.cpp on the identical checkpoint, Tritium is within 6% at one thread and
+2.09x slower at eight, because bitnet.cpp scales 2.54x across that range and
+Tritium scales 1.15x. Lowering the threshold does not help — the layer time goes
 37.4 ms at one thread to 173 ms at eight, since each of 210 matvecs per token
 pays its own fork/join. The fix is a cheaper synchronization primitive, not a
 different threshold: ggml gets its scaling from a persistent pool with cheap

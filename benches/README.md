@@ -37,9 +37,31 @@ number.
 
 | variable | meaning |
 |---|---|
-| `LLAMA_CPP_BIN` | `llama-bench` or `llama-cli`; otherwise searched on `PATH` |
+| `LLAMA_CPP_BIN` | a **`llama-bench`** binary; otherwise searched on `PATH` |
 | `LLAMA_GGUF` | a `.gguf` of a comparable model |
-| `BITNET_CPP_BIN` | bitnet.cpp's inference binary |
+| `BITNET_CPP_BIN` | bitnet.cpp's own **`llama-bench`** binary (it builds one) |
+| `BITNET_GGUF` | the `i2_s` `.gguf` of the same checkpoint |
+| `BASELINE_RUNS` | invocations per baseline; the median is recorded (default 3) |
+
+Both binaries must be `llama-bench`, not `llama-cli` or `run_inference.py`: the
+adapter passes llama-bench flags and parses its result table. Anything else
+fails loudly rather than producing a number from a format nobody checked.
+
+### What the baseline rows actually measure
+
+`llama-bench -p 0 -n N` generates N tokens from an **empty context** and never
+reads a prompt file, so baseline rows carry `llama-bench:tgN-empty-context` in
+the `suite` column rather than the suite Tritium ran. Labelling them with the
+suite would claim they saw input they never did.
+
+Both sides still measure steady-state batch-1 decode, which is what makes the
+comparison meaningful — but Tritium decodes with a short prompt in context and
+llama-bench decodes with none. At these context lengths the KV-attention
+difference is small; it is recorded rather than argued about.
+
+A baseline is recorded only when **every** invocation yields a sample. A partial
+set would publish a one-sample "median of three" as a successful measurement;
+short sets are recorded unavailable with the count instead.
 
 When a baseline is absent, the CSV gets a row with `status=unavailable` and a
 note saying exactly what was looked for. `report.py` renders those as

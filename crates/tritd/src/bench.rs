@@ -106,7 +106,12 @@ pub fn memcpy_probe_gbps(threads: usize) -> f64 {
         let total: u64 = if threads <= 1 {
             sum(&src)
         } else {
-            let chunk = BYTES / threads;
+            // Aligned down to the 8-byte checksum word. `sum` walks
+            // `chunks_exact(8)` and drops any short tail, so an unaligned split
+            // would leave a few bytes per worker unread while the rate below
+            // still divides by all of BYTES -- a tiny overstatement, but this
+            // function exists to not overstate things.
+            let chunk = (BYTES / threads) & !7;
             std::thread::scope(|s| {
                 let handles: Vec<_> = (0..threads)
                     .map(|i| {
@@ -221,7 +226,15 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     }
 
     let energy_before = read_energy_uj();
-    let mut best_decode_rate = 0f64;
+    // Median across runs, not the best.
+    //
+    // This file previously reported the best run, on the reasoning that a slow
+    // run measures the scheduler and a fast one measures the code. That is a
+    // defensible policy in isolation and the wrong one for a comparison:
+    // docs/04-BENCHMARKS.md specifies median of three, and the baselines in
+    // benches/run.sh are recorded as a median. Reporting our best against their
+    // median would tilt every comparison our way by construction.
+    let mut rates: Vec<f64> = Vec::new();
     let mut ttft_ms = f64::MAX;
     let mut decoded_total = 0usize;
     let mut kv_bytes = 0u64;
@@ -255,9 +268,7 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
             kv_bytes = stream.session().kv_bytes();
 
             if n > 0 {
-                // Best over every (run, prompt) pair, not the mean: a slow one
-                // measures the scheduler, a fast one measures the code.
-                best_decode_rate = best_decode_rate.max(n as f64 / decode_secs);
+                rates.push(n as f64 / decode_secs);
                 let t = (prefill_secs + first.unwrap_or(0.0)) * 1000.0;
                 ttft_ms = ttft_ms.min(t);
                 run_decoded += n;
@@ -266,6 +277,13 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
         decoded_total = decoded_total.max(run_decoded);
     }
     let wall = t_all.elapsed().as_secs_f64();
+
+    rates.sort_by(f64::total_cmp);
+    let decode_rate = match rates.len() {
+        0 => 0.0,
+        n if n % 2 == 1 => rates[n / 2],
+        n => (rates[n / 2 - 1] + rates[n / 2]) / 2.0,
+    };
 
     let (joules_per_token, energy_source) = match (energy_before, read_energy_uj()) {
         (Some(a), Some(b)) if b >= a && decoded_total > 0 => (
@@ -277,7 +295,7 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     };
 
     let weight_bytes = rt.model.weight_bytes();
-    let achieved_gbps = weight_bytes as f64 * best_decode_rate / 1e9;
+    let achieved_gbps = weight_bytes as f64 * decode_rate / 1e9;
 
     // Sampled BEFORE the probe. VmHWM is a high-water mark and the probe
     // allocates half a gigabyte, so reading it afterwards reports the probe's
@@ -300,7 +318,7 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
         decoded_tokens: decoded_total,
         ttft_ms: if ttft_ms == f64::MAX { 0.0 } else { ttft_ms },
         prefill_tok_per_s: 0.0,
-        decode_tok_per_s: best_decode_rate,
+        decode_tok_per_s: decode_rate,
         weight_bytes_per_token: weight_bytes,
         ternary_bytes: rt.model.ternary_bytes(),
         lm_head_bytes: rt.model.lm_head_bytes(),

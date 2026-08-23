@@ -47,16 +47,32 @@ projections, is the thing to attack next.
 
 ## Measured against the alternatives
 
-Same host, same prompts, greedy, 32 tokens, median of three invocations. Raw CSV
-in [benches/results/](benches/results/); reproduce with `benches/run.sh`.
+Same host, greedy, 32 tokens, median of three invocations per baseline. Raw CSV
+in [benches/results/](benches/results/). The defaults differ from these
+parameters, so reproduce with exactly:
+
+```sh
+export LLAMA_CPP_BIN=/path/to/llama.cpp/build/bin/llama-bench
+export LLAMA_GGUF=/path/to/qwen2.5-3b-instruct-q4_k_m.gguf
+export BITNET_CPP_BIN=/path/to/bitnet.cpp/build/bin/llama-bench
+export BITNET_GGUF=/path/to/ggml-model-i2_s.gguf
+for T in 1 2 4 8 16; do
+    benches/run.sh --model models/bitnet-2b4t.trit --tokens 32 --threads "$T"
+done
+```
+
+Tritium decodes the four-prompt suite; the baselines generate from an empty
+context, because `llama-bench` takes no prompt file. Both are steady-state
+batch-1 decode — see [benches/README.md](benches/README.md) for what that does
+and does not make comparable.
 
 | threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
 |---|---|---|---|
-| 1  | **14.98** | 14.36 | 11.65 |
-| 2  | 14.92 | **22.84** | 19.44 |
-| 4  | 15.84 | 26.17 | **27.89** |
-| 8  | 15.85 | 25.61 | **32.58** |
-| 16 | 15.55 | 24.46 | **31.16** |
+| 1  | 13.28 | **13.91** | 12.54 |
+| 2  | 14.61 | **20.01** | 19.64 |
+| 4  | 15.23 | 25.54 | **27.29** |
+| 8  | 15.23 | 24.72 | **31.90** |
+| 16 | 14.98 | 22.84 | **30.51** |
 
 bitnet.cpp runs the identical checkpoint, so that column is the honest
 comparison. llama.cpp runs Qwen2.5-3B Q4_K_M, because mainline cannot load the
@@ -64,13 +80,13 @@ comparison. llama.cpp runs Qwen2.5-3B Q4_K_M, because mainline cannot load the
 bits-per-weight column is in the CSV and why this table should not be read as
 "ternary beats 4-bit".
 
-**Tritium wins at one thread and loses at eight.** It is 1.29x faster than
-bitnet.cpp per core on the same checkpoint, then scales 1.06x from one thread to
-eight where bitnet.cpp scales 2.80x, finishing 2.06x behind. The kernels are not
-the problem; the runtime's inability to use more than one core is. A decode step
-issues 210 ternary matvecs whose largest is 4.4 MB, and per-matvec fork/join
-costs more than the matvec — measured, and the reason `PARALLEL_MIN_BYTES`
-exists.
+**All three are within 11% of each other at one thread. Only Tritium fails to
+scale.** From one thread to eight, bitnet.cpp gains 2.54x and llama.cpp 1.78x;
+Tritium gains 1.15x and then stops, finishing 2.09x behind bitnet.cpp. The
+kernels are not the problem — per core we are ordinary. The runtime's inability
+to use more than one core is the whole gap. A decode step issues 210 ternary
+matvecs whose largest is 4.4 MB, and per-matvec fork/join costs more than the
+matvec, which is measured and is why `PARALLEL_MIN_BYTES` exists.
 
 The other part of the gap is bytes: bitnet.cpp stores its embedding table as f16
 where Tritium stores f32, moving ~1178 MB per token against our 1834 MB.

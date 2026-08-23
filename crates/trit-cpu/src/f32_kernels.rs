@@ -199,10 +199,21 @@ fn resolve_f32() -> (&'static str, F32DotFn) {
 }
 
 /// Pin the dense kernel for the process. Errors -- never falls back.
+///
+/// As with the ternary side, the choice is cached for the process. Requesting
+/// the kernel already in force succeeds; requesting a different one after
+/// something has already resolved is an error, not a silent no-op.
 pub fn force_f32_kernel(name: &str) -> Result<&'static str, crate::UnsupportedKernel> {
     let (n, f) = lookup_f32(name)?;
     let _ = F32_KERNEL.set((n, f));
-    Ok(resolve_f32().0)
+    let in_force = resolve_f32().0;
+    if in_force != n {
+        return Err(crate::UnsupportedKernel {
+            requested: format!("{name} (already resolved to {in_force} earlier in this process)"),
+            available: available_f32_kernels(),
+        });
+    }
+    Ok(in_force)
 }
 
 /// The dense kernel in force.

@@ -301,6 +301,27 @@ fn unsupported_kernel_errors_rather_than_falling_back() {
     assert!(msg.contains("scalar"), "{msg}");
 }
 
+/// Forcing a kernel that cannot take effect must fail loudly.
+///
+/// Run as its own process so the OnceLock starts unset: resolve one kernel,
+/// then ask for a different one. Returning `Ok` with the first kernel would let
+/// a CI job believe it had covered the second.
+#[test]
+fn forcing_a_second_different_kernel_is_an_error() {
+    let available = trit_cpu::available_kernels();
+    // Resolve something, so the process-wide choice is now fixed.
+    let first = trit_cpu::kernel_name();
+    let Some(other) = available.iter().find(|k| **k != first) else {
+        eprintln!("only one kernel available ({first}); nothing to contend with");
+        return;
+    };
+    let err = trit_cpu::force_kernel(other).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("already resolved"), "{msg}");
+    // Asking for the one already in force stays fine.
+    assert_eq!(trit_cpu::force_kernel(first).unwrap(), first);
+}
+
 #[test]
 fn scalar_is_always_available() {
     assert!(trit_cpu::available_kernels().contains(&"scalar"));
