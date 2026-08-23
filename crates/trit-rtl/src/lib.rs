@@ -17,6 +17,16 @@ use std::sync::{Mutex, OnceLock};
 use trit_core::backend::MatvecBackend;
 use trit_core::planes::TritPlanes;
 
+/// Activation-memory depth of the Verilated core (`MAX_COLS` in
+/// `rtl/trit_matvec.sv`).
+///
+/// `x_addr` is `$clog2(MAX_COLS)` bits wide, so a wider matrix does not fail --
+/// the shim's preload wraps and silently overwrites lanes 0.., and the core's
+/// reads wrap to the same indexes. The call would return success with a wrong
+/// result, which is the one outcome this project's whole differential story is
+/// built to prevent. Checked here rather than trusted.
+pub const MAX_COLS: usize = 8192;
+
 extern "C" {
     fn trit_rtl_new() -> *mut c_void;
     #[allow(dead_code)]
@@ -59,6 +69,11 @@ pub fn matvec_beats(beats: &[u8], rows: usize, cols: usize, xq: &[i8], y: &mut [
     );
     assert!(xq.len() >= cols);
     assert_eq!(y.len(), rows);
+    assert!(
+        cols <= MAX_COLS,
+        "{cols} columns exceeds the core's {MAX_COLS}-deep activation memory; \
+         x_addr would wrap and the result would be silently wrong"
+    );
 
     let guard = core().lock().unwrap();
     // SAFETY: the shim reads `rows * cols/64 * 16` bytes from `beats` and `cols`

@@ -6,6 +6,10 @@ use std::sync::{Mutex, OnceLock};
 
 use trit_core::planes::{pack_planes, BEAT_BYTES, LANES};
 
+/// Activation-memory depth of the Verilated core (`MAX_COLS` in
+/// `rtl/trit_matvec.sv`).
+pub const MAX_COLS: usize = 8192;
+
 extern "C" {
     fn trit_rtl_new() -> *mut c_void;
     #[allow(dead_code)]
@@ -41,6 +45,12 @@ pub fn rtl_matvec_beats(beats: &[u8], rows: usize, cols: usize, xq: &[i8]) -> Ve
     assert_eq!(cols % LANES, 0, "cols must be a whole number of beats");
     assert_eq!(beats.len(), rows * (cols / LANES) * BEAT_BYTES);
     assert_eq!(xq.len(), cols);
+    // MAX_COLS in rtl/trit_matvec.sv. Beyond it the shim's activation preload
+    // wraps on a 13-bit x_addr and the core returns success with wrong data.
+    assert!(
+        cols <= MAX_COLS,
+        "{cols} columns exceeds the core's {MAX_COLS}-deep activation memory"
+    );
 
     let mut y = vec![0i32; rows];
     let guard = core().lock().unwrap();
