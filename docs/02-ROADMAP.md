@@ -1,82 +1,218 @@
-# Roadmap — 6 weeks to a demo that cannot be faked
+# Roadmap
 
-Each week ends with a public artifact (repo tag + short post). The cadence is the ternoise playbook: show the thing running, show the numbers, show the failure modes.
+## How this document changed
 
-## Week 1 — tritsim: correct before fast
+The original roadmap was six numbered weeks ending in an FPGA demo box, written
+when the plan was "prove the primitive in simulation, buy a board, ship the
+demo." That plan produced everything it promised through its own week 3b, and
+then the project pivoted: the runtime became hardware-agnostic, and the same
+ternary primitive now runs usefully on commodity CPUs as well as on the fabric
+it was designed for.
 
-- [x] Rust workspace scaffold (`tritc`, `tritsim` crates; `tritd`, `tritbench` deferred to their phases).
-- [x] Load `microsoft/bitnet-b1.58-2B-4T` (bf16 master weights) via safetensors; quantize with the b1.58 recipe, report zero-fraction and reconstruction stats.
-- [x] Implement decode loop in tritsim: embedding, RMSNorm, ternary linear (select-accumulate, int8 activations, absmax quant), RoPE, GQA attention, relu2 gated MLP with sub-norms, greedy sampling.
-- [x] Match reference logits (HF transformers with native online BitNet quantization) on fixed prompts: mean cosine 0.999, top-1 100% (near-tie rule at BOS documented in compare output).
-- **Artifact:** tritsim generating coherent text on CPU. Post: "ternary LLM inference in pure Rust, no multiplies in the hot loop."
+Two things follow. First, week numbering is gone. It was already fiction —
+the pivot alone took longer than a week — and this project has always actually
+run on **gates**: a milestone is done when a stated, measured condition holds,
+not when a calendar says so. Second, there are now two tracks. They share the
+`.trit` format, the correctness gates and most of the code, and they are worked
+in whatever order the evidence favours rather than strictly in sequence.
 
-## Week 2 — .trit format + RTL matmul core in simulation
+What has not changed: every milestone ends in a public artifact, every
+performance claim ships with a script that reproduces it, and misses get
+published rather than buried.
 
-- [x] Freeze `model.trit` v0: packing, tiling order, manifest. `tritc` emits it; tritsim consumes it (same bytes the FPGA will see). (Landed with Phase 0.)
-- [x] SystemVerilog: trit unpack + lane array (N=64) + adder tree + accumulator (`rtl/trit_matvec.sv`). Fixed-point RMSNorm/activation units deferred to week 3: bit-exact verification requires migrating tritsim's f32 norm math to matching fixed-point first (Q-format design), which belongs with board bring-up.
-- [x] Verilator testbench driven by tritsim-generated vectors (`tritsim vectors`, `make -C rtl test`); bit-exact on random, padding, extremes, zeros, 6912-wide, and real layer-0 k_proj tiles, plus an invalid-encoding error check.
-- **Artifact:** waveform + "RTL matches golden model bit-for-bit" post with the testbench harness.
+## Done
 
-## Week 3 — numerics, norm folding, synthesis numbers (reframed)
+| | Outcome | Gate |
+|---|---|---|
+| Ternary inference, correct | `tritsim` decodes BitNet b1.58 2B4T in pure Rust, no multiplies in the hot loop | G2: mean logit cosine 0.9991 vs the HF reference, top-1 100% |
+| `.trit` v0 and the RTL core | Multiplier-free SystemVerilog `tritcore`, driven by oracle-generated vectors | G4: bit-exact on every set including the `x = -128` extremes; G5: Yosys asserts zero `$mul`/`$macc` |
+| Numerics | Per-stage ranges measured on the real checkpoint; norm folding removes the rsqrt and divide from the datapath | Identical compare metrics and greedy output, property-tested across 1000 adversarial vectors |
+| Hardware in the loop | The real 2B model decodes end-to-end through the Verilated core | G6: byte-identical to the CPU backend, at 24.4 s/token |
+| Integer-exact MLP | The squared-ReLU stage never exists in f32 | Greedy text character-identical on both prompts |
+| **The pivot** | `.trit` v1 bit planes, SIMD kernels, host daemon, C ABI, comparative harness | G7 moved 93x on decode; G1-G6 unmoved |
+| Review hardening | 14 findings fixed, including an `i16` overflow in the NEON kernel and a streaming detokenizer that destroyed every multi-byte codepoint | NEON kernels executed on aarch64 hardware for the first time; all gates re-verified |
 
-Original premise ("port to the ternoise dev board") corrected: no board exists —
-ternoise is deliberately simulation-first, board chosen from synthesis numbers.
-tritium follows the same doctrine.
+Where that leaves the numbers, measured on a Ryzen 9 8945HX over the four-prompt
+short suite. The frozen single-prompt reference in [06-GATES.md](06-GATES.md)
+reads slightly lower (14.89 tok/s, 470 ms, 27.3 GB/s) because it is a different
+input, and it — not this table — is what a regression is measured against:
 
-- [x] Measure per-stage numeric ranges on the real checkpoint (`TRITSIM_STATS`); write docs/03b-NUMERICS.md. Massive activations confirmed (residual max ~138k; relu2 stage ~1.5e10).
-- [x] Norm folding: eliminate the per-element rsqrt/divide from the datapath (absmax codes are scale-invariant); proved on the real model — identical compare metrics and greedy outputs, property-tested across 1000 adversarial vectors.
-- [x] Yosys generic synthesis of trit_matvec with a zero-multiplier assertion (`make -C rtl synth`): ~29.5k datapath cells at 64 lanes, no $mul/$macc.
-- [x] Board-selection memo (docs/04b-BOARD-MEMO.md) with roofline x synthesis numbers; purchase decision to Bahadir. **Decision gate (moved from silicon to paper, where it belongs pre-purchase).**
-- **Artifact:** the numerics report + the "no multipliers, no dividers" synthesis check.
+| | Pre-pivot | Now |
+|---|---|---|
+| Decode | 0.16 tok/s | 15.7 tok/s |
+| Time to first token | ~33 s | 440 ms |
+| Peak RSS | 6.10 GiB | 1.80 GiB |
+| Achieved bandwidth | ~0.3 GB/s | 29.0 GB/s (~61-68% of the measured roofline) |
 
-## Week 3b — layer sequencer under Verilator (pre-purchase gate)
+## The board-purchase gate
 
-- [x] Hardware-in-the-loop end-to-end (ternoise M5 pattern): tritsim's `--backend rtl` (cargo feature `rtl`) routes every ternary matvec of the real 2B4T model through the Verilated trit_matvec core. Compare output byte-identical to the CPU backend (6 positions, folded norm); greedy text identical. Measured 24 s/token in Verilator (~1.4M beats/s) — the number that says why silicon is next.
-- **The board purchase gate sits here** (see docs/04b-BOARD-MEMO.md): PASSED 2026-08-12 — buying is now unblocked.
+Still open, and deliberately so. The selection memo
+([04b-BOARD-MEMO.md](04b-BOARD-MEMO.md)) recommends a Kria KV260 on
+roofline-versus-synthesis grounds, and the gate that was meant to unblock the
+purchase **passed** when the real model decoded through the Verilated core.
 
-## Week 3c — first silicon contact (after board purchase)
+The pivot changed the urgency, not the conclusion. A working CPU runtime means
+the project has something demonstrable without a board, which removes the
+schedule pressure that would otherwise have forced the purchase early. The
+decision is Bahadir's and nothing here commits money.
 
-- [ ] Port the sequencer to the chosen board; single transformer layer end-to-end on hardware, output matches tritsim.
-- [ ] Measure: achieved bandwidth, lane utilization, clock against the roofline.
-- **Artifact:** scope/ILA screenshot + measured GB/s vs the ARCHITECTURE table.
+---
 
-## Week 4 prep (done in sim) — integer-exact MLP path
+# Track A — the runtime
 
-- [x] Phase 4 gate (2026-08-13): folded vs folded+TRITSIM_INT_MLP on the real
-  checkpoint — greedy text character-identical on both prompts; summary
-  metrics identical (mean cosine 0.9991, top-1 100%). Per-position logits
-  differ in the 2nd-3rd decimal (per-position cosine within 0.9979-0.9997)
-  because the integer path rounds once where f32 rounds per-element — a
-  different, more exact rounding of the same math, as the plan predicted.
+Ordered by evidence, not by preference. Each entry states why it is where it is.
 
-## Week 4 — full model on hardware
+## A1. Baselines, actually run
 
-- [ ] Layer sequencer: run all layers per token, host-driven descriptor chain, double-buffered DMA.
-- [ ] tritd: tokenizer, sampler, chat loop talking to the board.
-- [ ] KV cache v1 (BRAM hot window, 2K cap). Embeddings/lm_head on host if fabric-constrained.
-- [ ] Target model: whatever fits the bandwidth budget conversationally — 160M–700M class first, 2B stretch.
-- **Artifact:** video — prompt in, tokens out, network cable visibly unplugged.
+**The largest credibility gap in the project.** `benches/` is built, records a
+row per baseline, and honestly reports `unavailable` — because neither llama.cpp
+nor bitnet.cpp is installed on the machine every published number came from. So
+every comparison so far is Tritium against its own past, plus a roofline measured
+on the same host.
 
-## Week 5 — numbers nobody can argue with
+This is first because it is cheap, it is blocking every efficiency claim the
+project exists to make, and it is the one item where the answer could be
+genuinely unflattering. A ternary runtime that loses to llama.cpp Q4_K_M on the
+same host is something we need to know before building anything else on the
+premise that it does not.
 
-- [ ] `tritbench`: fixed prompt suite, 3 runs, medians; tok/s decode, TTFT, J/token via INA226 on the 12V rail.
-- [ ] Baselines on identical prompts: bitnet.cpp on Raspberry Pi 5, Jetson Orin Nano (and one x86 laptop for reference).
-- [ ] Per-layer profiler output (cycle counts, DMA stalls) — first public outing of the profiler angle.
-- **Artifact:** benchmark report (BENCHMARKS.md filled with real data) + reproduction scripts. This is the credibility post.
+- Install llama.cpp and bitnet.cpp; run `benches/run.sh` with both present.
+- Same prompts, same thread count, same context cap, greedy decoding.
+- Commit the raw CSV.
 
-## Week 6 — the demo and the ask
+**Gate:** a committed CSV with `status=ok` rows for both baselines, and a
+published comparison — whichever way it goes.
 
-- [ ] Package the board as a self-contained "answer box": battery pack, e-ink or serial display, wake-on-button. Offline by construction.
-- [ ] 2-minute demo video: what it is, why ternary, the J/token chart, the roadmap to ASIC.
-- [ ] Write the one-pager (from 05-POSITIONING). Apply to Founders Inc; the application is the six weeks of public artifacts.
-- **Artifact:** demo video + application sent.
+## A2. The f32 LM head
 
-## Explicit risks
+**The biggest remaining technical lever, by arithmetic.** At batch 1 the tied
+f32 head moves 1313 MB per token against 521 MB for every ternary projection
+combined. The ternary kernels are already at 32x scalar; there is far more left
+in the 72% of traffic that is not ternary than in the 28% that is.
+
+An int8 head would cut bytes/token from 1834 MB to roughly 849 MB. If the same
+fraction of roofline held, that is about 2.2x — larger than any remaining kernel
+work can plausibly return. It is a prediction from the roofline, and the point of
+the milestone is to test it rather than to quote it.
+
+The open question is quality cost, which is unmeasured. G2 is the arbiter.
+
+**Gate:** bytes/token and decode tok/s both measured before and after, with G2
+held at its frozen value or the regression argued explicitly in
+[06-GATES.md](06-GATES.md).
+
+## A3. Energy per token
+
+J/token is named "the headline metric" in [04-BENCHMARKS.md](04-BENCHMARKS.md),
+and the project has never reported one, because the reader refuses to estimate
+and no machine in the loop has exposed a counter. The development host has no
+RAPL zones at all.
+
+This is blocked on hardware access rather than on work: it needs a box with a
+real energy counter, or an inline meter. Until then the column stays empty and
+the source reads `none`, which is the correct behaviour and not a placeholder to
+be filled with a guess.
+
+**Gate:** J/token reported from a real counter on at least one machine, next to
+a baseline measured the same way on the same machine.
+
+## A4. ARM throughput
+
+The NEON kernels are now *correct* — executed on aarch64 CI hardware, matching
+the reference exactly across the differential corpus including the worst case for
+the `i16` accumulators. They have never been *timed*, so no ARM performance claim
+exists and none should be made.
+
+This matters disproportionately for positioning: the edge devices the project
+targets are overwhelmingly ARM, so "verified on x86" is a weaker story than it
+looks.
+
+**Gate:** decode tok/s and bytes/token on real ARM hardware, published next to
+the x86 figures, with the kernel named.
+
+## A5. KV cache precision and context
+
+f32 and preallocated: 315 MB at a 2048 cap. int8 pages would cut that
+substantially, and the ratio gets worse as context grows. Lower priority than
+A1-A2 because it is resident footprint rather than per-token traffic, so it
+moves RSS rather than tok/s.
+
+**Gate:** RSS measured before and after at equal context, G2 held.
+
+## A6. Batched prefill
+
+Currently batch 1 everywhere. Prefill is the compute-bound phase, so it is where
+batching actually pays, and it is also what would make `PARALLEL_MIN_BYTES` worth
+revisiting — with a measurement, as before.
+
+Explicitly last: it is a throughput feature for a serving story the project does
+not yet have, and it should not jump the queue ahead of claims that are already
+being made.
+
+---
+
+# Track B — silicon
+
+The RTL is not a museum piece and the pivot did not retire it. It is a backend
+that CI exercises on every push, its bit-exactness is a frozen invariant, and it
+is the only path to the efficiency numbers that justify the whole thesis. What
+changed is that it is no longer the *only* way to have a demo, which means it can
+be done properly rather than urgently.
+
+## B1. Board bring-up
+
+Follows the purchase. Port the sequencer, get a single transformer layer running
+end-to-end on the part, output matching the oracle.
+
+**Gate:** one layer on hardware, bit-identical to `tritsim`. Artifact: scope or
+ILA capture next to the golden vectors.
+
+## B2. Achieved bandwidth against the roofline
+
+The number the architecture document has been predicting without evidence.
+Measure achieved GB/s, lane utilization and clock, and compare to the roofline
+the board was chosen on.
+
+**Gate:** measured GB/s published against the predicted figure, including the
+gap and its explanation.
+
+## B3. Full model on the part
+
+Layer sequencer, host-driven descriptor chain, double-buffered DMA, KV cache with
+a BRAM hot window. Embeddings and head on the PS side if fabric-constrained —
+which, given section 3 of the architecture, is where they belong anyway.
+
+**Gate:** a full decode on hardware, output matching the oracle, with tok/s and
+J/token measured on the 12V rail.
+
+## B4. Timing closure and the honest RTL limits
+
+Two things are known-unfinished and should not be discovered by a board:
+
+- The 64-term single-cycle reduction and 64 parallel activation reads are fine
+  under Verilator and are not placed on a part.
+- `MAX_COLS` is 8192. Every projection in this model class fits, and the wrappers
+  now reject anything wider rather than wrapping the address silently — but a
+  larger model would need real banking.
+
+---
+
+## Risks
 
 | Risk | Mitigation |
 |---|---|
-| DDR controller/DMA integration eats week 3 | It always does. Week 3 scope is ONE layer; sequencing is week 4. |
-| 2B model too slow on ternoise board | Ship 700M-class conversational demo; show 2B math for the better board. Honesty beats vaporware. |
-| No small ternary checkpoint with decent quality | Fall back to microsoft 2B4T at low tok/s for quality demo + small model for speed demo; two-board story. |
-| RTL debugging spiral | tritsim vectors at every block boundary; never debug quality and correctness at the same time. |
-| Board dies / tooling hell | tritsim IS a demo ("no-multiply LLM runtime in Rust") and the profiler is a standalone deliverable. |
+| A baseline beats us on the same host | Publish it. A ternary runtime that loses to Q4_K_M on x86 is a finding about x86, not about ternary — but only if we measured it before claiming otherwise. This is why A1 is first. |
+| The int8 head costs real quality | G2 is the arbiter and it is frozen. Ship it as a flag rather than a default if the cosine moves; the bytes/token win is not worth a lobotomized model. |
+| No hardware with an energy counter | J/token stays unreported. The column being empty is the honest outcome, and estimating one would poison the single claim the project exists to make. |
+| ARM turns out slow | Then say so. The NEON kernels were written against the same contract as the x86 ones and are correct; if they are slow, that is a kernel problem with a known shape, not a surprise. |
+| Board arrives and timing does not close | Reduce lane count. The design scales roughly linearly with lanes and the roofline says the memory link binds long before the adder tree does. |
+| The project drifts into being a CPU inference engine | The RTL parity gate runs on every push. Drift is detectable by construction, not by vigilance. |
+
+## Ground rules
+
+- Every performance claim ships with a reproducible script.
+- `tritsim` is the source of truth. The CPU runtime and the RTL are both wrong
+  until they match it.
+- Gates move only with an argued entry in [06-GATES.md](06-GATES.md).
+- Energy is measured or absent, never estimated.
+- Build in public. No emojis in project communications.
