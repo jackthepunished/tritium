@@ -45,6 +45,54 @@ by `tok/s ~= bandwidth / bytes_per_token`. For this model that is **521 MB of
 ternary weights and 1313 MB of f32 embeddings** — the LM head, not the ternary
 projections, is the thing to attack next.
 
+## Measured against the alternatives
+
+Same host, greedy, 32 tokens, median of three invocations per baseline. Raw CSV
+in [benches/results/](benches/results/). The defaults differ from these
+parameters, so reproduce with exactly:
+
+```sh
+export LLAMA_CPP_BIN=/path/to/llama.cpp/build/bin/llama-bench
+export LLAMA_GGUF=/path/to/qwen2.5-3b-instruct-q4_k_m.gguf
+export BITNET_CPP_BIN=/path/to/bitnet.cpp/build/bin/llama-bench
+export BITNET_GGUF=/path/to/ggml-model-i2_s.gguf
+for T in 1 2 4 8 16; do
+    benches/run.sh --model models/bitnet-2b4t.trit --tokens 32 --threads "$T"
+done
+```
+
+Tritium decodes the four-prompt suite; the baselines generate from an empty
+context, because `llama-bench` takes no prompt file. Both are steady-state
+batch-1 decode — see [benches/README.md](benches/README.md) for what that does
+and does not make comparable.
+
+| threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
+|---|---|---|---|
+| 1  | 13.28 | **13.91** | 12.54 |
+| 2  | 14.61 | **20.01** | 19.64 |
+| 4  | 15.23 | 25.54 | **27.29** |
+| 8  | 15.23 | 24.72 | **31.90** |
+| 16 | 14.98 | 22.84 | **30.51** |
+
+bitnet.cpp runs the identical checkpoint, so that column is the honest
+comparison. llama.cpp runs Qwen2.5-3B Q4_K_M, because mainline cannot load the
+`i2_s` type — a different model at a different quality point, which is why the
+bits-per-weight column is in the CSV and why this table should not be read as
+"ternary beats 4-bit".
+
+**All three are within 11% of each other at one thread. Only Tritium fails to
+scale.** From one thread to eight, bitnet.cpp gains 2.54x and llama.cpp 1.78x;
+Tritium gains 1.15x and then stops, finishing 2.09x behind bitnet.cpp. The
+kernels are not the problem — per core we are ordinary. The runtime's inability
+to use more than one core is the whole gap. A decode step issues 210 ternary
+matvecs whose largest is 4.4 MB, and per-matvec fork/join costs more than the
+matvec, which is measured and is why `PARALLEL_MIN_BYTES` exists.
+
+The other part of the gap is bytes: bitnet.cpp stores its embedding table as f16
+where Tritium stores f32, moving ~1178 MB per token against our 1834 MB.
+
+Both are on the roadmap, in that order.
+
 ## Architecture
 
 | Crate | What it is | Status |
@@ -56,7 +104,7 @@ projections, is the thing to attack next.
 | `crates/trit-rtl` | Hardware-in-the-loop backend over the Verilated core. | working |
 | `crates/tritsim` | Independent golden reference. The oracle every other path is diffed against. | working |
 | `rtl/` | Multiplier-free SystemVerilog `tritcore` + Verilator testbenches. | 64 lanes, simulation-first |
-| `benches/` | Comparative harness vs llama.cpp / bitnet.cpp baselines. | working; no baseline installed here yet |
+| `benches/` | Comparative harness vs llama.cpp / bitnet.cpp baselines. | working; both baselines measured |
 
 ## Quickstart
 
@@ -171,10 +219,9 @@ Full specification, including both plane invariants and the v0 migration path:
 - No FPGA silicon yet. The RTL is simulation-first: the 64-term single-cycle
   reduction and 64 parallel activation reads are fine under Verilator and are not
   yet timing-closed on a board.
-- No llama.cpp or bitnet.cpp comparison has been run yet. `benches/` is built and
-  records a row for each baseline, but neither binary is installed on the machine
-  these numbers came from, so both show as `unavailable`. The figures above are
-  Tritium against its own past, plus a roofline measured on the same host.
+- **Tritium does not scale across cores.** It has the best single-thread number
+  of the three runtimes measured and the worst aggregate one. See the comparison
+  below; closing this is the top item on the roadmap.
 - Energy per token is reported only where a real counter exists. It is never
   estimated.
 

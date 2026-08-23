@@ -208,6 +208,90 @@ fn forced_kernel_matches_the_reference() {
     check_kernel(&name);
 }
 
+/// Every dense f32 kernel this CPU can run must agree with the sequential
+/// reference.
+///
+/// Forced by name from CI, one process per kernel, for the same reason the
+/// ternary suite is: the dispatcher prefers AVX-512 where it exists, so on such
+/// a runner the AVX2 path would otherwise never execute and its coverage would
+/// be imaginary.
+///
+/// Tolerance rather than equality, unlike the ternary kernels: f32 addition is
+/// not associative and a vectorized reduction sums in a different order. The
+/// bound is far tighter than the scale at which a top-1 selection could move.
+#[test]
+fn forced_f32_kernel_matches_the_reference() {
+    let Ok(name) = std::env::var("TRIT_F32_KERNEL") else {
+        eprintln!("TRIT_F32_KERNEL unset; covered by default_f32_kernel_matches_the_reference");
+        return;
+    };
+    let forced = match trit_cpu::f32_kernels::force_f32_kernel(&name) {
+        Ok(k) => k,
+        Err(e) => panic!("cannot test {name}: {e}"),
+    };
+    assert_eq!(
+        forced, name,
+        "force_f32_kernel resolved to a different kernel"
+    );
+    check_f32_kernel();
+}
+
+/// The dispatcher's own choice -- what a real run uses.
+#[test]
+fn default_f32_kernel_matches_the_reference() {
+    println!(
+        "dispatched f32 kernel: {}",
+        trit_cpu::f32_kernels::f32_kernel_name()
+    );
+    println!(
+        "available on this CPU: {:?}",
+        trit_cpu::f32_kernels::available_f32_kernels()
+    );
+    check_f32_kernel();
+}
+
+fn check_f32_kernel() {
+    let mut rng = Rng(0xF32D);
+    // Shapes chosen to straddle every unrolled block size in the kernels: 64
+    // floats for AVX-512, 32 for AVX2, 16 for NEON. Each of these leaves a
+    // different scalar tail.
+    for (rows, cols) in [
+        (3usize, 1usize),
+        (5, 15),
+        (7, 31),
+        (4, 64),
+        (9, 65),
+        (6, 127),
+        (2, 2560),
+    ] {
+        let w: Vec<f32> = (0..rows * cols).map(|_| rng.i8() as f32 * 0.01).collect();
+        let x: Vec<f32> = (0..cols).map(|_| rng.i8() as f32 * 0.01).collect();
+
+        let mut want = vec![0f32; rows];
+        trit_cpu::f32_kernels::f32_matvec_scalar(&w, rows, cols, &x, &mut want);
+
+        for threads in [1usize, 4] {
+            let mut got = vec![0f32; rows];
+            trit_cpu::f32_kernels::f32_matvec(&w, rows, cols, &x, &mut got, threads);
+            for (i, (a, b)) in want.iter().zip(&got).enumerate() {
+                assert!(
+                    (a - b).abs() <= 1e-4 * a.abs().max(1.0),
+                    "{rows}x{cols} row {i} at {threads} threads: {a} vs {b}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn unsupported_f32_kernel_errors_rather_than_falling_back() {
+    let err = trit_cpu::f32_kernels::force_f32_kernel("not-a-real-kernel").unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("not available"), "{msg}");
+    // The message must name what IS available, or a CI failure is unactionable.
+    assert!(msg.contains("scalar"), "{msg}");
+}
+
 #[test]
 fn unsupported_kernel_errors_rather_than_falling_back() {
     let err = trit_cpu::force_kernel("definitely-not-a-kernel").unwrap_err();
@@ -215,6 +299,27 @@ fn unsupported_kernel_errors_rather_than_falling_back() {
     assert!(msg.contains("not available"), "{msg}");
     // The message must name what IS available, or a CI failure is unactionable.
     assert!(msg.contains("scalar"), "{msg}");
+}
+
+/// Forcing a kernel that cannot take effect must fail loudly.
+///
+/// Run as its own process so the OnceLock starts unset: resolve one kernel,
+/// then ask for a different one. Returning `Ok` with the first kernel would let
+/// a CI job believe it had covered the second.
+#[test]
+fn forcing_a_second_different_kernel_is_an_error() {
+    let available = trit_cpu::available_kernels();
+    // Resolve something, so the process-wide choice is now fixed.
+    let first = trit_cpu::kernel_name();
+    let Some(other) = available.iter().find(|k| **k != first) else {
+        eprintln!("only one kernel available ({first}); nothing to contend with");
+        return;
+    };
+    let err = trit_cpu::force_kernel(other).unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("already resolved"), "{msg}");
+    // Asking for the one already in force stays fine.
+    assert_eq!(trit_cpu::force_kernel(first).unwrap(), first);
 }
 
 #[test]

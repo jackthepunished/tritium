@@ -60,52 +60,85 @@ pub fn peak_rss_mb() -> Option<u64> {
     None
 }
 
+/// Passes over the probe buffer. The best one is reported.
+///
+/// Best-of-N for the same reason the decode rate is best-of-N: a slow pass
+/// measures the scheduler and whatever else the machine was doing, a fast one
+/// measures the memory system. Single passes on the development host scattered
+/// between 45 and 50 GB/s run to run while a real streaming kernel sustained
+/// close to 55, and that scatter lands in `roofline_pct` as a denominator that
+/// flatters every result.
+///
+/// Passes rather than a larger buffer: 512 MB already exceeds any last-level
+/// cache, so each pass genuinely re-reads DRAM, while growing the buffer would
+/// put a gigabyte-scale allocation in front of exactly the small edge devices
+/// this runtime targets.
+///
+/// Measured and rejected: eight independent accumulator chains, on the theory
+/// that a single `fold` made the loop latency-bound. It is not -- LLVM already
+/// vectorizes the fold, and the chained and naive versions matched within noise
+/// at every buffer size and thread count tried.
+const PROBE_PASSES: usize = 5;
+
 /// Streaming read bandwidth of this machine, measured over a working set well
 /// past any last-level cache.
+///
+/// The buffer is filled with a non-zero byte deliberately: `vec![0u8; n]` can be
+/// served by lazily-zeroed pages, and the probe would then read one physical
+/// page repeatedly and report a fantasy.
 pub fn memcpy_probe_gbps(threads: usize) -> f64 {
     const BYTES: usize = 512 << 20;
     let src = vec![1u8; BYTES];
+
     // Fold with wrapping_add: the value is a checksum nobody reads, and a plain
     // sum over half a gigabyte overflows u64 (and panics in debug builds). What
     // matters is that every byte is loaded and the result is not optimized away,
     // which is what a weight pass looks like.
-    let sum_range = |r: std::ops::Range<usize>| -> u64 {
-        src[r].chunks_exact(8).fold(0u64, |a, c| {
+    let sum = |b: &[u8]| -> u64 {
+        b.chunks_exact(8).fold(0u64, |a, c| {
             a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap()))
         })
     };
 
-    let t = Instant::now();
-    let total: u64 = if threads <= 1 {
-        sum_range(0..BYTES)
-    } else {
-        let chunk = BYTES / threads;
-        std::thread::scope(|s| {
-            let handles: Vec<_> = (0..threads)
-                .map(|i| {
-                    let src = &src;
-                    s.spawn(move || {
-                        let start = i * chunk;
-                        let end = if i + 1 == threads {
-                            BYTES
-                        } else {
-                            start + chunk
-                        };
-                        src[start..end].chunks_exact(8).fold(0u64, |a, c| {
-                            a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap()))
+    let mut best = 0f64;
+    for _ in 0..PROBE_PASSES {
+        let t = Instant::now();
+        let total: u64 = if threads <= 1 {
+            sum(&src)
+        } else {
+            // Aligned down to the 8-byte checksum word. `sum` walks
+            // `chunks_exact(8)` and drops any short tail, so an unaligned split
+            // would leave a few bytes per worker unread while the rate below
+            // still divides by all of BYTES -- a tiny overstatement, but this
+            // function exists to not overstate things.
+            let chunk = (BYTES / threads) & !7;
+            std::thread::scope(|s| {
+                let handles: Vec<_> = (0..threads)
+                    .map(|i| {
+                        let src = &src;
+                        let sum = &sum;
+                        s.spawn(move || {
+                            let start = i * chunk;
+                            let end = if i + 1 == threads {
+                                BYTES
+                            } else {
+                                start + chunk
+                            };
+                            sum(&src[start..end])
                         })
                     })
-                })
-                .collect();
-            handles
-                .into_iter()
-                .map(|h| h.join().unwrap())
-                .fold(0u64, u64::wrapping_add)
-        })
-    };
-    let secs = t.elapsed().as_secs_f64();
-    std::hint::black_box(total);
-    BYTES as f64 / secs / 1e9
+                    .collect();
+                handles
+                    .into_iter()
+                    .map(|h| h.join().unwrap())
+                    .fold(0u64, u64::wrapping_add)
+            })
+        };
+        let secs = t.elapsed().as_secs_f64();
+        std::hint::black_box(total);
+        best = best.max(BYTES as f64 / secs / 1e9);
+    }
+    best
 }
 
 /// Energy counters, where the platform exposes them.
@@ -193,7 +226,15 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     }
 
     let energy_before = read_energy_uj();
-    let mut best_decode_rate = 0f64;
+    // Median across runs, not the best.
+    //
+    // This file previously reported the best run, on the reasoning that a slow
+    // run measures the scheduler and a fast one measures the code. That is a
+    // defensible policy in isolation and the wrong one for a comparison:
+    // docs/04-BENCHMARKS.md specifies median of three, and the baselines in
+    // benches/run.sh are recorded as a median. Reporting our best against their
+    // median would tilt every comparison our way by construction.
+    let mut rates: Vec<f64> = Vec::new();
     let mut ttft_ms = f64::MAX;
     let mut decoded_total = 0usize;
     let mut kv_bytes = 0u64;
@@ -227,9 +268,7 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
             kv_bytes = stream.session().kv_bytes();
 
             if n > 0 {
-                // Best over every (run, prompt) pair, not the mean: a slow one
-                // measures the scheduler, a fast one measures the code.
-                best_decode_rate = best_decode_rate.max(n as f64 / decode_secs);
+                rates.push(n as f64 / decode_secs);
                 let t = (prefill_secs + first.unwrap_or(0.0)) * 1000.0;
                 ttft_ms = ttft_ms.min(t);
                 run_decoded += n;
@@ -238,6 +277,13 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
         decoded_total = decoded_total.max(run_decoded);
     }
     let wall = t_all.elapsed().as_secs_f64();
+
+    rates.sort_by(f64::total_cmp);
+    let decode_rate = match rates.len() {
+        0 => 0.0,
+        n if n % 2 == 1 => rates[n / 2],
+        n => (rates[n / 2 - 1] + rates[n / 2]) / 2.0,
+    };
 
     let (joules_per_token, energy_source) = match (energy_before, read_energy_uj()) {
         (Some(a), Some(b)) if b >= a && decoded_total > 0 => (
@@ -249,7 +295,7 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
     };
 
     let weight_bytes = rt.model.weight_bytes();
-    let achieved_gbps = weight_bytes as f64 * best_decode_rate / 1e9;
+    let achieved_gbps = weight_bytes as f64 * decode_rate / 1e9;
 
     // Sampled BEFORE the probe. VmHWM is a high-water mark and the probe
     // allocates half a gigabyte, so reading it afterwards reports the probe's
@@ -272,7 +318,7 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
         decoded_tokens: decoded_total,
         ttft_ms: if ttft_ms == f64::MAX { 0.0 } else { ttft_ms },
         prefill_tok_per_s: 0.0,
-        decode_tok_per_s: best_decode_rate,
+        decode_tok_per_s: decode_rate,
         weight_bytes_per_token: weight_bytes,
         ternary_bytes: rt.model.ternary_bytes(),
         lm_head_bytes: rt.model.lm_head_bytes(),

@@ -32,20 +32,33 @@ def main(path):
 
     for host, rs in by_host.items():
         print(f"## {host}\n")
-        print("| runtime | quant | bits/w | tok/s | TTFT | bytes/token | GB/s | % roofline | peak RSS | J/token |")
-        print("|---|---|---|---:|---:|---:|---:|---:|---:|---:|")
-        for r in rs:
+        print(
+            "| runtime | quant | bits/w | threads | tok/s | TTFT | bytes/token "
+            "| GB/s | % roofline | peak RSS | J/token |"
+        )
+        print("|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|")
+        # Thread count first, then runtime, so each thread count reads as one
+        # comparable block. Scaling is the thing these rows exist to show.
+        def _key(r):
+            try:
+                t = int(r.get("threads") or 0)
+            except ValueError:
+                t = 0
+            return (t, r["runtime"])
+
+        for r in sorted(rs, key=_key):
             if r["status"] != "ok":
                 note = r.get("note", "") or r["status"]
                 print(
                     f"| {r['runtime']} | {r['quant'] or '--'} | {r['bits_per_weight'] or '--'} "
-                    f"| _not measured_ | | | | | | | <!-- {note} -->"
+                    f"| {r.get('threads') or '--'} | _not measured_ | | | | | | | <!-- {note} -->"
                 )
                 continue
             bpt = r["weight_bytes_per_token"]
             bpt = f"{int(bpt)/1e6:.0f} MB" if bpt else "--"
             print(
                 f"| {r['runtime']} | {r['quant']} | {r['bits_per_weight']} "
+                f"| {r.get('threads') or '--'} "
                 f"| {fmt(r['decode_tok_per_s'])} | {fmt(r['ttft_ms'], 0, ' ms')} | {bpt} "
                 f"| {fmt(r['achieved_gbps'], 1)} | {fmt(r['roofline_pct'], 0, '%')} "
                 f"| {fmt(r['peak_rss_mb'], 0, ' MB')} | {fmt(r['joules_per_token'], 3)} |"

@@ -123,11 +123,29 @@ Consequences baked into the design:
 - **Prefill is the exception.** With N prompt tokens you amortize one weight pass
   over N tokens of work, so prefill runs compute-bound. TTFT looks
   disproportionately good; steady-state decode is the honest number.
-- **The next real lever is the head, not the kernels.** Arithmetic, not a
-  measurement: an int8 head would cut bytes/token from 1834 MB to roughly 849 MB.
-  If the same fraction of roofline held, that is about 2.2x — more than any
-  remaining kernel work can plausibly return, since the ternary kernels already
-  sit at 32x scalar. It is a prediction, and it gets tested rather than quoted.
+- **Bytes are not time. Measure both.** This document originally argued from
+  the byte share alone and concluded the head was the thing to attack. An
+  instrumented decode says otherwise: the head is 26.9 ms of a 64.4 ms token,
+  42% of the time against 72% of the bytes, because it runs at 48.8 GB/s while
+  the ternary path runs at 13.9. The two halves sit at opposite ends of the
+  machine's efficiency range, so the byte split systematically misleads about
+  where time goes. Halving the head's bytes is still worth about 1.26x, and is
+  worth doing because it is free — see [02-ROADMAP.md](02-ROADMAP.md) A3 — but
+  it is no longer the largest item.
+
+### Where the time actually goes
+
+| | per token | share | achieved |
+|---|---|---|---|
+| 30 transformer layers (ternary + attention) | 37.5 ms | 58% | 13.9 GB/s |
+| LM head | 26.9 ms | 42% | 48.8 GB/s |
+
+The head is already at roughly 92% of this machine's ~53 GB/s ceiling, so no
+kernel work will move it: forcing the dense kernel to scalar, AVX2 and AVX-512
+in turn gives 28.8, 28.1 and 27.1 ms. The ternary path is the opposite — it is
+compute-bound in the kernel at about 15.8 GB/s per core, barely above what it
+achieves from DRAM, which means it would scale with cores if the runtime could
+use them. Section 7 is why it cannot.
 
 ## 4. System overview
 
@@ -291,6 +309,15 @@ and the parallelism that does pay goes to the LM head.
 
 Batched prefill, or a model whose projections are an order of magnitude larger,
 would want this revisited — again with a measurement.
+
+**This is the project's largest open defect, and it is now quantified.** Against
+bitnet.cpp on the identical checkpoint, Tritium is within 6% at one thread and
+2.09x slower at eight, because bitnet.cpp scales 2.54x across that range and
+Tritium scales 1.15x. Lowering the threshold does not help — the layer time goes
+37.4 ms at one thread to 173 ms at eight, since each of 210 matvecs per token
+pays its own fork/join. The fix is a cheaper synchronization primitive, not a
+different threshold: ggml gets its scaling from a persistent pool with cheap
+barriers. Until that exists, the threshold is load-bearing and must stay.
 
 ## 8. The silicon track
 

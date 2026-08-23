@@ -102,15 +102,20 @@ pub fn available_kernels() -> Vec<&'static str> {
 }
 
 #[derive(Debug)]
-pub struct UnsupportedKernel(pub String);
+pub struct UnsupportedKernel {
+    pub requested: String,
+    /// What this CPU *can* run. Carried rather than looked up, so the dense f32
+    /// dispatch can raise the same error about its own kernel list.
+    pub available: Vec<&'static str>,
+}
 
 impl std::fmt::Display for UnsupportedKernel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "kernel {:?} is not available on this CPU (have: {})",
-            self.0,
-            available_kernels().join(", ")
+            self.requested,
+            self.available.join(", ")
         )
     }
 }
@@ -121,7 +126,10 @@ fn lookup(name: &str) -> Result<(&'static str, MatvecFn), UnsupportedKernel> {
         .into_iter()
         .find(|k| k.0 == name && k.2)
         .map(|k| (k.0, k.1))
-        .ok_or_else(|| UnsupportedKernel(name.to_string()))
+        .ok_or_else(|| UnsupportedKernel {
+            requested: name.to_string(),
+            available: available_kernels(),
+        })
 }
 
 static KERNEL: OnceLock<(&'static str, MatvecFn)> = OnceLock::new();
@@ -142,12 +150,23 @@ fn resolve() -> (&'static str, MatvecFn) {
 /// Pin the kernel for the process. Errors -- never falls back -- if this CPU
 /// cannot run it.
 ///
-/// Takes effect only if no kernel has been resolved yet, since the choice is
-/// cached for the process; returns the name actually in force.
+/// The choice is cached for the process, so this can only take effect before
+/// anything has resolved a kernel. Asking for the one already in force is fine;
+/// asking for a *different* one after the fact is an error rather than a
+/// silently ignored request. Returning `Ok` with someone else's kernel would
+/// let a CI job believe it had tested `scalar` while it re-tested `avx512vnni`,
+/// which is the exact failure this whole forcing mechanism exists to prevent.
 pub fn force_kernel(name: &str) -> Result<&'static str, UnsupportedKernel> {
     let (n, f) = lookup(name)?;
     let _ = KERNEL.set((n, f));
-    Ok(resolve().0)
+    let in_force = resolve().0;
+    if in_force != n {
+        return Err(UnsupportedKernel {
+            requested: format!("{name} (already resolved to {in_force} earlier in this process)"),
+            available: available_kernels(),
+        });
+    }
+    Ok(in_force)
 }
 
 /// The kernel in force.
