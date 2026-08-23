@@ -60,52 +60,80 @@ pub fn peak_rss_mb() -> Option<u64> {
     None
 }
 
+/// Passes over the probe buffer. The best one is reported.
+///
+/// Best-of-N for the same reason the decode rate is best-of-N: a slow pass
+/// measures the scheduler and whatever else the machine was doing, a fast one
+/// measures the memory system. Single passes on the development host scattered
+/// between 45 and 50 GB/s run to run while a real streaming kernel sustained
+/// close to 55, and that scatter lands in `roofline_pct` as a denominator that
+/// flatters every result.
+///
+/// Passes rather than a larger buffer: 512 MB already exceeds any last-level
+/// cache, so each pass genuinely re-reads DRAM, while growing the buffer would
+/// put a gigabyte-scale allocation in front of exactly the small edge devices
+/// this runtime targets.
+///
+/// Measured and rejected: eight independent accumulator chains, on the theory
+/// that a single `fold` made the loop latency-bound. It is not -- LLVM already
+/// vectorizes the fold, and the chained and naive versions matched within noise
+/// at every buffer size and thread count tried.
+const PROBE_PASSES: usize = 5;
+
 /// Streaming read bandwidth of this machine, measured over a working set well
 /// past any last-level cache.
+///
+/// The buffer is filled with a non-zero byte deliberately: `vec![0u8; n]` can be
+/// served by lazily-zeroed pages, and the probe would then read one physical
+/// page repeatedly and report a fantasy.
 pub fn memcpy_probe_gbps(threads: usize) -> f64 {
     const BYTES: usize = 512 << 20;
     let src = vec![1u8; BYTES];
+
     // Fold with wrapping_add: the value is a checksum nobody reads, and a plain
     // sum over half a gigabyte overflows u64 (and panics in debug builds). What
     // matters is that every byte is loaded and the result is not optimized away,
     // which is what a weight pass looks like.
-    let sum_range = |r: std::ops::Range<usize>| -> u64 {
-        src[r].chunks_exact(8).fold(0u64, |a, c| {
+    let sum = |b: &[u8]| -> u64 {
+        b.chunks_exact(8).fold(0u64, |a, c| {
             a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap()))
         })
     };
 
-    let t = Instant::now();
-    let total: u64 = if threads <= 1 {
-        sum_range(0..BYTES)
-    } else {
-        let chunk = BYTES / threads;
-        std::thread::scope(|s| {
-            let handles: Vec<_> = (0..threads)
-                .map(|i| {
-                    let src = &src;
-                    s.spawn(move || {
-                        let start = i * chunk;
-                        let end = if i + 1 == threads {
-                            BYTES
-                        } else {
-                            start + chunk
-                        };
-                        src[start..end].chunks_exact(8).fold(0u64, |a, c| {
-                            a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap()))
+    let mut best = 0f64;
+    for _ in 0..PROBE_PASSES {
+        let t = Instant::now();
+        let total: u64 = if threads <= 1 {
+            sum(&src)
+        } else {
+            let chunk = BYTES / threads;
+            std::thread::scope(|s| {
+                let handles: Vec<_> = (0..threads)
+                    .map(|i| {
+                        let src = &src;
+                        let sum = &sum;
+                        s.spawn(move || {
+                            let start = i * chunk;
+                            let end = if i + 1 == threads {
+                                BYTES
+                            } else {
+                                start + chunk
+                            };
+                            sum(&src[start..end])
                         })
                     })
-                })
-                .collect();
-            handles
-                .into_iter()
-                .map(|h| h.join().unwrap())
-                .fold(0u64, u64::wrapping_add)
-        })
-    };
-    let secs = t.elapsed().as_secs_f64();
-    std::hint::black_box(total);
-    BYTES as f64 / secs / 1e9
+                    .collect();
+                handles
+                    .into_iter()
+                    .map(|h| h.join().unwrap())
+                    .fold(0u64, u64::wrapping_add)
+            })
+        };
+        let secs = t.elapsed().as_secs_f64();
+        std::hint::black_box(total);
+        best = best.max(BYTES as f64 / secs / 1e9);
+    }
+    best
 }
 
 /// Energy counters, where the platform exposes them.
