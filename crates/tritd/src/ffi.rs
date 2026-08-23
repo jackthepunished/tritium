@@ -133,7 +133,9 @@ impl From<TritSamplerParams> for SamplerParams {
 /// Runtime version string. Valid for the process lifetime.
 #[no_mangle]
 pub extern "C" fn trit_version() -> *const c_char {
-    concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as *const c_char
+    concat!(env!("CARGO_PKG_VERSION"), "\0")
+        .as_ptr()
+        .cast::<c_char>()
 }
 
 /// Bit 0: a CPU backend is compiled in. Bit 1: the RTL backend is.
@@ -299,7 +301,7 @@ pub unsafe extern "C" fn trit_session_prefill(
         let bytes = if len == 0 {
             CStr::from_ptr(utf8).to_bytes()
         } else {
-            std::slice::from_raw_parts(utf8 as *const u8, len)
+            std::slice::from_raw_parts(utf8.cast::<u8>(), len)
         };
         let text = std::str::from_utf8(bytes)?;
         let sess = &mut *s;
@@ -378,7 +380,7 @@ pub unsafe extern "C" fn trit_session_next(
             sess.pending = Some((id, text));
             return Ok(TRIT_ERR_BUFFER);
         }
-        std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_buf as *mut u8, bytes.len());
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_buf.cast::<u8>(), bytes.len());
         *out_buf.add(bytes.len()) = 0;
         let _ = &sess.model; // keeps the model alive for the session's lifetime
         Ok(1)
