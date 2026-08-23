@@ -294,6 +294,76 @@ fn a_projection_of_the_wrong_shape_is_rejected_at_load() {
     );
 }
 
+/// An optional tensor that is present but stored with the wrong dtype must be
+/// an error, not silently read as absent.
+///
+/// Absent and malformed are different: a missing sub-norm legitimately selects
+/// a different numerics rung, so swallowing a malformed one would quietly run
+/// the model a different way rather than refusing the file.
+#[test]
+fn a_sub_norm_with_the_wrong_dtype_is_not_read_as_missing() {
+    let path = std::env::temp_dir().join("xcmp_baddtype.trit");
+    let mut w = TritWriter::create(
+        &path,
+        r#"{"hidden_size":8,"intermediate_size":8,"num_hidden_layers":1,
+            "num_attention_heads":2,"vocab_size":4,"tie_word_embeddings":true}"#,
+    )
+    .unwrap();
+    w.write_f32("model.embed_tokens.weight", &[4, 8], &[0.1; 32])
+        .unwrap();
+    w.write_f32("model.norm.weight", &[8], &[1.0; 8]).unwrap();
+    w.write_f32("model.layers.0.input_layernorm.weight", &[8], &[1.0; 8])
+        .unwrap();
+    w.write_f32(
+        "model.layers.0.post_attention_layernorm.weight",
+        &[8],
+        &[1.0; 8],
+    )
+    .unwrap();
+    for n in ["q_proj", "k_proj", "v_proj", "o_proj"] {
+        w.write_trit(
+            &format!("model.layers.0.self_attn.{n}.weight"),
+            &[8, 8],
+            &[0i8; 64],
+            0.1,
+        )
+        .unwrap();
+    }
+    for n in ["gate_proj", "up_proj", "down_proj"] {
+        w.write_trit(
+            &format!("model.layers.0.mlp.{n}.weight"),
+            &[8, 8],
+            &[0i8; 64],
+            0.1,
+        )
+        .unwrap();
+    }
+    // The sub-norm is a dense gain vector; write it ternary instead. (Ternary
+    // tensors must be 2-D, so it is a 1x8 rather than a bare 8.)
+    w.write_trit(
+        "model.layers.0.self_attn.attn_sub_norm.weight",
+        &[1, 8],
+        &[0i8; 8],
+        0.1,
+    )
+    .unwrap();
+    w.finish().unwrap();
+
+    let backend: Arc<dyn MatvecBackend> = Arc::new(trit_cpu::CpuBackend::new(1));
+    let err = CoreModel::load(TritFile::open(&path).unwrap(), backend).unwrap_err();
+    let msg = format!("{err:#}");
+    assert!(msg.contains("attn_sub_norm"), "must name the tensor: {msg}");
+    assert!(msg.contains("dense"), "must say what was wrong: {msg}");
+
+    // The oracle must refuse it for the same reason, or the two implementations
+    // disagree about which files are even loadable.
+    let sim = tritsim::model::Model::load(&path);
+    assert!(
+        sim.is_err(),
+        "the oracle accepted a file the runtime rejected"
+    );
+}
+
 /// Tied embeddings must alias, not copy: the LM head span is the embedding span.
 #[test]
 fn tied_embeddings_are_aliased_not_cloned() {

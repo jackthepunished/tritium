@@ -127,13 +127,16 @@ impl Model {
             );
             Ok(file.dense(s).into_owned())
         };
-        // Absent is allowed; present-but-wrong-shape is not. Silently treating
-        // a malformed sub-norm as missing would pick a different numerics rung
-        // without saying so.
+        // Absent is allowed; present-but-malformed is not. Presence is decided
+        // by `has`, not by whether `dense_span` succeeded: that call also fails
+        // when the tensor exists with the wrong dtype, so treating any error as
+        // "absent" would read a ternary sub-norm as a missing one -- picking a
+        // different numerics rung without saying so.
         let dense_opt = |name: &str, elems: usize| -> Result<Option<Vec<f32>>> {
-            match file.dense_span(name) {
-                Err(_) => Ok(None),
-                Ok(_) => dense(name, elems).map(Some),
+            if file.has(name) {
+                dense(name, elems).map(Some)
+            } else {
+                Ok(None)
             }
         };
 
@@ -171,22 +174,25 @@ impl Model {
         // Prefer an explicit head; fall back to the tied embedding only when the
         // config says the weights are tied, so a genuinely untied checkpoint
         // missing its head is an error rather than silently wrong output.
-        let (lm_head, tied) = match file.dense_span("lm_head.weight") {
-            Ok(s) => {
-                anyhow::ensure!(
-                    s.elems() == vocab_elems,
-                    "lm_head.weight holds {} elements, but config.json implies {vocab_elems}",
-                    s.elems()
-                );
-                (s, false)
-            }
-            Err(e) => {
-                anyhow::ensure!(
-                    cfg.tie_word_embeddings,
-                    "lm_head.weight is absent and config does not set tie_word_embeddings: {e}"
-                );
-                (embed, true)
-            }
+        // Prefer an explicit head; fall back to the tied embedding only when the
+        // config says the weights are tied, so a genuinely untied checkpoint
+        // missing its head is an error rather than silently wrong output. A head
+        // that is present but malformed is an error either way -- the fallback
+        // is for absence, not for repair.
+        let (lm_head, tied) = if file.has("lm_head.weight") {
+            let s = file.dense_span("lm_head.weight")?;
+            anyhow::ensure!(
+                s.elems() == vocab_elems,
+                "lm_head.weight holds {} elements, but config.json implies {vocab_elems}",
+                s.elems()
+            );
+            (s, false)
+        } else {
+            anyhow::ensure!(
+                cfg.tie_word_embeddings,
+                "lm_head.weight is absent and config does not set tie_word_embeddings"
+            );
+            (embed, true)
         };
 
         let has_ffn_sub_norm = layers.iter().all(|l| l.ffn_sub_norm.is_some());

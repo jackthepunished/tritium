@@ -157,9 +157,10 @@ impl Model {
         // silently selects a different numerics rung -- and the oracle would
         // then be certifying a model the runtime would refuse to load.
         let f32_opt = |name: &str| -> Result<Option<Vec<f32>>> {
-            match r.dense_span(name) {
-                Err(_) => Ok(None),
-                Ok(_) => f32_of(name).map(Some),
+            if r.has(name) {
+                f32_of(name).map(Some)
+            } else {
+                Ok(None)
             }
         };
 
@@ -186,15 +187,14 @@ impl Model {
         // checkpoint that is missing its head is an error, not a licence to
         // invent one -- and the two implementations must agree about that, or
         // the cross-implementation gate is comparing different models.
-        let lm_head = match r.dense_span("lm_head.weight") {
-            Ok(_) => f32_of("lm_head.weight")?,
-            Err(e) => {
-                anyhow::ensure!(
-                    cfg.tie_word_embeddings,
-                    "lm_head.weight is absent and config does not set tie_word_embeddings: {e}"
-                );
-                embed.clone()
-            }
+        let lm_head = if r.has("lm_head.weight") {
+            f32_of("lm_head.weight")?
+        } else {
+            anyhow::ensure!(
+                cfg.tie_word_embeddings,
+                "lm_head.weight is absent and config does not set tie_word_embeddings"
+            );
+            embed.clone()
         };
         Ok(Self {
             final_norm: f32_of("model.norm.weight")?,
