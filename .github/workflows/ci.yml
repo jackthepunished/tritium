@@ -8,11 +8,21 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Read-only by default. Nothing in this workflow writes to the repository, and
+# the jobs run build scripts and a test suite -- code that should not be able to
+# reach a credential that happens to be lying around in the git config.
+permissions:
+  contents: read
+
 jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
       - run: cargo fmt --all -- --check
 
   test:
@@ -26,6 +36,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
       - run: cargo clippy --workspace --exclude trit-rtl --all-targets -- -D warnings
       # trit-rtl is excluded: building it runs Verilator, which the rtl job owns.
       - run: cargo test --workspace --exclude trit-rtl --release
@@ -52,6 +66,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
       - run: rustup target add aarch64-unknown-linux-gnu
       - run: cargo check -p trit-cpu --target aarch64-unknown-linux-gnu
 
@@ -59,6 +77,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # actions/checkout leaves its token in .git/config by default, where
+          # any build script or test could read it. Nothing here needs it.
+          persist-credentials: false
       - run: sudo apt-get update && sudo apt-get install -y verilator yosys
       - run: make -C rtl lint
       - run: make -C rtl test
