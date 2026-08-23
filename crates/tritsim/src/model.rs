@@ -152,7 +152,16 @@ impl Model {
                 .with_context(|| format!("missing {name}"))?;
             Ok(r.dense(span).into_owned())
         };
-        let f32_opt = |name: &str| f32_of(name).ok();
+        // Absent is allowed; present-but-not-dense is not. `.ok()` alone would
+        // turn a sub-norm stored with the wrong dtype into "no sub-norm", which
+        // silently selects a different numerics rung -- and the oracle would
+        // then be certifying a model the runtime would refuse to load.
+        let f32_opt = |name: &str| -> Result<Option<Vec<f32>>> {
+            match r.dense_span(name) {
+                Err(_) => Ok(None),
+                Ok(_) => f32_of(name).map(Some),
+            }
+        };
 
         let mut layers = Vec::with_capacity(cfg.num_layers);
         for i in 0..cfg.num_layers {
@@ -163,16 +172,30 @@ impl Model {
                 k: bl(&format!("{p}self_attn.k_proj.weight"))?,
                 v: bl(&format!("{p}self_attn.v_proj.weight"))?,
                 o: bl(&format!("{p}self_attn.o_proj.weight"))?,
-                attn_sub_norm: f32_opt(&format!("{p}self_attn.attn_sub_norm.weight")),
+                attn_sub_norm: f32_opt(&format!("{p}self_attn.attn_sub_norm.weight"))?,
                 post_norm: f32_of(&format!("{p}post_attention_layernorm.weight"))?,
                 gate: bl(&format!("{p}mlp.gate_proj.weight"))?,
                 up: bl(&format!("{p}mlp.up_proj.weight"))?,
                 down: bl(&format!("{p}mlp.down_proj.weight"))?,
-                ffn_sub_norm: f32_opt(&format!("{p}mlp.ffn_sub_norm.weight")),
+                ffn_sub_norm: f32_opt(&format!("{p}mlp.ffn_sub_norm.weight"))?,
             });
         }
         let embed = f32_of("model.embed_tokens.weight")?;
-        let lm_head = f32_of("lm_head.weight").unwrap_or_else(|_| embed.clone());
+        // Same rule the production loader applies: fall back to the embedding
+        // only when the config says the weights are tied. A genuinely untied
+        // checkpoint that is missing its head is an error, not a licence to
+        // invent one -- and the two implementations must agree about that, or
+        // the cross-implementation gate is comparing different models.
+        let lm_head = match r.dense_span("lm_head.weight") {
+            Ok(_) => f32_of("lm_head.weight")?,
+            Err(e) => {
+                anyhow::ensure!(
+                    cfg.tie_word_embeddings,
+                    "lm_head.weight is absent and config does not set tie_word_embeddings: {e}"
+                );
+                embed.clone()
+            }
+        };
         Ok(Self {
             final_norm: f32_of("model.norm.weight")?,
             embed,

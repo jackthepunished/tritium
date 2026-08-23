@@ -1,12 +1,10 @@
 use crate::model::{KvCache, Model};
 use anyhow::Result;
 
+/// Greedy choice, using the production sampler's tie rule (lowest index wins)
+/// so `greedy_ids` cannot diverge from the runtime on a tied logit vector.
 fn argmax(l: &[f32]) -> u32 {
-    l.iter()
-        .enumerate()
-        .max_by(|a, b| a.1.total_cmp(b.1))
-        .unwrap()
-        .0 as u32
+    trit_core::sampler::argmax(l) as u32
 }
 
 /// Feed `prompt_ids`, then greedily decode `steps` tokens (stops early on eos).

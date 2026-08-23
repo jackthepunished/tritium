@@ -28,9 +28,13 @@ impl Rng {
     }
 }
 
+// The fixture writes no lm_head.weight, so it must declare the tie: both
+// loaders now refuse to fall back to the embedding matrix unless the config
+// says the weights really are tied.
 const CFG: &str = r#"{"hidden_size":16,"intermediate_size":32,"num_hidden_layers":2,
   "num_attention_heads":4,"num_key_value_heads":2,"vocab_size":32,
-  "rope_theta":10000.0,"rms_norm_eps":1e-5,"hidden_act":"relu2"}"#;
+  "rope_theta":10000.0,"rms_norm_eps":1e-5,"hidden_act":"relu2",
+  "tie_word_embeddings":true}"#;
 
 /// One fixture builder for both shapes so schema changes land in one place.
 /// Each test gets its own file: tests run in parallel and File::create
@@ -219,13 +223,7 @@ fn greedy_argmax_is_stable() {
     let model = Model::load(&path).unwrap();
     let mut cache = KvCache::new(&model.cfg);
     let logits = model.forward(3, 0, &mut cache);
-    let argmax = |l: &[f32]| {
-        l.iter()
-            .enumerate()
-            .max_by(|a, b| a.1.total_cmp(b.1))
-            .unwrap()
-            .0
-    };
+    let argmax = trit_core::sampler::argmax;
     let t1 = argmax(&logits);
     let mut cache2 = KvCache::new(&model.cfg);
     assert_eq!(argmax(&model.forward(3, 0, &mut cache2)), t1);

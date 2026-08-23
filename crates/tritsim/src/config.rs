@@ -14,6 +14,7 @@ struct Raw {
     rms_norm_eps: Option<f32>,
     hidden_act: Option<String>,
     max_position_embeddings: Option<usize>,
+    tie_word_embeddings: Option<bool>,
 }
 
 #[derive(Clone, Debug)]
@@ -28,6 +29,10 @@ pub struct ModelConfig {
     pub rms_eps: f32,
     pub act: Act,
     pub max_seq: usize,
+    /// Whether `lm_head.weight` is the embedding matrix. The oracle needs this
+    /// for the same reason the runtime does: falling back to the embedding when
+    /// the head is genuinely absent and untied would be inventing a model.
+    pub tie_word_embeddings: bool,
 }
 
 impl ModelConfig {
@@ -50,6 +55,7 @@ impl ModelConfig {
             // v1 KV cache caps context at 2048 (see docs/02-ROADMAP.md), but
             // never claim more than the checkpoint itself supports.
             max_seq: 2048.min(r.max_position_embeddings.unwrap_or(2048)),
+            tie_word_embeddings: r.tie_word_embeddings.unwrap_or(false),
         })
     }
     pub fn head_dim(&self) -> usize {

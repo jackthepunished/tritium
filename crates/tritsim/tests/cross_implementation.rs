@@ -142,13 +142,7 @@ fn cosine(a: &[f32], b: &[f32]) -> f32 {
     (dot / (na * nb).max(1e-30)) as f32
 }
 
-fn argmax(v: &[f32]) -> usize {
-    v.iter()
-        .enumerate()
-        .max_by(|a, b| a.1.total_cmp(b.1))
-        .map(|(i, _)| i)
-        .unwrap()
-}
+use trit_core::sampler::argmax;
 
 /// Run the same token sequence through both and compare at every position.
 fn compare_mode(stem: &str, sim_mode: ForwardMode, core_mode: Numerics, backend_threads: usize) {
@@ -263,6 +257,41 @@ fn untied_model_missing_its_head_is_an_error() {
     let err = CoreModel::load(TritFile::open(&path).unwrap(), backend).unwrap_err();
     let msg = format!("{err:#}");
     assert!(msg.contains("tie_word_embeddings"), "{msg}");
+}
+
+/// A tensor whose shape disagrees with the embedded config.json must be
+/// rejected by name at load, not indexed into somewhere in the forward pass.
+#[test]
+fn a_projection_of_the_wrong_shape_is_rejected_at_load() {
+    let path = std::env::temp_dir().join("xcmp_badshape.trit");
+    let mut w = TritWriter::create(
+        &path,
+        r#"{"hidden_size":8,"intermediate_size":8,"num_hidden_layers":1,
+            "num_attention_heads":2,"vocab_size":4,"tie_word_embeddings":true}"#,
+    )
+    .unwrap();
+    w.write_f32("model.embed_tokens.weight", &[4, 8], &[0.1; 32])
+        .unwrap();
+    w.write_f32("model.layers.0.input_layernorm.weight", &[8], &[1.0; 8])
+        .unwrap();
+    // 8x8 is what the config implies; write 4x8 instead.
+    w.write_trit(
+        "model.layers.0.self_attn.q_proj.weight",
+        &[4, 8],
+        &[0i8; 32],
+        0.1,
+    )
+    .unwrap();
+    w.finish().unwrap();
+
+    let backend: Arc<dyn MatvecBackend> = Arc::new(trit_cpu::CpuBackend::new(1));
+    let err = CoreModel::load(TritFile::open(&path).unwrap(), backend).unwrap_err();
+    let msg = format!("{err:#}");
+    assert!(msg.contains("q_proj"), "error must name the tensor: {msg}");
+    assert!(
+        msg.contains("4x8"),
+        "error must report the actual shape: {msg}"
+    );
 }
 
 /// Tied embeddings must alias, not copy: the LM head span is the embedding span.

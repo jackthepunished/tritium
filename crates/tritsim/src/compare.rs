@@ -22,13 +22,13 @@ pub fn cosine(a: &[f32], b: &[f32]) -> f32 {
     dot / (na * nb).max(1e-12)
 }
 
-fn argmax(l: &[f32]) -> usize {
-    l.iter()
-        .enumerate()
-        .max_by(|a, b| a.1.total_cmp(b.1))
-        .unwrap()
-        .0
-}
+// Deliberately the production sampler's argmax rather than a local one. A
+// bare `max_by` on values alone returns the LAST maximal index, where
+// `sampler::argmax` returns the lowest; on a tied logit vector the two pick
+// different tokens. Since this function exists to certify that the two
+// implementations agree on top-1, it has to be measuring the contract the
+// runtime actually uses.
+use trit_core::sampler::argmax;
 
 pub fn compare(model: &Model, dump_path: &Path) -> Result<CompareStats> {
     let d: Dump = serde_json::from_str(&std::fs::read_to_string(dump_path)?)?;
