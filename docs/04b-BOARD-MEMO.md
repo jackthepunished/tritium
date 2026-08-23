@@ -37,11 +37,11 @@ numbers.
 
 **B (Kria KV260), bought after option-C's layer sequencer runs under Verilator.**
 *Gate status: PASSED 2026-08-12 — the real model decodes end-to-end through the
-Verilated core, byte-identical to the golden path (roadmap week 3b). The
+Verilated core, byte-identical to the golden path (gate G6). The
 purchase is unblocked whenever Bahadir wants to proceed.*
 Rationale: the roofline says DDR3 boards can never make the 2B model
 conversational, and the Phase-0-validated stack deserves hardware that can hit
-the week-5 benchmark targets (>= 8 tok/s on a ~700M model at <= $250 BOM is
+the Track B benchmark targets (>= 8 tok/s on a ~700M model at <= $250 BOM is
 achievable on a used KV260). The PS-side Linux host removes the largest
 non-differentiating engineering risk (host transport). Sequence C -> B keeps
 the ternoise discipline: the board arrives with the RTL already proven against

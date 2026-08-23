@@ -250,6 +250,12 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
 
     let weight_bytes = rt.model.weight_bytes();
     let achieved_gbps = weight_bytes as f64 * best_decode_rate / 1e9;
+
+    // Sampled BEFORE the probe. VmHWM is a high-water mark and the probe
+    // allocates half a gigabyte, so reading it afterwards reports the probe's
+    // footprint rather than the model's -- 2335 MB against the real 1846 MB on
+    // this host, which would misstate the one figure the pivot exists to move.
+    let peak_rss = peak_rss_mb();
     let memcpy_gbps = opts
         .measure_memcpy
         .then(|| memcpy_probe_gbps(rt.model.backend().threads()));
@@ -274,7 +280,7 @@ pub fn run(rt: &Runtime, opts: &BenchOptions) -> Result<BenchReport> {
         achieved_gbps,
         memcpy_gbps,
         roofline_pct: memcpy_gbps.map(|m| achieved_gbps / m * 100.0),
-        peak_rss_mb: peak_rss_mb(),
+        peak_rss_mb: peak_rss,
         joules_per_token,
         energy_source,
     })
