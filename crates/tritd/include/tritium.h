@@ -111,7 +111,12 @@ int trit_session_prefill(TritSession *s, const char *utf8, size_t len);
  *
  * A return of 1 with an EMPTY string is normal, not an error: byte-level BPE
  * splits multi-byte codepoints across tokens, and the runtime holds an
- * incomplete tail until its continuation arrives. */
+ * incomplete tail until its continuation arrives.
+ *
+ * TRIT_ERR_BUFFER means out_buf was too small. It is recoverable and loses
+ * nothing: out_id and out_len are still set -- to the held token and the byte
+ * length it needs -- the token is retained by the session, and calling again
+ * with a buffer of at least out_len + 1 bytes delivers that same token. */
 int trit_session_next(TritSession *s,
                       uint32_t    *out_id,
                       char        *out_buf,

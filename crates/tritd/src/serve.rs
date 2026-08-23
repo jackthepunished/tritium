@@ -64,6 +64,26 @@ pub fn serve(rt: Runtime, opts: &ServeOptions) -> Result<()> {
     Ok(())
 }
 
+/// Take the runtime lock, recovering from poisoning.
+///
+/// `catch_unwind` above keeps the process alive when a request panics, but it
+/// does not clear the poison flag the panicking thread left on the mutex. The
+/// generation paths panic with the lock held -- the kernels assert their
+/// preconditions -- so an `unwrap()` here would turn one bad request into a
+/// server that answers nothing until it is restarted, which is precisely what
+/// the `catch_unwind` exists to prevent.
+///
+/// Recovering is sound because the state behind the lock is not left partially
+/// updated by a panic: `Runtime` holds the model, tokenizer and names, and each
+/// request builds its own `TokenStream` over them rather than mutating shared
+/// decode state.
+fn lock(rt: &Arc<Mutex<Runtime>>) -> std::sync::MutexGuard<'_, Runtime> {
+    rt.lock().unwrap_or_else(|poisoned| {
+        eprintln!("recovered the runtime lock after a panic in an earlier request");
+        poisoned.into_inner()
+    })
+}
+
 struct Request {
     method: String,
     path: String,
@@ -145,7 +165,7 @@ fn handle(stream: TcpStream, rt: &Arc<Mutex<Runtime>>, default_max: usize) -> Re
     match (req.method.as_str(), req.path.as_str()) {
         ("GET", "/healthz") => write_response(&stream, "200 OK", "text/plain", "ok\n"),
         ("GET", "/v1/models") => {
-            let g = rt.lock().unwrap();
+            let g = lock(rt);
             let body = format!(
                 r#"{{"object":"list","data":[{{"id":"tritium","object":"model","backend":{},"kernel":{},"context":{}}}]}}"#,
                 json_escape(&g.backend_name),
@@ -155,7 +175,7 @@ fn handle(stream: TcpStream, rt: &Arc<Mutex<Runtime>>, default_max: usize) -> Re
             write_response(&stream, "200 OK", "application/json", &body)
         }
         ("GET", "/metrics") => {
-            let g = rt.lock().unwrap();
+            let g = lock(rt);
             let m = &g.model;
             let body = format!(
                 "tritium_weight_bytes_per_token {}\n\
@@ -204,7 +224,7 @@ fn completions(
         }
     };
 
-    let guard = rt.lock().unwrap();
+    let guard = lock(rt);
     let params = SamplerParams {
         temperature: req.temperature.unwrap_or(0.0),
         top_p: req.top_p.unwrap_or(1.0),

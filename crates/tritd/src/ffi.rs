@@ -91,6 +91,16 @@ pub struct TritSession {
     detok: Detokenizer,
     tokenizer: *const HfTokenizer,
     finished: bool,
+    /// Text that was produced but did not fit the caller's buffer.
+    ///
+    /// Sampling a token mutates the session and feeds the detokenizer, and
+    /// neither is reversible. Without somewhere to put the text, a
+    /// `TRIT_ERR_BUFFER` return would discard a token the model had already
+    /// committed to: a caller that enlarged its buffer and called again would
+    /// silently receive the *next* token instead. Holding it here makes the
+    /// error recoverable -- call again with a large enough buffer and the same
+    /// text is delivered.
+    pending: Option<(u32, String)>,
 }
 
 /// Sampling knobs, laid out to match `include/tritium.h`.
@@ -243,6 +253,7 @@ pub unsafe extern "C" fn trit_session_new(
             // session; documented in tritium.h.
             tokenizer: &rt.tokenizer as *const HfTokenizer,
             finished: false,
+            pending: None,
         })))
     })
 }
@@ -265,6 +276,7 @@ pub unsafe extern "C" fn trit_session_reset(s: *mut TritSession) -> c_int {
         (*s).session.reset();
         (*s).detok = Detokenizer::new();
         (*s).finished = false;
+        (*s).pending = None;
         Ok(TRIT_OK)
     })
 }
@@ -330,32 +342,44 @@ pub unsafe extern "C" fn trit_session_next(
         if sess.finished {
             return Ok(0);
         }
-        let tk = &*sess.tokenizer;
 
-        let id = sess.session.sample();
-        if tk.is_eos(id) || sess.session.remaining() == 0 {
-            sess.finished = true;
-            return Ok(0);
-        }
-        sess.session.advance(id)?;
-        let text = sess.detok.push(tk, id)?;
+        // A token held back by an earlier undersized buffer is delivered before
+        // the model is asked for another one.
+        let (id, text) = match sess.pending.take() {
+            Some(held) => held,
+            None => {
+                let tk = &*sess.tokenizer;
+                let id = sess.session.sample();
+                if tk.is_eos(id) || sess.session.remaining() == 0 {
+                    sess.finished = true;
+                    return Ok(0);
+                }
+                sess.session.advance(id)?;
+                let text = sess.detok.push(tk, id)?;
+                (id, text)
+            }
+        };
 
         let bytes = text.as_bytes();
+        // Report the size and the identity of the token even on failure, so a
+        // caller that has to grow its buffer can allocate exactly once and knows
+        // which token it is about to receive again.
+        if !out_len.is_null() {
+            *out_len = bytes.len();
+        }
+        if !out_id.is_null() {
+            *out_id = id;
+        }
         if bytes.len() + 1 > buf_len {
             set_error(format!(
                 "buffer of {buf_len} bytes is too small for {} + NUL",
                 bytes.len()
             ));
+            sess.pending = Some((id, text));
             return Ok(TRIT_ERR_BUFFER);
         }
         std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_buf as *mut u8, bytes.len());
         *out_buf.add(bytes.len()) = 0;
-        if !out_id.is_null() {
-            *out_id = id;
-        }
-        if !out_len.is_null() {
-            *out_len = bytes.len();
-        }
         let _ = &sess.model; // keeps the model alive for the session's lifetime
         Ok(1)
     })

@@ -138,6 +138,32 @@ int main(int argc, char **argv) {
     if (trit_session_reset(s) != TRIT_OK) { fprintf(stderr, "reset failed\n"); return 1; }
     if (trit_session_prefill(s, "hello", 0) != TRIT_OK) { fprintf(stderr, "re-prefill\n"); return 1; }
 
+    /* TRIT_ERR_BUFFER must be recoverable: sampling a token mutates the session
+       irreversibly, so a token that does not fit has to be held rather than
+       dropped. Ask with a one-byte buffer until a non-empty token shows up. */
+    {
+        char small[1], big[256];
+        uint32_t held_id = 0, again_id = 0;
+        size_t need = 0, got = 0;
+        int i, r, hit = 0;
+        for (i = 0; i < 16 && !hit; i++) {
+            r = trit_session_next(s, &held_id, small, sizeof small, &need);
+            if (r == TRIT_ERR_BUFFER) hit = 1;
+            else if (r != 1) { fprintf(stderr, "unexpected rc %d\n", r); return 1; }
+        }
+        if (!hit)      { fprintf(stderr, "never saw a too-small buffer\n"); return 1; }
+        if (need == 0) { fprintf(stderr, "out_len unset on TRIT_ERR_BUFFER\n"); return 1; }
+        if (need + 1 > sizeof big) { fprintf(stderr, "token implausibly long\n"); return 1; }
+
+        if (trit_session_next(s, &again_id, big, sizeof big, &got) != 1) {
+            fprintf(stderr, "held token not redelivered: %s\n", trit_last_error());
+            return 1;
+        }
+        if (got != need)          { fprintf(stderr, "redelivered %zu want %zu\n", got, need); return 1; }
+        if (again_id != held_id)  { fprintf(stderr, "redelivered a different token\n"); return 1; }
+        if (big[got] != '\0')     { fprintf(stderr, "not NUL terminated\n"); return 1; }
+    }
+
     trit_session_free(s);
     trit_model_free(m);
     printf("OK %zu tokens\n", produced);
