@@ -40,20 +40,39 @@ unsafe fn spread16(mask: u64, group: usize) -> uint8x16_t {
 
 /// Baseline NEON. 16 columns per step, four steps per beat.
 ///
-/// Accumulates in `i16` and flushes to `i32` every 64 beats. Each
-/// `vpadalq_s8` step adds at most `2 * 127 = 254` per `i16` lane, so 128
-/// accumulations is the true overflow bound; 64 leaves a factor of two of
-/// headroom and keeps the flush on a power-of-two boundary.
+/// Accumulates in `i16` and flushes to `i32` every [`FLUSH`] **beats**. The
+/// bound is on accumulation *steps*, not beats, and the two are not the same
+/// number: the inner loop runs `g in 0..4`, so one beat issues four
+/// `vpadalq_s8` per accumulator.
+///
+/// `vpadalq_s8` pairwise-adds two masked `i8` lanes into each `i16` lane, so a
+/// single step moves an accumulator by at most `2 * 128 = 256` -- `-128` is a
+/// representable activation and two of them pairwise-add to `-256`. That caps
+/// the safe run at `32768 / 256 = 128` steps, which is 32 beats.
+///
+/// [`STEPS_PER_BEAT`] and [`MAX_STEP`] below turn that argument into a
+/// compile-time assertion, so the flush interval can never drift back past the
+/// bound in silence. `vpadalq_s8` wraps rather than saturating or trapping, so
+/// an overflow here would surface as a quietly wrong logit.
 ///
 /// # Safety
 /// The current CPU must support `neon` (baseline on aarch64). Slice lengths are
 /// established by the safe caller in `lib.rs`.
 #[target_feature(enable = "neon")]
 pub unsafe fn matvec(beats: &[u8], rows: usize, beats_per_row: usize, xq: &[i8], y: &mut [i32]) {
-    const FLUSH: usize = 64;
+    /// `vpadalq_s8` calls per accumulator per beat -- the `g in 0..4` loop.
+    const STEPS_PER_BEAT: usize = 4;
+    /// Largest magnitude one step can add to an `i16` lane: two `-128` lanes.
+    const MAX_STEP: usize = 256;
+    /// Beats between flushes to the `i32` accumulator.
+    const FLUSH: usize = 16;
+    const _: () = assert!(
+        FLUSH * STEPS_PER_BEAT * MAX_STEP <= i16::MAX as usize + 1,
+        "i16 accumulators can overflow before the flush"
+    );
     let stride = beats_per_row * BEAT_BYTES;
 
-    for r in 0..rows {
+    for (r, out) in y.iter_mut().enumerate().take(rows) {
         let row = beats.as_ptr().add(r * stride);
         let mut acc32 = vdupq_n_s32(0);
         let mut acc_p16 = vdupq_n_s16(0);
@@ -84,7 +103,7 @@ pub unsafe fn matvec(beats: &[u8], rows: usize, beats_per_row: usize, xq: &[i8],
         }
         acc32 = vpadalq_s16(acc32, acc_p16);
         acc32 = vsubq_s32(acc32, vpaddlq_s16(acc_n16));
-        y[r] = vaddvq_s32(acc32);
+        *out = vaddvq_s32(acc32);
     }
 }
 
@@ -96,10 +115,15 @@ pub unsafe fn matvec(beats: &[u8], rows: usize, beats_per_row: usize, xq: &[i8],
 /// this crate builds on stable. The instruction itself is Armv8.2-A `dotprod`,
 /// which the dispatcher feature-detects before selecting this kernel.
 ///
+/// The `dotprod` target feature is enabled on this function, not just detected
+/// at runtime: the instruction is written as inline asm, so it is the
+/// *assembler* that has to accept `sdot`, and without the feature on the
+/// function the build fails rather than falling back.
+///
 /// # Safety
 /// The current CPU must support the `dotprod` extension.
 #[inline]
-#[target_feature(enable = "neon")]
+#[target_feature(enable = "neon", enable = "dotprod")]
 unsafe fn sdot(acc: int32x4_t, a: int8x16_t, b: int8x16_t) -> int32x4_t {
     let mut out = acc;
     std::arch::asm!(
@@ -120,7 +144,7 @@ unsafe fn sdot(acc: int32x4_t, a: int8x16_t, b: int8x16_t) -> int32x4_t {
 /// # Safety
 /// The current CPU must support `neon` and the `dotprod` extension. Slice
 /// lengths are established by the safe caller.
-#[target_feature(enable = "neon")]
+#[target_feature(enable = "neon", enable = "dotprod")]
 pub unsafe fn matvec_dotprod(
     beats: &[u8],
     rows: usize,
@@ -131,7 +155,7 @@ pub unsafe fn matvec_dotprod(
     let ones = vdupq_n_s8(1);
     let stride = beats_per_row * BEAT_BYTES;
 
-    for r in 0..rows {
+    for (r, out) in y.iter_mut().enumerate().take(rows) {
         let row = beats.as_ptr().add(r * stride);
         let mut acc_p = vdupq_n_s32(0);
         let mut acc_n = vdupq_n_s32(0);
@@ -152,6 +176,6 @@ pub unsafe fn matvec_dotprod(
                 acc_n = sdot(acc_n, vandq_s8(x, nm), ones);
             }
         }
-        y[r] = vaddvq_s32(acc_p) - vaddvq_s32(acc_n);
+        *out = vaddvq_s32(acc_p) - vaddvq_s32(acc_n);
     }
 }

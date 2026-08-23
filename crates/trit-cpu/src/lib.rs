@@ -159,20 +159,34 @@ pub fn kernel_name() -> &'static str {
 ///
 /// `xq` must be at least `planes.padded_cols()` long with zeros in the padding;
 /// padded columns are clear in both planes, so they contribute nothing.
-pub fn ternary_matvec_planes(planes: &TritPlanes<'_>, xq: &[i8], y: &mut [i32]) {
-    let (rows, bpr) = (planes.rows(), planes.beats_per_row());
-    // Established here so the unsafe kernels carry exactly one obligation each:
-    // that the CPU supports their target features.
+/// Establish every length relation the kernels rely on.
+///
+/// Factored out of [`ternary_matvec_planes`] so the threaded path in
+/// [`CpuBackend::matvec`] can hold the identical contract before it calls a raw
+/// kernel. `CpuBackend::matvec` is public trait API: an `xq` shorter than
+/// `padded_cols()` would otherwise be read past the end through
+/// `xq.as_ptr().add(b * LANES)` -- undefined behaviour rather than a panic.
+fn assert_shapes(planes: &TritPlanes<'_>, xq: &[i8], y: &[i32]) {
     assert!(
         xq.len() >= planes.padded_cols(),
         "activation buffer is {} long, need {} (padded to a whole beat)",
         xq.len(),
         planes.padded_cols()
     );
-    assert_eq!(y.len(), rows, "output length must match row count");
-    let beats = planes.as_bytes();
-    assert_eq!(beats.len(), rows * bpr * trit_core::planes::BEAT_BYTES);
+    assert_eq!(y.len(), planes.rows(), "output length must match row count");
+    assert_eq!(
+        planes.as_bytes().len(),
+        planes.rows() * planes.beats_per_row() * trit_core::planes::BEAT_BYTES
+    );
     debug_assert!(planes.check_invariants().is_ok(), "planes violate P1/P2");
+}
+
+pub fn ternary_matvec_planes(planes: &TritPlanes<'_>, xq: &[i8], y: &mut [i32]) {
+    let (rows, bpr) = (planes.rows(), planes.beats_per_row());
+    // Established here so the unsafe kernels carry exactly one obligation each:
+    // that the CPU supports their target features.
+    assert_shapes(planes, xq, y);
+    let beats = planes.as_bytes();
 
     let (_, f) = resolve();
     // SAFETY: `f` came from the dispatch table, which only ever yields kernels
@@ -241,6 +255,9 @@ impl MatvecBackend for CpuBackend {
         if self.threads == 1 || planes.as_bytes().len() < PARALLEL_MIN_BYTES {
             return ternary_matvec_planes(planes, xq, y);
         }
+        // The threaded branch calls the raw kernel, so it must establish the
+        // same preconditions the dispatching wrapper would have.
+        assert_shapes(planes, xq, y);
         use rayon::prelude::*;
         let bpr = planes.beats_per_row();
         let stride = bpr * trit_core::planes::BEAT_BYTES;
