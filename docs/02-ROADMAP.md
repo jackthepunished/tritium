@@ -60,94 +60,132 @@ decision is Bahadir's and nothing here commits money.
 
 # Track A — the runtime
 
-Ordered by evidence, not by preference. Each entry states why it is where it is.
+Ordered by evidence, not by preference. Each entry states why it is where it
+is, and the order changed once the baselines were actually run — measuring
+beat reasoning, which is the whole point of putting A1 first.
 
-## A1. Baselines, actually run
+## A1. Baselines, actually run — DONE
 
-**The largest credibility gap in the project.** `benches/` is built, records a
-row per baseline, and honestly reports `unavailable` — because neither llama.cpp
-nor bitnet.cpp is installed on the machine every published number came from. So
-every comparison so far is Tritium against its own past, plus a roofline measured
-on the same host.
+Both baselines are installed, measured and committed
+(`benches/results/DESKTOP-HV2MQTM-20260823.csv`). Same host, same prompts,
+greedy, 32 tokens, median of three invocations:
 
-This is first because it is cheap, it is blocking every efficiency claim the
-project exists to make, and it is the one item where the answer could be
-genuinely unflattering. A ternary runtime that loses to llama.cpp Q4_K_M on the
-same host is something we need to know before building anything else on the
-premise that it does not.
+| threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
+|---|---|---|---|
+| 1  | **14.98** | 14.36 | 11.65 |
+| 2  | 14.92 | **22.84** | 19.44 |
+| 4  | 15.84 | 26.17 | **27.89** |
+| 8  | 15.85 | 25.61 | **32.58** |
+| 16 | 15.55 | 24.46 | **31.16** |
 
-- Install llama.cpp and bitnet.cpp; run `benches/run.sh` with both present.
-- Same prompts, same thread count, same context cap, greedy decoding.
-- Commit the raw CSV.
+bitnet.cpp runs the identical checkpoint, so that is the apples-to-apples
+column. llama.cpp runs Qwen2.5-3B Q4_K_M — mainline cannot load the `i2_s`
+type and its converter has no BitNet entry — so it is a different model at a
+different quality point, and the bits/w column carries that.
 
-**Gate:** a committed CSV with `status=ok` rows for both baselines, and a
-published comparison — whichever way it goes.
+**The answer was unflattering, which is what this item was for.** Tritium has
+the best single-thread number of the three and beats bitnet.cpp by 1.29x on the
+same checkpoint. Then it does not scale: 1.06x from one thread to eight against
+bitnet.cpp's 2.80x, ending 2.06x behind. Nothing here says the kernels are bad.
+Everything here says the runtime cannot use a machine.
 
-## A2. The f32 LM head
+Two levers fall out of it, and they reorder the rest of this track.
 
-**The biggest remaining technical lever, by arithmetic.** At batch 1 the tied
-f32 head moves 1313 MB per token against 521 MB for every ternary projection
-combined. The ternary kernels are already at 32x scalar; there is far more left
-in the 72% of traffic that is not ternary than in the 28% that is.
+## A2. Parallel scaling
 
-An int8 head would cut bytes/token from 1834 MB to roughly 849 MB. If the same
-fraction of roofline held, that is about 2.2x — larger than any remaining kernel
-work can plausibly return. It is a prediction from the roofline, and the point of
-the milestone is to test it rather than to quote it.
+**The largest lever in the project, by a wide margin.** Tritium is the fastest
+of the three per core and the slowest in aggregate. If it scaled like
+bitnet.cpp, 14.98 tok/s at one thread becomes roughly 42 at eight — before any
+other change.
 
-The open question is quality cost, which is unmeasured. G2 is the arbiter.
+The cause is measured, not guessed. A decode step issues 210 ternary matvecs
+whose largest is 4.4 MB, and each one currently pays a rayon fork/join.
+Lowering `PARALLEL_MIN_BYTES` to let them parallelize makes things dramatically
+worse, not better:
 
-**Gate:** bytes/token and decode tok/s both measured before and after, with G2
-held at its frozen value or the regression argued explicitly in
-[06-GATES.md](06-GATES.md).
+| threads | layer time |
+|---|---|
+| 1 | 37.4 ms |
+| 2 | 66-74 ms |
+| 4 | 112-115 ms |
+| 8 | 173-175 ms |
 
-## A3. Energy per token
+Even two threads is 1.8x worse. So `PARALLEL_MIN_BYTES` is correct and must
+stay until something cheaper than per-call fork/join exists. ggml gets its
+scaling from a persistent pool with cheap barriers; that is the shape of the
+fix, and it is a real piece of engineering rather than a tuning change.
 
-J/token is named "the headline metric" in [04-BENCHMARKS.md](04-BENCHMARKS.md),
-and the project has never reported one, because the reader refuses to estimate
-and no machine in the loop has exposed a counter. The development host has no
-RAPL zones at all.
+**Gate:** decode tok/s at 1, 2, 4, 8 and 16 threads published next to the
+baseline curve, with the same suite. The number that matters is the *slope*,
+not the peak.
 
-This is blocked on hardware access rather than on work: it needs a box with a
-real energy counter, or an inline meter. Until then the column stays empty and
-the source reads `none`, which is the correct behaviour and not a placeholder to
-be filled with a guess.
+## A3. The f32 LM head
 
-**Gate:** J/token reported from a real counter on at least one machine, next to
-a baseline measured the same way on the same machine.
+Still worth doing, at a smaller number than first estimated, and now
+independently corroborated: bitnet.cpp stores `token_embd` as f16 where Tritium
+stores f32, so it moves ~1178 MB per token against our 1834 MB. Part of its
+advantage is simply that.
 
-## A4. ARM throughput
+The instrumented decode puts the head at 26.9 ms of a 64.4 ms token — 42% of
+the time, not the 72% the byte share suggests, because the head runs at
+48.8 GB/s while the ternary path runs at 13.9. Halving its bytes should take
+the token to roughly 51 ms: about **1.26x**, plus peak RSS from 1846 MB to
+around 1190 MB.
 
-The NEON kernels are now *correct* — executed on aarch64 CI hardware, matching
-the reference exactly across the differential corpus including the worst case for
-the `i16` accumulators. They have never been *timed*, so no ARM performance claim
-exists and none should be made.
+The values are already bf16 — `tritc` widens them from the checkpoint on the
+way in and nothing ever adds precision — so storing and reading them as bf16 is
+lossless relative to the source. There is no quality experiment to run, which
+is why this ranks above anything that trades accuracy.
 
-This matters disproportionately for positioning: the edge devices the project
+**Gate:** bytes/token and decode tok/s measured before and after, with G2 held
+at its frozen value.
+
+## A4. Energy per token
+
+J/token is named "the headline metric" in [04-BENCHMARKS.md](04-BENCHMARKS.md)
+and has never been reported, because the reader refuses to estimate and no
+machine in the loop has exposed a counter. The development host has no RAPL
+zones at all.
+
+Blocked on hardware access rather than on work. Until then the column stays
+empty and the source reads `none`, which is the correct behaviour and not a
+placeholder to be filled with a guess. Now that both baselines run on this
+host, an energy-capable box would produce the comparison the project exists to
+make.
+
+**Gate:** J/token from a real counter, next to a baseline measured the same way
+on the same machine.
+
+## A5. ARM throughput
+
+The NEON kernels are *correct* — executed on aarch64 CI hardware, matching the
+reference across the differential corpus including the worst case for the `i16`
+accumulators. They have never been *timed*, so no ARM performance claim exists.
+
+This matters disproportionately for positioning: the edge devices this project
 targets are overwhelmingly ARM, so "verified on x86" is a weaker story than it
-looks.
+looks. It sits below A2 only because the scaling defect would travel to ARM
+unchanged, and measuring it twice would be wasted work.
 
-**Gate:** decode tok/s and bytes/token on real ARM hardware, published next to
-the x86 figures, with the kernel named.
+**Gate:** decode tok/s on real ARM hardware, published next to the x86 figures,
+with the kernel named.
 
-## A5. KV cache precision and context
+## A6. KV cache precision and context
 
 f32 and preallocated: 315 MB at a 2048 cap. int8 pages would cut that
-substantially, and the ratio gets worse as context grows. Lower priority than
-A1-A2 because it is resident footprint rather than per-token traffic, so it
-moves RSS rather than tok/s.
+substantially, and the ratio worsens as context grows. Below A2-A3 because it
+moves resident footprint rather than per-token traffic — RSS, not tok/s.
 
 **Gate:** RSS measured before and after at equal context, G2 held.
 
-## A6. Batched prefill
+## A7. Batched prefill
 
-Currently batch 1 everywhere. Prefill is the compute-bound phase, so it is where
-batching actually pays, and it is also what would make `PARALLEL_MIN_BYTES` worth
-revisiting — with a measurement, as before.
+Batch 1 everywhere today. Prefill is the compute-bound phase, so it is where
+batching pays, and it is also what would make `PARALLEL_MIN_BYTES` worth
+revisiting — after A2, and with a measurement.
 
-Explicitly last: it is a throughput feature for a serving story the project does
-not yet have, and it should not jump the queue ahead of claims that are already
-being made.
+Explicitly last: a throughput feature for a serving story the project does not
+yet have.
 
 ---
 
