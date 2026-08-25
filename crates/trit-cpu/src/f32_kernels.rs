@@ -24,14 +24,11 @@ pub fn f32_matvec_scalar(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut
 mod x86 {
     use std::arch::x86_64::*;
 
-    /// bf16 weights widened in-register, then ordinary FMA against f32
-    /// activations.
+    /// bf16 widened in-register, then ordinary FMA against f32 activations.
     ///
-    /// Deliberately not `vdpbf16ps`. That instruction needs *both* operands in
-    /// bf16, which would round the activations too: measured max relative
-    /// deviation 1.25e-1 against 9.7e-6 for this approach, on logits whose
-    /// magnitude is around 18. It was also not faster (12.5 ms against 12.3 on
-    /// the real head shape), so the accuracy would have bought nothing.
+    /// Not `vdpbf16ps`: it needs both operands in bf16, rounding the
+    /// activations too. Measured 1.25e-1 max relative deviation against 9.7e-6
+    /// here, and it was not faster.
     ///
     /// # Safety
     /// Requires `avx512f` and `avx512bw`.
@@ -91,15 +88,11 @@ mod x86 {
         total
     }
 
+    /// Indistinguishable from AVX2 at one thread, where a core saturates around
+    /// 40 GB/s either way; 1.34x at four, where AVX2 cannot issue fast enough.
+    ///
     /// # Safety
     /// Requires `avx512f`. Lengths are checked by the safe caller.
-    ///
-    /// Worth having even though the head is a streaming read: at one thread this
-    /// is indistinguishable from the AVX2 path, because a single core saturates
-    /// around 40 GB/s either way. At four it is 1.34x, because four cores can
-    /// pull ~55 GB/s and AVX2 cannot issue loads fast enough to use it. The
-    /// bottleneck moves from the memory system to the core as threads are added,
-    /// which is why measuring this single-threaded would have found nothing.
     #[target_feature(enable = "avx512f")]
     pub unsafe fn dot_avx512(a: *const f32, b: *const f32, n: usize) -> f32 {
         let (mut a0, mut a1) = (_mm512_setzero_ps(), _mm512_setzero_ps());
@@ -301,11 +294,7 @@ unsafe fn dot_bf16_scalar(w: *const u16, x: *const f32, n: usize) -> f32 {
     total
 }
 
-/// The bf16 kernel matching the dense kernel in force.
-///
-/// Selected by the same name rather than by a separate table, so forcing a
-/// kernel forces both precisions and there is no way to test one while the
-/// other silently runs something else.
+/// Selected by the same name as the f32 kernel, so forcing one forces both.
 fn bf16_dot_for(name: &str) -> Bf16DotFn {
     match name {
         #[cfg(target_arch = "x86_64")]
@@ -316,7 +305,7 @@ fn bf16_dot_for(name: &str) -> Bf16DotFn {
     }
 }
 
-/// Dense matvec over weights in whatever precision the file stores.
+/// Dense matvec over weights in whatever precision the file stores them.
 pub fn dense_matvec(
     w: trit_core::backend::DenseWeights<'_>,
     rows: usize,
@@ -332,17 +321,16 @@ pub fn dense_matvec(
     let (name, f32_dot) = resolve_f32();
     let bf16_dot = bf16_dot_for(name);
 
-    // One closure per precision, so the hot loop has no per-row branch.
+    // One closure per precision: no per-row branch.
     let row: &(dyn Fn(usize) -> f32 + Sync) = match w {
-        trit_core::backend::DenseWeights::F32(w) => &move |r: usize| -> f32 {
-            // SAFETY: r < rows so the row lies inside w; cols matches x. The
-            // dispatch table only yields kernels this CPU supports.
-            unsafe { f32_dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
-        },
-        trit_core::backend::DenseWeights::Bf16(w) => &move |r: usize| -> f32 {
-            // SAFETY: as above.
-            unsafe { bf16_dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
-        },
+        // SAFETY: r < rows so the row lies inside w, cols matches x, and the
+        // dispatch table only yields kernels this CPU supports.
+        trit_core::backend::DenseWeights::F32(w) => {
+            &move |r: usize| unsafe { f32_dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
+        }
+        trit_core::backend::DenseWeights::Bf16(w) => {
+            &move |r: usize| unsafe { bf16_dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
+        }
     };
 
     let pool = (threads > 1)
@@ -382,11 +370,8 @@ pub fn f32_matvec(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32],
         unsafe { dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
     };
 
-    // The same pool the ternary path uses, not a second one.
-    //
-    // These two matvecs alternate throughout a decode step, so two independent
-    // thread pools means two sets of workers contending for the same cores. At
-    // sixteen threads that cost more than the parallelism returned.
+    // The pool the ternary path uses. Two pools contend for the same cores, and
+    // these matvecs alternate all decode.
     let pool = (threads > 1)
         .then(|| crate::pool::global(threads))
         .flatten();

@@ -179,13 +179,9 @@ pub fn kernel_name() -> &'static str {
 ///
 /// `xq` must be at least `planes.padded_cols()` long with zeros in the padding;
 /// padded columns are clear in both planes, so they contribute nothing.
-/// Establish every length relation the kernels rely on.
-///
-/// Factored out of [`ternary_matvec_planes`] so the threaded path in
-/// [`CpuBackend::matvec`] can hold the identical contract before it calls a raw
-/// kernel. `CpuBackend::matvec` is public trait API: an `xq` shorter than
-/// `padded_cols()` would otherwise be read past the end through
-/// `xq.as_ptr().add(b * LANES)` -- undefined behaviour rather than a panic.
+/// Length relations the kernels rely on. Both the serial and threaded paths
+/// must establish these: a short `xq` is read past the end by the SIMD kernels,
+/// which is UB rather than a panic.
 fn assert_shapes(planes: &TritPlanes<'_>, xq: &[i8], y: &[i32]) {
     assert!(
         xq.len() >= planes.padded_cols(),
@@ -232,22 +228,13 @@ pub struct CpuBackend {
     name: String,
 }
 
-/// Ceiling on the automatically chosen thread count.
-///
-/// Decode at batch 1 is memory-bound, so past a handful of cores the extra
-/// threads contend for bandwidth instead of adding it, and the per-job wake-ups
-/// start to cost more than the slice they enable. Measured against the previous
-/// implementation in interleaved pairs on a 32-thread Zen 4: 1.17x at two
-/// threads, 1.18x at four, 1.17x at eight, and 0.94x at sixteen.
-///
-/// So one thread per core is the wrong automatic answer on a large machine. An
-/// explicit `--threads` is still honoured exactly, including into the region
-/// where it regresses; this only changes what "decide for me" means.
+/// Ceiling on the automatic thread count. Interleaved pairs measured 1.17x at
+/// two, 1.18x at four, 1.17x at eight and 0.94x at sixteen, so one per core is
+/// the wrong answer to "decide for me". Explicit `--threads` is unaffected.
 const DEFAULT_MAX_THREADS: usize = 8;
 
 impl CpuBackend {
-    /// `threads = 0` means "choose", which is one per core up to
-    /// [`DEFAULT_MAX_THREADS`].
+    /// `threads = 0` means one per core, up to [`DEFAULT_MAX_THREADS`].
     pub fn new(threads: usize) -> Self {
         let threads = if threads == 0 {
             std::thread::available_parallelism()
@@ -270,37 +257,22 @@ impl Default for CpuBackend {
     }
 }
 
-/// Minimum plane bytes before a ternary matvec is worth splitting across
-/// threads.
+/// Minimum plane bytes before splitting a matvec at all.
 ///
-/// This was 32 MiB, chosen to keep *every* per-layer tensor in this model class
-/// on one thread, because splitting them through a work-stealing pool cost more
-/// than the matvec: end-to-end decode measured 14.06 tok/s single-threaded
-/// against 2.40 tok/s at 32 threads. That threshold was a workaround for the
-/// dispatch mechanism, not a property of the work.
-///
-/// With [`pool`], dispatch is a sequence-counter bump and an unpark, so the
-/// crossover moves down by roughly three orders of magnitude. What remains is a
-/// floor below which even that is not worth it: a 64 KiB tensor is around 4000
-/// beats, which one core finishes in the time the wake-up takes.
+/// Was 32 MiB, sized to keep every per-layer tensor off a work-stealing pool
+/// whose per-job cost exceeded the matvec. With [`pool`] the crossover drops
+/// about three orders of magnitude; what is left is a floor below which the
+/// wake-up is not worth it.
 const PARALLEL_MIN_BYTES: usize = 64 << 10;
 
-/// Plane bytes each slot should get before another slot is worth waking.
+/// Plane bytes per slot.
 ///
-/// Slot count has to track the work, not the machine. A decode step's matvecs
-/// run from roughly 400 KiB to 4.4 MiB, and splitting the small ones across
-/// every core costs more in wake-ups than the slice saves: measured end-to-end,
-/// an uncapped pool peaked at 20.28 tok/s on four threads and fell to 16.46 on
-/// eight and 11.00 on sixteen, worse than not parallelising at all. At 256 KiB
-/// the peak is within 1.5% of uncapped and the sixteen-thread case recovers to
-/// 14.70. Larger slices (1 MiB) give up too much at two and four threads.
-///
-/// With a cap the thread count becomes a ceiling rather than an instruction, so
-/// asking for more threads than the work can use is harmless.
+/// Slot count tracks the work, not the machine. Uncapped, decode peaked at
+/// 20.28 tok/s on four threads and fell to 11.00 on sixteen; at 256 KiB the
+/// peak is within 1.5% and sixteen recovers to 14.70.
 const BYTES_PER_SLOT_DEFAULT: usize = 256 << 10;
 
-/// Resolved once. `TRIT_BYTES_PER_SLOT=0` disables the cap entirely, which is
-/// how the default was chosen rather than guessed.
+/// `TRIT_BYTES_PER_SLOT=0` disables the cap; that is how the default was chosen.
 pub(crate) fn bytes_per_slot() -> usize {
     static V: OnceLock<usize> = OnceLock::new();
     *V.get_or_init(|| {
@@ -311,8 +283,7 @@ pub(crate) fn bytes_per_slot() -> usize {
     })
 }
 
-/// How many slots a job of `bytes` should use, given the pool width and the
-/// number of independent output rows available to split.
+/// Slots for a job of `bytes`, bounded by pool width and available rows.
 pub(crate) fn slots_for(bytes: usize, threads: usize, rows: usize) -> usize {
     let per_slot = bytes_per_slot();
     if per_slot == 0 {

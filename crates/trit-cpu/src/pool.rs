@@ -1,83 +1,43 @@
-//! A persistent worker pool for row-parallel matvecs.
+//! Persistent worker pool for row-parallel matvecs.
 //!
-//! # Why this exists
+//! A decode step issues 210 ternary matvecs; per-job fork/join costs more than
+//! the matvec. Measured layer time at 1/2/4/8 threads: 37.6/37.6/36.9/36.7 ms
+//! serial, 36.0/65.0/108.8/174.0 with a work-stealing pool, 37.1/20.0/12.8/14.1
+//! here. A right-sized pool and a broadcast primitive were also measured and
+//! both stayed slower than serial.
 //!
-//! A decode step issues 210 ternary matvecs, and the largest of them is 4.4 MB.
-//! Handing each one to a work-stealing pool costs more than the matvec: measured
-//! on a 32-thread Zen 4, letting them parallelise that way took layer time from
-//! 37.4 ms at one thread to 173 ms at eight. A dedicated, correctly-sized
-//! work-stealing pool and a broadcast primitive were both measured too, and both
-//! remained *slower than not parallelising at all*.
-//!
-//! What works is the shape ggml uses: workers spawned once, waiting on a
-//! sequence counter, with no allocation and no scheduler involvement per job.
-//! Same measurement, same machine: 37.1 / 20.0 / 12.8 / 14.1 ms at 1 / 2 / 4 / 8
-//! threads.
-//!
-//! # Why it does not spin
-//!
-//! Jobs arrive roughly every 300 us during decode. Spinning through that gap
-//! wastes a core per worker, which is affordable on a 32-thread desktop and is
-//! not affordable on the four-core edge parts this runtime exists for. Workers
-//! spin briefly, then park. `thread::park` and `unpark` carry a token, so a
-//! worker that parks after the dispatcher has already unparked it wakes
-//! immediately rather than missing the job.
-//!
-//! # Why the unsafe is sound
-//!
-//! The job outlives no call. [`Pool::run`] publishes a pointer to a caller-owned
-//! closure, wakes the workers, runs slot 0 itself, and then blocks until every
-//! other slot has reported completion. Only after that does it return, so no
-//! worker can hold a reference to the closure or to `y` past the borrow. The
-//! closure is erased to a *thin* pointer plus a monomorphised trampoline that
-//! knows its concrete type, so nothing here transmutes a fat pointer.
-//!
-//! Panics are the one hazard: a worker that unwinds would never report done and
-//! would hang the dispatcher. Slot bodies are wrapped in `catch_unwind`, the
-//! panic is recorded, and `run` resumes it on the calling thread once every slot
-//! has been accounted for.
+//! Workers spin briefly then park; jobs arrive ~300 us apart and spinning
+//! through that wastes a core per worker on the four-core parts this targets.
 
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 
-/// Iterations spun before parking. Long enough to cover a job that is already
-/// in flight, short enough not to burn a core while decode is between layers.
 const SPIN_LIMIT: u32 = 4_000;
 
-/// One unit of work: the erased closure and a trampoline that can call it.
+/// Erased closure plus a trampoline monomorphised over its concrete type, so
+/// nothing here transmutes a fat pointer.
 #[derive(Clone, Copy)]
 struct Task {
-    /// Thin pointer to the caller's closure.
     data: *const (),
-    /// Monomorphised over the element type and the closure's concrete type by
-    /// [`Pool::run`], so the erased pointers below can be recovered exactly.
     call: unsafe fn(*const (), usize, *mut (), usize),
-    /// One `(ptr, element count)` per slot, carved from the caller's output.
-    /// Disjoint.
+    /// Disjoint `(ptr, len)` per slot, carved from the caller's output.
     parts: *const (*mut (), usize),
     n_parts: usize,
 }
 
-// SAFETY: the pointers inside are only dereferenced between the sequence bump
-// and the completion barrier in `run`, during which the caller is blocked and
-// the data it points at is alive and not aliased. `run` is the only producer.
+// SAFETY: dereferenced only between the sequence bump and the completion
+// barrier in `run`, during which the caller is blocked and the data is alive.
 unsafe impl Send for Task {}
 unsafe impl Sync for Task {}
 
 struct Shared {
-    /// Bumped once per job. Workers wake when it changes.
     seq: AtomicUsize,
-    /// Slots finished for the current job.
     done: AtomicUsize,
-    /// The current job. `None` between jobs.
     task: Mutex<Option<Task>>,
-    /// Workers that have entered their loop. `Pool::new` blocks on this.
     ready: AtomicUsize,
-    /// Set when a worker's slot panicked, so `run` can re-raise on the caller.
     panicked: AtomicBool,
-    /// Told to exit at process teardown.
     stop: AtomicBool,
     threads: usize,
 }
@@ -100,7 +60,7 @@ impl Pool {
             threads,
         });
         let mut handles = Vec::with_capacity(threads.saturating_sub(1));
-        // Slot 0 is whoever calls `run`; spawn the rest.
+        // Slot 0 is the caller.
         for slot in 1..threads {
             let shared = Arc::clone(&shared);
             let h = thread::Builder::new()
@@ -109,12 +69,8 @@ impl Pool {
                 .expect("spawn worker");
             handles.push(h.thread().clone());
         }
-        // Wait for every worker to have read the initial sequence number.
-        //
-        // Without this, a worker that first runs *after* a job is dispatched
-        // latches the already-bumped sequence as its baseline, waits for the job
-        // after this one, and never reports the current one. The dispatcher then
-        // blocks forever. Spawning is not starting.
+        // A worker that first runs after a job is dispatched would latch the
+        // bumped sequence as its baseline and never report that job.
         while shared.ready.load(Ordering::Acquire) < threads.saturating_sub(1) {
             std::hint::spin_loop();
         }
@@ -125,11 +81,8 @@ impl Pool {
         self.shared.threads
     }
 
-    /// Split `y` into `chunk`-sized pieces and run `f(slot, piece)` across the
-    /// pool, returning only once every piece is complete.
-    ///
-    /// `f` is called with the slot index and a disjoint sub-slice of `y`, so it
-    /// may write freely without synchronisation.
+    /// Run `f(slot, piece)` over `chunk`-sized pieces of `y`, returning only
+    /// once every piece is complete. Pieces are disjoint.
     pub fn run<T, F>(&self, y: &mut [T], chunk: usize, f: &F)
     where
         T: Send,
@@ -142,9 +95,6 @@ impl Pool {
         if parts.is_empty() {
             return;
         }
-        // More chunks than slots would silently drop work; the caller sizes
-        // `chunk` from the slot count, so this is a contract check rather than a
-        // recoverable condition.
         assert!(
             parts.len() <= self.shared.threads,
             "{} chunks for {} slots",
@@ -152,11 +102,9 @@ impl Pool {
             self.shared.threads
         );
 
-        /// Recovers the closure's concrete type and calls it.
-        ///
         /// # Safety
-        /// `data` must point to a live `F`, and `ptr`/`len` must describe a
-        /// `[T]` that no other slot is touching.
+        /// `data` must point to a live `F`; `ptr`/`len` must describe a `[T]`
+        /// no other slot is touching.
         unsafe fn trampoline<T, F>(data: *const (), slot: usize, ptr: *mut (), len: usize)
         where
             F: Fn(usize, &mut [T]) + Sync,
@@ -172,34 +120,23 @@ impl Pool {
             n_parts: parts.len(),
         };
 
-        // Only slots with a chunk report, and only those are woken.
-        //
-        // The byte cap frequently gives a job fewer slots than the pool has, and
-        // waking every worker then costs a futex wake per idle worker per
-        // matvec: 210 matvecs a token times fifteen idle workers is where the
-        // sixteen-thread regression came from.
-        //
-        // This stays free of the straggler race because an idle worker never
-        // touches `done`. Every worker counted here had work, and `run` blocks
-        // until all of them report, so none can still be running when the next
-        // job resets the counter.
+        // Only slots with a chunk are woken and counted. Waking idle workers
+        // cost a futex wake each, per matvec, which is where the sixteen-thread
+        // regression came from. Safe because an idle worker never touches
+        // `done`, so no straggler can satisfy the next job's barrier.
         let reporters = parts.len() - 1;
         self.shared.done.store(0, Ordering::Relaxed);
         self.shared.panicked.store(false, Ordering::Relaxed);
         *self.shared.task.lock().unwrap_or_else(|e| e.into_inner()) = Some(task);
 
-        // Release: everything above must be visible to a worker that observes
-        // the new sequence number.
         self.shared.seq.fetch_add(1, Ordering::Release);
         for h in self.handles.iter().take(reporters) {
             h.unpark();
         }
 
-        // Slot 0 is this thread.
         let mine = run_slot(&task, 0);
 
-        // Block until every other slot has reported. This is what makes the
-        // pointers in `task` sound: nothing escapes the call.
+        // Blocking here is what makes the pointers in `task` sound.
         let mut spins = 0u32;
         while self.shared.done.load(Ordering::Acquire) < reporters {
             spins = spins.saturating_add(1);
@@ -226,21 +163,17 @@ impl Drop for Pool {
     fn drop(&mut self) {
         self.shared.stop.store(true, Ordering::Release);
         self.shared.seq.fetch_add(1, Ordering::Release);
-        // Every worker, not just the ones a job would have used: they all have
-        // to observe `stop` and leave.
         for h in &self.handles {
             h.unpark();
         }
     }
 }
 
-/// Run one slot of the current task. Returns the panic payload if it unwound.
 fn run_slot(task: &Task, slot: usize) -> Result<(), Box<dyn std::any::Any + Send>> {
     if slot >= task.n_parts {
         return Ok(());
     }
-    // SAFETY: `parts` points at a live Vec owned by the blocked caller, `slot`
-    // is in bounds, and each slot touches a disjoint piece.
+    // SAFETY: `parts` is owned by the blocked caller; slots are disjoint.
     let (ptr, len) = unsafe { *task.parts.add(slot) };
     catch_unwind(AssertUnwindSafe(|| unsafe {
         (task.call)(task.data, slot, ptr, len)
@@ -251,8 +184,7 @@ fn worker(shared: Arc<Shared>, slot: usize) {
     let mut last = shared.seq.load(Ordering::Acquire);
     shared.ready.fetch_add(1, Ordering::Release);
     loop {
-        // Spin briefly, then park. `unpark` leaves a token, so a worker that
-        // parks just after being woken returns from `park` immediately.
+        // `unpark` leaves a token, so parking just after a wake returns at once.
         let mut spins = 0u32;
         loop {
             let now = shared.seq.load(Ordering::Acquire);
@@ -274,13 +206,10 @@ fn worker(shared: Arc<Shared>, slot: usize) {
 
         let task = match *shared.task.lock().unwrap_or_else(|e| e.into_inner()) {
             Some(t) => t,
-            // Woken with no task: teardown, or a spurious wake between jobs.
             None => continue,
         };
 
-        // This job gave us no chunk. Report nothing: the dispatcher counts only
-        // the slots it handed work to, and an idle worker reporting would
-        // release the barrier while another slot is still writing.
+        // No chunk: report nothing, or the barrier releases early.
         if slot >= task.n_parts {
             continue;
         }
@@ -288,18 +217,14 @@ fn worker(shared: Arc<Shared>, slot: usize) {
         if run_slot(&task, slot).is_err() {
             shared.panicked.store(true, Ordering::Release);
         }
-        // Release: the caller's acquire-load of `done` must see our writes.
         shared.done.fetch_add(1, Ordering::Release);
     }
 }
 
 static POOL: OnceLock<Pool> = OnceLock::new();
 
-/// The process-wide pool, sized on first use.
-///
-/// Returns `None` when a different thread count is requested than the pool was
-/// built with, so the caller falls back rather than silently using the wrong
-/// width. In practice the backend is constructed once per process.
+/// The process-wide pool, sized on first use. `None` if a different width is
+/// requested later, so the caller falls back rather than using the wrong one.
 pub fn global(threads: usize) -> Option<&'static Pool> {
     let p = POOL.get_or_init(|| Pool::new(threads.max(1)));
     (p.threads() == threads.max(1)).then_some(p)
@@ -325,16 +250,13 @@ mod tests {
         }
     }
 
-    /// The barrier is the safety argument, so it gets a test: no write may
-    /// land after `run` returns.
     #[test]
     fn run_does_not_return_before_every_slot_finishes() {
         let pool = Pool::new(4);
         for _ in 0..200 {
             let mut y = vec![0i32; 4096];
             pool.run(&mut y, 1024, &|slot, out| {
-                // Uneven work, so a slot that was not waited on would be
-                // observable as a zero below.
+                // Uneven, so an unwaited slot shows up as a zero.
                 for _ in 0..(slot * 500) {
                     std::hint::spin_loop();
                 }
@@ -344,20 +266,13 @@ mod tests {
         }
     }
 
-    /// Idle slots must not report completion.
-    ///
-    /// This is the invariant that makes it safe to wake only the slots with
-    /// work. When idle workers reported too, their increments satisfied the
-    /// barrier before the working slots had finished, and `run` returned while
-    /// another thread was still writing into the caller's buffer. That is a
-    /// use-after-scope; it showed up here as a zero in the output.
+    /// Wake-only-the-working-slots is safe only if idle slots stay silent.
     #[test]
     fn idle_slots_do_not_release_the_barrier_early() {
         let pool = Pool::new(8);
         for _ in 0..500 {
             let mut y = vec![0i32; 3];
             pool.run(&mut y, 1, &|slot, out| {
-                // Later slots finish last, so an early release is observable.
                 for _ in 0..(slot * 2000) {
                     std::hint::spin_loop();
                 }

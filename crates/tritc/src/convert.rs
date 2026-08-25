@@ -120,18 +120,10 @@ pub fn convert(input_dir: &Path, output: &Path) -> Result<Report> {
                 n_tern += 1;
                 writer.write_trit(&name, &shape, &trits, scale)?;
             } else if shape.len() == 2 && view.dtype() == Dtype::BF16 {
-                // Keep the source precision instead of widening it.
-                //
-                // The checkpoint is bf16. Widening to f32 here added no
-                // information and doubled the bytes this tensor streams per
-                // token, and on a tied-embedding model that tensor is the
-                // largest stream in decode. Storing it back as bf16 is exact
-                // with respect to the source: every value round-trips.
-                //
-                // Only 2-D tensors, which is the embedding table and an untied
-                // head. The 1-D norm gains are a few kilobytes and feed the
-                // absmax quantiser, so they stay f32 rather than perturbing the
-                // numerics ladder for no bandwidth.
+                // Keep the source precision: widening added no information and
+                // doubled the largest stream in decode. Exact, since every
+                // value round-trips. 1-D norm gains stay f32; they are tiny and
+                // feed the absmax quantiser.
                 writer.write_bf16(&name, &shape, &data)?;
             } else {
                 writer.write_f32(&name, &shape, &data)?;

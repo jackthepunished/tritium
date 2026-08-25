@@ -29,13 +29,9 @@ pub trait MatvecBackend: Send + Sync + std::fmt::Debug {
         1
     }
 
-    /// Dense weights, still in the precision the file stores them in.
-    ///
-    /// The point of not widening on load is bandwidth. Decode is memory-bound
-    /// and the tied head is the largest single stream in it, so reading it as
-    /// bf16 halves the bytes that stream per token. The values themselves are
-    /// unchanged: the checkpoint is bf16, `tritc` used to widen it, and nothing
-    /// downstream ever added precision.
+    /// Dense matvec over weights in the precision the file stores them in.
+    /// Widening on load would double the bytes the largest stream in decode
+    /// moves per token.
     fn dense_matvec(
         &self,
         w: DenseWeights<'_>,
@@ -60,13 +56,11 @@ pub trait MatvecBackend: Send + Sync + std::fmt::Debug {
     }
 }
 
-/// A dense weight matrix as stored, without a widening pass.
+/// A dense weight matrix as stored. Widening bf16 is `bits << 16` reinterpreted
+/// as f32, which is exact, so a kernel widens in registers instead.
 #[derive(Clone, Copy, Debug)]
 pub enum DenseWeights<'a> {
     F32(&'a [f32]),
-    /// Raw bf16 bit patterns. Widening is `bits << 16` reinterpreted as f32,
-    /// which is exact, so a kernel may widen in registers and never materialise
-    /// the f32 form.
     Bf16(&'a [u16]),
 }
 
@@ -80,7 +74,7 @@ impl DenseWeights<'_> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-    /// Bytes this matrix streams per pass. The number decode is bounded by.
+    /// Bytes streamed per pass, which is what decode is bounded by.
     pub fn bytes(&self) -> usize {
         match self {
             DenseWeights::F32(w) => w.len() * 4,
@@ -89,13 +83,12 @@ impl DenseWeights<'_> {
     }
 }
 
-/// Exact widening of one bf16 bit pattern.
 #[inline]
 pub fn bf16_to_f32(bits: u16) -> f32 {
     f32::from_bits((bits as u32) << 16)
 }
 
-/// Portable dense matvec over either precision.
+/// Portable reference over either precision.
 pub fn dense_matvec_reference(
     w: DenseWeights<'_>,
     rows: usize,

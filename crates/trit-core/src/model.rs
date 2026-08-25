@@ -462,8 +462,6 @@ impl Model {
 
         // ---- logits ----
         math::rmsnorm_into(&s.x, &self.final_norm, cfg.rms_eps, &mut s.normed[..h]);
-        // Borrowed in its stored precision. Widening here would allocate the
-        // whole head every decode step.
         let head = self.file.dense_weights(self.lm_head)?;
         self.backend
             .dense_matvec(head, cfg.vocab_size, h, &s.normed[..h], logits);
