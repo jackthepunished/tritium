@@ -649,6 +649,39 @@ impl TritFile {
         }
     }
 
+    /// Borrow a dense tensor **without widening it**.
+    ///
+    /// [`Self::dense`] returns f32 and therefore has to allocate and convert a
+    /// bf16 tensor, which for the tied head would be a 1.3 GB materialisation
+    /// per decode step. This hands back the stored bytes so a kernel can widen
+    /// in registers instead.
+    pub fn dense_weights(&self, s: DenseSpan) -> Result<crate::backend::DenseWeights<'_>> {
+        let raw = &self.mmap[s.start..s.start + s.len];
+        match s.dtype {
+            DType::F32 => {
+                // SAFETY: every bit pattern is a valid f32 and the length is a
+                // multiple of 4; align_to hands back any unaligned head/tail
+                // rather than assuming alignment.
+                let (head, mid, tail) = unsafe { raw.align_to::<f32>() };
+                ensure!(
+                    head.is_empty() && tail.is_empty(),
+                    "dense tensor is not 4-byte aligned in the mapping"
+                );
+                Ok(crate::backend::DenseWeights::F32(mid))
+            }
+            DType::Bf16 => {
+                // SAFETY: as above; u16 has no invalid bit patterns.
+                let (head, mid, tail) = unsafe { raw.align_to::<u16>() };
+                ensure!(
+                    head.is_empty() && tail.is_empty(),
+                    "dense tensor is not 2-byte aligned in the mapping"
+                );
+                Ok(crate::backend::DenseWeights::Bf16(mid))
+            }
+            DType::Trit => unreachable!("dense_span rejects ternary tensors"),
+        }
+    }
+
     /// One row of a dense 2-D tensor -- the embedding lookup, without touching
     /// the other 128k rows.
     pub fn dense_row(

@@ -283,6 +283,67 @@ fn check_f32_kernel() {
     }
 }
 
+/// The bf16 path must agree with the f32 path on the same values.
+///
+/// Storing the head as bf16 is only lossless because the checkpoint was bf16 to
+/// begin with. This pins that: build weights that are exactly representable in
+/// bf16, run both precisions, and require the results to match within
+/// reassociation noise. If they diverge, the format change is not free and the
+/// claim in the roadmap is wrong.
+#[test]
+fn bf16_weights_agree_with_the_same_values_as_f32() {
+    use trit_core::backend::{bf16_to_f32, DenseWeights};
+
+    let mut rng = Rng(0xB16);
+    for (rows, cols) in [
+        (3usize, 1usize),
+        (5, 31),
+        (4, 64),
+        (9, 65),
+        (7, 127),
+        (2, 2560),
+    ] {
+        // bf16 bit patterns first, so the f32 side holds exactly the same
+        // values rather than values that merely round to them.
+        let bits: Vec<u16> = (0..rows * cols)
+            .map(|_| {
+                let v = rng.i8() as f32 * 0.01;
+                let b = v.to_bits();
+                (b.wrapping_add(((b >> 16) & 1) + 0x7fff) >> 16) as u16
+            })
+            .collect();
+        let widened: Vec<f32> = bits.iter().copied().map(bf16_to_f32).collect();
+        let x: Vec<f32> = (0..cols).map(|_| rng.i8() as f32 * 0.01).collect();
+
+        for threads in [1usize, 4] {
+            let mut from_f32 = vec![0f32; rows];
+            let mut from_bf16 = vec![0f32; rows];
+            trit_cpu::f32_kernels::dense_matvec(
+                DenseWeights::F32(&widened),
+                rows,
+                cols,
+                &x,
+                &mut from_f32,
+                threads,
+            );
+            trit_cpu::f32_kernels::dense_matvec(
+                DenseWeights::Bf16(&bits),
+                rows,
+                cols,
+                &x,
+                &mut from_bf16,
+                threads,
+            );
+            for (i, (a, b)) in from_f32.iter().zip(&from_bf16).enumerate() {
+                assert!(
+                    (a - b).abs() <= 1e-4 * a.abs().max(1.0),
+                    "{rows}x{cols} row {i} at {threads} threads: {a} vs {b}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn unsupported_f32_kernel_errors_rather_than_falling_back() {
     let err = trit_cpu::f32_kernels::force_f32_kernel("not-a-real-kernel").unwrap_err();

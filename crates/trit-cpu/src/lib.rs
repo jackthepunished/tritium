@@ -368,4 +368,15 @@ impl MatvecBackend for CpuBackend {
     fn f32_matvec(&self, w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32]) {
         f32_kernels::f32_matvec(w, rows, cols, x, y, self.threads)
     }
+
+    fn dense_matvec(
+        &self,
+        w: trit_core::backend::DenseWeights<'_>,
+        rows: usize,
+        cols: usize,
+        x: &[f32],
+        y: &mut [f32],
+    ) {
+        f32_kernels::dense_matvec(w, rows, cols, x, y, self.threads)
+    }
 }
