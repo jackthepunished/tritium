@@ -32,17 +32,17 @@ published rather than buried.
 | **The pivot** | `.trit` v1 bit planes, SIMD kernels, host daemon, C ABI, comparative harness | G7 moved 93x on decode; G1-G6 unmoved |
 | Review hardening | 14 findings fixed, including an `i16` overflow in the NEON kernel and a streaming detokenizer that destroyed every multi-byte codepoint | NEON kernels executed on aarch64 hardware for the first time; all gates re-verified |
 
-Where that leaves the numbers, measured on a Ryzen 9 8945HX over the four-prompt
-short suite. The frozen single-prompt reference in [06-GATES.md](06-GATES.md)
-reads slightly lower (14.89 tok/s, 470 ms, 27.3 GB/s) because it is a different
-input, and it — not this table — is what a regression is measured against:
+Where that leaves the numbers, measured on a Ryzen 9 8945HX at 4 threads over
+the four-prompt suite. [06-GATES.md](06-GATES.md) is the frozen reference; this
+host drifts between runs, so treat absolutes as approximate and speedups as
+claims that need interleaved pairs:
 
-| | Pre-pivot | Now |
-|---|---|---|
-| Decode | 0.16 tok/s | 15.7 tok/s |
-| Time to first token | ~33 s | 440 ms |
-| Peak RSS | 6.10 GiB | 1.80 GiB |
-| Achieved bandwidth | ~0.3 GB/s | 29.0 GB/s (~61-68% of the measured roofline) |
+| | Pre-pivot | After the pivot | After A2+A3 |
+|---|---|---|---|
+| Decode | 0.16 tok/s | 14.89 tok/s | **27.90 tok/s** |
+| Time to first token | ~33 s | 470 ms | **239 ms** |
+| Peak RSS | 6.10 GiB | 1.80 GiB | **1.19 GiB** |
+| Bytes per token | 1834 MB | 1834 MB | **1178 MB** |
 
 ## The board-purchase gate
 
@@ -100,58 +100,68 @@ figure is produced the same way the baselines' are.
 
 Two levers fall out of it, and they reorder the rest of this track.
 
-## A2. Parallel scaling
+## A2. Parallel scaling — DONE, partly
 
-**The largest lever in the project, by a wide margin.** Tritium is ordinary per
-core and last by a factor of two in aggregate. If it scaled like bitnet.cpp,
-13.28 tok/s at one thread becomes roughly 34 at eight — before any other
-change, and past bitnet.cpp's 31.90.
+`crates/trit-cpu/src/pool.rs` replaces per-matvec fork/join with a persistent
+pool on a sequence counter. Four mechanisms were measured in the real decode
+loop first; a dedicated work-stealing pool and a broadcast primitive both stayed
+slower than not parallelising at all.
 
-The cause is measured, not guessed. A decode step issues 210 ternary matvecs
-whose largest is 4.4 MB, and each one currently pays a rayon fork/join.
-Lowering `PARALLEL_MIN_BYTES` to let them parallelize makes things dramatically
-worse, not better:
+**Worth 1.17x**, measured in interleaved pairs against the previous
+implementation because this host drifts up to 30% between runs. That is well
+short of the 1.59x the isolated prototype suggested, and the smaller number is
+the true one.
 
-| threads | layer time |
-|---|---|
-| 1 | 37.4 ms |
-| 2 | 66-74 ms |
-| 4 | 112-115 ms |
-| 8 | 173-175 ms |
+The gate asked for the slope, not the peak, and the slope improved: 1.34x from
+one thread to eight, against 1.15x before. It is still short of bitnet.cpp's
+2.39x, and the curve now peaks at four threads and declines rather than
+flattening. **That decline is what is left of this item**, and it is why the
+automatic thread count caps at eight.
 
-Even two threads is 1.8x worse. So `PARALLEL_MIN_BYTES` is correct and must
-stay until something cheaper than per-call fork/join exists. ggml gets its
-scaling from a persistent pool with cheap barriers; that is the shape of the
-fix, and it is a real piece of engineering rather than a tuning change.
+Worth noting the desktop understates it. On a four-core edge part, which is the
+hardware this project exists for, going from effectively single-threaded to
+using the cores is worth more than it is on a 32-thread machine that was already
+fast.
 
-**Gate:** decode tok/s at 1, 2, 4, 8 and 16 threads published next to the
-baseline curve, with the same suite. The number that matters is the *slope*,
-not the peak.
+## A3. The f32 LM head — DONE
 
-## A3. The f32 LM head
+`tritc` was reading the checkpoint's bf16 tensors, widening them to f32 and
+storing f32. Two-dimensional dense tensors now keep the source precision. The
+1-D norm gains stay f32: a few kilobytes each, and they feed the absmax
+quantiser.
 
-Still worth doing, at a smaller number than first estimated, and now
-independently corroborated: bitnet.cpp stores `token_embd` as f16 where Tritium
-stores f32, so it moves ~1178 MB per token against our 1834 MB. Part of its
-advantage is simply that.
+**Worth 1.37x**, measured in paired runs with the same binary and only the model
+file differing. That beat the 1.26x projection, the first estimate in this
+project to come in under rather than over. Bytes per token 1834 MB to 1178 MB,
+peak RSS 1846 MB to 1220 MB, model file 1836 MB to 1179 MB.
 
-The instrumented decode puts the head at 26.9 ms of a 64.4 ms token — 42% of
-the time, not the 72% the byte share suggests, because the head runs at
-48.8 GB/s while the ternary path runs at 13.9. Halving its bytes should take
-the token to roughly 51 ms: about **1.26x**, plus peak RSS from 1846 MB to
-around 1190 MB.
+Exact with respect to the source, so there was no quality experiment to run:
+G2 held at 0.9991 / 100% and G3 stayed byte-identical.
 
-The values are already bf16 — `tritc` widens them from the checkpoint on the
-way in and nothing ever adds precision — so storing and reading them as bf16 is
-lossless relative to the source. There is no quality experiment to run, which
-is why this ranks above anything that trades accuracy.
+Independently corroborated by the competition. bitnet.cpp already stored
+`token_embd` as f16, and that was most of its remaining advantage; closing it is
+what moved Tritium ahead per core.
 
-**Gate:** bytes/token and decode tok/s measured before and after, with G2 held
-at its frozen value.
+## Where that leaves the comparison
+
+Same host, same session, greedy, 32 tokens, median of three:
+
+| threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
+|---|---|---|---|
+| 1  | **19.40** | 15.40 | 13.61 |
+| 2  | **26.73** | 22.06 | 19.10 |
+| 4  | **27.90** | 27.83 | 26.72 |
+| 8  | 25.93 | 26.18 | **32.49** |
+| 16 | 20.72 | 23.88 | **31.21** |
+
+Ahead at 1, 2 and 4 threads, and 1.43x bitnet.cpp per core on the identical
+checkpoint, having been last in that column before A2 and A3. Still behind above
+four threads, where bitnet.cpp keeps climbing and Tritium declines.
 
 ## A4. Energy per token
 
-J/token is named "the headline metric" in [04-BENCHMARKS.md](04-BENCHMARKS.md)
+**Now the top open item on this track.** J/token is named "the headline metric"
+in [04-BENCHMARKS.md](04-BENCHMARKS.md)
 and has never been reported, because the reader refuses to estimate and no
 machine in the loop has exposed a counter. The development host has no RAPL
 zones at all.

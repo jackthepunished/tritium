@@ -143,14 +143,24 @@ restored cosine 1.000000 everywhere.
 ## Post-pivot results
 
 The pivot's purpose was to move the G7 numbers without moving G1-G6. Measured
-on the environment of record with `models/bitnet-2b4t.trit` (v1):
+on the environment of record with `models/bitnet-2b4t.trit`:
 
-| Metric | Pre-pivot | Post-pivot | Change |
+| Metric | Pre-pivot | After the pivot | After A2+A3 |
 |---|---|---|---|
-| Decode | 0.16 tok/s | **14.89 tok/s** | **93x** |
-| Time to first token | ~33 s | **470 ms** | 70x |
-| Peak RSS | 6,401,024 KB | **1,891,184 KB** | 3.4x less |
-| Achieved bandwidth | ~0.3 GB/s | **27.3 GB/s** | 66% of the 41.1 GB/s measured on this host |
+| Decode | 0.16 tok/s | 14.89 tok/s | **27.90 tok/s** |
+| Time to first token | ~33 s | 470 ms | **239 ms** |
+| Peak RSS | 6,401,024 KB | 1,891,184 KB | **1,249,280 KB** |
+| Bytes per token | 1,834,352,640 | 1,834,352,640 | **1,177,681,920** |
+| Achieved bandwidth | ~0.3 GB/s | 27.3 GB/s | **32.9 GB/s** |
+
+Decode is at 4 threads, which is where this host peaks.
+
+The roofline fraction is a ratio against a probe run in the same invocation, and
+that probe is itself noisy: across the five thread counts in the committed CSV
+it read 48.25, 58.27, 57.24, 52.67 and 49.78 GB/s. At 4 threads, 32.85 against
+57.24 is **57%**. Quote the pair, never the fraction alone, and never a fixed
+ceiling for this host. The pivot's "66% of roofline" was computed against a
+single-pass probe that under-reported, so it was optimistic on top of that.
 
 Kernel throughput on a 2560x6912 tensor, planes resident in L3:
 
@@ -162,11 +172,46 @@ Kernel throughput on a 2560x6912 tensor, planes resident in L3:
 | avx2 | 0.66 | 6.7 | 13.87x |
 | bitserial (popcount) | 6.12 | 0.7 | 1.49x |
 
-Threading is measured, not assumed. A decode step issues 210 ternary matvecs
-whose largest is 4.4 MB, and splitting each across the machine costs more in
-fork/join than it saves: 14.13 tok/s at one thread against 2.40 tok/s at 32
-before `PARALLEL_MIN_BYTES` was introduced. It now peaks at 4 threads (14.89)
-and stays flat to 32 (14.34).
+### Against other runtimes
+
+Same host, same session, greedy, 32 tokens, median of three. bitnet.cpp runs the
+identical checkpoint; llama.cpp runs Qwen2.5-3B Q4_K_M because mainline cannot
+load `i2_s`, so that column is a different model at a different quality point.
+
+| threads | tritium | llama.cpp | bitnet.cpp |
+|---|---|---|---|
+| 1  | **19.40** | 15.40 | 13.61 |
+| 2  | **26.73** | 22.06 | 19.10 |
+| 4  | **27.90** | 27.83 | 26.72 |
+| 8  | 25.93 | 26.18 | **32.49** |
+| 16 | 20.72 | 23.88 | **31.21** |
+
+Ahead at 1, 2 and 4 threads, 1.43x bitnet.cpp per core. Still behind above
+4 threads: our curve peaks and declines where bitnet.cpp keeps climbing to
+32.49. That gap is the remaining scaling work.
+
+### Threading
+
+Measured, not assumed, and the measurement changed twice.
+
+Before a persistent pool existed, splitting each of the 210 ternary matvecs per
+token across the machine cost more than it saved: 14.13 tok/s at one thread
+against 2.40 at 32. `PARALLEL_MIN_BYTES` was set to 32 MiB to prevent it.
+
+With the pool, dispatch is a sequence-counter bump and an unpark, and the
+threshold drops to 64 KiB. Four mechanisms were measured in the real decode
+loop; a dedicated work-stealing pool and a broadcast primitive both stayed
+slower than not parallelising at all.
+
+| Mechanism | 1t | 2t | 4t | 8t |
+|---|---|---|---|---|
+| serial | 37.6 | 37.6 | 36.9 | 36.7 |
+| rayon, global pool | 36.0 | 65.0 | 108.8 | 174.0 |
+| rayon, sized pool | 35.8 | 50.0 | 69.7 | 148.9 |
+| rayon, broadcast | 35.9 | 47.2 | 57.5 | 89.8 |
+| persistent spin barrier | 37.1 | **20.0** | **12.8** | 14.1 |
+
+Layer time in ms. All produce byte-identical output.
 
 G1-G6 are unchanged throughout. G2 still reports 0.9991/100%, G3 is still
 byte-identical in every numerics mode on both implementations, and the real
@@ -182,7 +227,10 @@ the before/after.
 |---|---|---|---|---|
 | B | `.trit` v0 -> v1 bit planes | v0 codes | v1 planes | The migration is proven exact: `tritc upgrade` of the v0 file is byte-identical to a fresh convert. G2 and G3 unchanged. |
 | B | Recorded zero fraction | 0.377 | **0.4219** | The old figure was hand-transcribed into checkpoint-notes.md and wrong. The byte-identity of the upgrade proves the trits themselves did not change. |
-| C | RTL weight interface | `w_data[127:0]` | `w_pos`/`w_neg` | Synthesis is unchanged at 33,659 cells, still multiplier-free. | |
+| C | RTL weight interface | `w_data[127:0]` | `w_pos`/`w_neg` | Synthesis is unchanged at 33,659 cells, still multiplier-free. |
+| A2 | Automatic thread count | one per core | one per core, max 8 | Interleaved pairs give 1.17x at 2, 1.18x at 4, 1.17x at 8 and **0.94x at 16**. One per core is the wrong automatic answer on a large machine. Explicit `--threads` is unchanged. |
+| A3 | Dense 2-D tensor storage | f32 | bf16 when the source is bf16 | The checkpoint is bf16 and `tritc` was widening it, so this restores the source precision rather than reducing it. Every value round-trips. Bytes per token 1,834,352,640 -> 1,177,681,920; G2 and G3 unchanged. Existing `.trit` files still load; the benefit needs a re-convert, and narrowing an existing file is not offered because a stored f32 does not record whether it was bf16 first. |
+| A3 | Bandwidth probe | single pass | best of five | The single-pass probe scattered 45-50 GB/s where the machine sustains ~53, so `roofline_pct` flattered every result. Reported fraction drops from ~62% to 53-57% with no runtime change. |
 
 The one change already anticipated: RoPE currently computes
 `theta.powf(-2.0 * i / head_dim)` in **f32** (`crates/tritsim/src/math.rs`),

@@ -74,17 +74,22 @@ Measured on BitNet b1.58 2B4T, reported by `tritd info`:
 
 | | bytes/token | share |
 |---|---|---|
-| Ternary weights (all 30 layers, every projection) | 521,011,200 | 28% |
-| `lm_head` / tied embeddings, f32 | 1,313,341,440 | 72% |
-| **Total** | **1,834,352,640** | |
+| Ternary weights (all 30 layers, every projection) | 521,011,200 | 44% |
+| `lm_head` / tied embeddings, bf16 | 656,670,720 | 56% |
+| **Total** | **1,177,681,920** | |
 | KV cache, f32, preallocated at 2048 context | 314,572,800 | not per-token |
 
-**The LM head is 2.5x every ternary projection combined.** This is the single
-most important number in the document, and it is not what the pre-pivot
-architecture expected: the table this section used to carry estimated a "~600 MB
-packed" model and reasoned entirely about ternary weight streaming. On a
-tied-embedding model with a 128256-word vocabulary at f32, the non-ternary tail
-dominates the ternary body more than 2:1.
+**The dense head is still the largest single stream, even at bf16.** On a
+tied-embedding model with a 128256-word vocabulary, the non-ternary tail rivals
+the entire ternary body. It used to dominate it 2.5:1, because `tritc` widened
+the checkpoint's bf16 tensors to f32 and stored 1,313,341,440 bytes where
+656,670,720 carry the same values. Restoring the source precision removed
+656 MB per token and is exact: see [02-ROADMAP.md](02-ROADMAP.md) A3.
+
+This is also the shape of the pre-pivot mistake, which is worth keeping in view.
+That version of this section estimated a "~600 MB packed" model and reasoned
+entirely about ternary weight streaming, and was wrong about where the bytes
+were.
 
 So the runtime's dense f32 matvec is not incidental. `MatvecBackend::f32_matvec`
 exists as a first-class trait method for exactly this reason — a backend that
@@ -94,27 +99,27 @@ throughput at all.
 ### Where that leaves us
 
 Measured on an AMD Ryzen 9 8945HX (Zen 4, AVX-512 VNNI), 4 threads,
-`benches/prompts/short.jsonl`:
+`benches/prompts/short.jsonl`, median of three:
 
 | | |
 |---|---|
-| Decode | 15.7 tok/s |
-| Achieved bandwidth | 29.0 GB/s |
-| Streaming-read probe, same host, same run | 42-47 GB/s (run to run) |
-| Fraction of roofline | ~61-68% |
-| Peak RSS | 1846 MB |
-| Time to first token | 440 ms |
+| Decode | 27.9 tok/s |
+| Achieved bandwidth | 32.9 GB/s |
+| Streaming-read probe, same invocation | 57.2 GB/s |
+| Fraction of it | 57% |
+| Peak RSS | 1220 MB |
+| Time to first token | 239 ms |
 
 The roofline figure is a **measured ratio**, not an assumption about what the
 memory system can do: `tritd bench` runs a streaming-read probe on the same
-machine in the same invocation and divides by it. The probe varies a few GB/s
-between runs, so the percentage is quoted as a range rather than to the digit.
+machine in the same invocation, best of five passes, and divides by it. The
+probe itself reads 48-58 GB/s across runs, so the pair belongs together and this
+host has no single ceiling worth quoting.
 
-These are a fresh four-prompt suite run and sit slightly above the frozen
-single-prompt figures in [06-GATES.md](06-GATES.md) (14.89 tok/s, 470 ms,
-27.3 GB/s). Different input, different number: the gates file is the regression
-reference and is not restated here. Quote it, not this table, when comparing
-against a past run.
+This machine drifts by up to 30% between runs, so absolute figures here are not
+comparable across sessions. Anything claiming a speedup should be an interleaved
+paired measurement against the thing it is faster than;
+[06-GATES.md](06-GATES.md) is the frozen reference.
 
 Consequences baked into the design:
 
@@ -123,29 +128,36 @@ Consequences baked into the design:
 - **Prefill is the exception.** With N prompt tokens you amortize one weight pass
   over N tokens of work, so prefill runs compute-bound. TTFT looks
   disproportionately good; steady-state decode is the honest number.
-- **Bytes are not time. Measure both.** This document originally argued from
-  the byte share alone and concluded the head was the thing to attack. An
-  instrumented decode says otherwise: the head is 26.9 ms of a 64.4 ms token,
-  42% of the time against 72% of the bytes, because it runs at 48.8 GB/s while
-  the ternary path runs at 13.9. The two halves sit at opposite ends of the
-  machine's efficiency range, so the byte split systematically misleads about
-  where time goes. Halving the head's bytes is still worth about 1.26x, and is
-  worth doing because it is free — see [02-ROADMAP.md](02-ROADMAP.md) A3 — but
-  it is no longer the largest item.
+- **Bytes are not time. Measure both.** This document once argued from the byte
+  share alone and concluded the head was the thing to attack. An instrumented
+  decode disagreed: with an f32 head it was 26.9 ms of a 64.4 ms token, 42% of
+  the time against 72% of the bytes, because it ran at 48.8 GB/s while the
+  ternary path ran at 13.9. The two halves sat at opposite ends of the machine's
+  efficiency range, so the byte split misled about where time went. Both have
+  since moved — the head is bf16 and the ternary path can use cores — but the
+  lesson holds: a byte count predicts time only when the two paths run at
+  comparable efficiency, and here they did not.
 
 ### Where the time actually goes
+
+Measured with an f32 head and a single-threaded ternary path, which is the
+configuration the two findings below came from:
 
 | | per token | share | achieved |
 |---|---|---|---|
 | 30 transformer layers (ternary + attention) | 37.5 ms | 58% | 13.9 GB/s |
 | LM head | 26.9 ms | 42% | 48.8 GB/s |
 
-The head is already at roughly 92% of this machine's ~53 GB/s ceiling, so no
-kernel work will move it: forcing the dense kernel to scalar, AVX2 and AVX-512
-in turn gives 28.8, 28.1 and 27.1 ms. The ternary path is the opposite — it is
-compute-bound in the kernel at about 15.8 GB/s per core, barely above what it
-achieves from DRAM, which means it would scale with cores if the runtime could
-use them. Section 7 is why it cannot.
+Two opposite conclusions came out of that split, and both held.
+
+The head was already at roughly 92% of this machine's ceiling, so no kernel work
+would move it: forcing the dense kernel to scalar, AVX2 and AVX-512 in turn gave
+28.8, 28.1 and 27.1 ms. The only thing that could help was moving fewer bytes,
+which is what storing it in bf16 does.
+
+The ternary path was the opposite: compute-bound in the kernel at about
+15.8 GB/s per core, barely above what it achieved from DRAM, which meant it
+would scale with cores if the runtime could use them. Section 7 is how.
 
 ## 4. System overview
 
@@ -299,25 +311,40 @@ one.
 Threading splits **rows**, never a reduction, so results are bit-identical
 regardless of thread count or scheduling.
 
-The interesting part is that more threads made it *worse*, and the fix was a
-measurement rather than an intuition. A decode step issues 210 ternary matvecs
-whose largest is 4.4 MB; splitting each across the machine costs more in
-fork/join than it saves. Before a threshold was introduced: 14.13 tok/s at one
-thread against 2.40 tok/s at 32 — nearly 6x slower. With `PARALLEL_MIN_BYTES` set
-above every per-layer tensor in this model class, the ternary matvecs run inline
-and the parallelism that does pay goes to the LM head.
+The dispatch mechanism turned out to matter more than the parallelism. A decode
+step issues 210 ternary matvecs whose largest is 4.4 MB, and handing each to a
+work-stealing pool costs more than the matvec itself: layer time went 37.4 ms at
+one thread to 173 ms at eight. For a long time the runtime avoided the problem
+by refusing to parallelise anything smaller than 32 MiB, which meant the ternary
+path was effectively single-threaded.
 
-Batched prefill, or a model whose projections are an order of magnitude larger,
-would want this revisited — again with a measurement.
+Four mechanisms were measured in the real decode loop. A dedicated pool sized to
+the thread count and a broadcast primitive both helped substantially and both
+remained slower than not parallelising at all. Only a persistent pool on a
+sequence counter beat serial execution, at 2.9x on the layer path.
 
-**This is the project's largest open defect, and it is now quantified.** Against
-bitnet.cpp on the identical checkpoint, Tritium is within 6% at one thread and
-2.09x slower at eight, because bitnet.cpp scales 2.54x across that range and
-Tritium scales 1.15x. Lowering the threshold does not help — the layer time goes
-37.4 ms at one thread to 173 ms at eight, since each of 210 matvecs per token
-pays its own fork/join. The fix is a cheaper synchronization primitive, not a
-different threshold: ggml gets its scaling from a persistent pool with cheap
-barriers. Until that exists, the threshold is load-bearing and must stay.
+`crates/trit-cpu/src/pool.rs` is that pool: workers spawned once, waiting on a
+counter, with no allocation and no scheduler involvement per job. They spin
+briefly and then park, because jobs arrive roughly every 300 us and spinning
+through that gap wastes a core per worker, which the four-core parts this
+runtime targets cannot afford.
+
+Two properties are load-bearing and both are tested:
+
+- `run` blocks until every slot it dispatched has reported, which is what makes
+  the pointers it hands out sound. Nothing escapes the call.
+- Slots with no chunk report nothing. When idle workers incremented the
+  completion counter, their increments satisfied the barrier before the working
+  slots had finished and `run` returned while another thread was still writing.
+
+Slot count is bounded by the work as well as the pool, at 256 KiB of planes per
+slot, and the dense head shares the same pool rather than running a second one.
+The automatic thread count caps at eight: sixteen measures 0.94x against the
+previous implementation, so one per core is the wrong answer to "decide for me"
+on a large machine.
+
+What remains is that the curve peaks at four threads and declines, where
+bitnet.cpp keeps climbing to eight. That is the open gap.
 
 ## 8. The silicon track
 

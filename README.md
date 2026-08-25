@@ -34,16 +34,18 @@ Every number here is reproducible with `tritd bench`; the frozen reference is
 
 | | Before the pivot | Now |
 |---|---|---|
-| Decode | 0.16 tok/s | **14.89 tok/s** |
-| Time to first token | ~33 s | **470 ms** |
-| Peak RSS | 6.10 GiB | **1.80 GiB** |
-| Achieved bandwidth | ~0.3 GB/s | **27.3 GB/s** (66% of the 41.1 GB/s this host sustains) |
+| Decode | 0.16 tok/s | **27.9 tok/s** |
+| Time to first token | ~33 s | **239 ms** |
+| Peak RSS | 6.10 GiB | **1.19 GiB** |
+| Bytes per token | 1834 MB | **1178 MB** |
+| Achieved bandwidth | ~0.3 GB/s | **32.9 GB/s** (57% of a 57.2 GB/s probe in the same run) |
 | Quality vs the HF reference | mean logit cosine 0.9991, top-1 100% | unchanged |
 
 Decoding at batch 1 touches every weight once per token, so throughput is bounded
 by `tok/s ~= bandwidth / bytes_per_token`. For this model that is **521 MB of
-ternary weights and 1313 MB of f32 embeddings** — the LM head, not the ternary
-projections, is the thing to attack next.
+ternary weights and 657 MB of bf16 embeddings**. The head was f32 until the
+converter stopped widening the checkpoint's bf16 tensors, which removed 656 MB
+per token at no cost in accuracy.
 
 ## Measured against the alternatives
 
@@ -68,11 +70,11 @@ and does not make comparable.
 
 | threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
 |---|---|---|---|
-| 1  | 13.28 | **13.91** | 12.54 |
-| 2  | 14.61 | **20.01** | 19.64 |
-| 4  | 15.23 | 25.54 | **27.29** |
-| 8  | 15.23 | 24.72 | **31.90** |
-| 16 | 14.98 | 22.84 | **30.51** |
+| 1  | **19.40** | 15.40 | 13.61 |
+| 2  | **26.73** | 22.06 | 19.10 |
+| 4  | **27.90** | 27.83 | 26.72 |
+| 8  | 25.93 | 26.18 | **32.49** |
+| 16 | 20.72 | 23.88 | **31.21** |
 
 bitnet.cpp runs the identical checkpoint, so that column is the honest
 comparison. llama.cpp runs Qwen2.5-3B Q4_K_M, because mainline cannot load the
@@ -80,18 +82,10 @@ comparison. llama.cpp runs Qwen2.5-3B Q4_K_M, because mainline cannot load the
 bits-per-weight column is in the CSV and why this table should not be read as
 "ternary beats 4-bit".
 
-**All three are within 11% of each other at one thread. Only Tritium fails to
-scale.** From one thread to eight, bitnet.cpp gains 2.54x and llama.cpp 1.78x;
-Tritium gains 1.15x and then stops, finishing 2.09x behind bitnet.cpp. The
-kernels are not the problem — per core we are ordinary. The runtime's inability
-to use more than one core is the whole gap. A decode step issues 210 ternary
-matvecs whose largest is 4.4 MB, and per-matvec fork/join costs more than the
-matvec, which is measured and is why `PARALLEL_MIN_BYTES` exists.
-
-The other part of the gap is bytes: bitnet.cpp stores its embedding table as f16
-where Tritium stores f32, moving ~1178 MB per token against our 1834 MB.
-
-Both are on the roadmap, in that order.
+**Tritium leads at 1, 2 and 4 threads, and loses above that.** It is 1.43x
+faster than bitnet.cpp per core on the identical checkpoint. But its curve peaks
+at four threads and declines, where bitnet.cpp keeps climbing to 32.49 at eight.
+Closing that is the open work.
 
 ## Architecture
 
@@ -99,7 +93,7 @@ Both are on the roadmap, in that order.
 |---|---|---|
 | `crates/tritc` | Converter: HF BitNet checkpoint → packed `.trit` v1. Folds norms, quantizes, verifies. | working |
 | `crates/trit-core` | Format, transformer, KV cache, RoPE, sampler, tokenizer traits. No `unsafe` outside one mmap. | working |
-| `crates/trit-cpu` | Bit-sliced SIMD kernels: AVX-512 VNNI / AVX-512BW / AVX2 / NEON / portable scalar. | x86 and aarch64 both verified on hardware in CI |
+| `crates/trit-cpu` | Bit-sliced ternary SIMD kernels, dense bf16/f32 kernels, and the worker pool they share. | x86 and aarch64 both verified on hardware in CI |
 | `crates/tritd` | Host daemon and C runtime: `run`, `serve`, `bench`, `info`, plus a C ABI. | working |
 | `crates/trit-rtl` | Hardware-in-the-loop backend over the Verilated core. | working |
 | `crates/tritsim` | Independent golden reference. The oracle every other path is diffed against. | working |
@@ -219,9 +213,10 @@ Full specification, including both plane invariants and the v0 migration path:
 - No FPGA silicon yet. The RTL is simulation-first: the 64-term single-cycle
   reduction and 64 parallel activation reads are fine under Verilator and are not
   yet timing-closed on a board.
-- **Tritium does not scale across cores.** It has the best single-thread number
-  of the three runtimes measured and the worst aggregate one. See the comparison
-  below; closing this is the top item on the roadmap.
+- **Scaling stops at four threads.** Decode peaks there and declines, where
+  bitnet.cpp climbs to eight. Fixed in part: a persistent worker pool replaced
+  per-matvec fork/join and lifted one-to-eight scaling from 1.15x to 1.34x, but
+  bitnet.cpp still reaches 2.39x.
 - Energy per token is reported only where a real counter exists. It is never
   estimated.
 

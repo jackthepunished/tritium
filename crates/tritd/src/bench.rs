@@ -95,9 +95,10 @@ pub fn memcpy_probe_gbps(threads: usize) -> f64 {
     // matters is that every byte is loaded and the result is not optimized away,
     // which is what a weight pass looks like.
     let sum = |b: &[u8]| -> u64 {
-        b.chunks_exact(8).fold(0u64, |a, c| {
-            a.wrapping_add(u64::from_le_bytes(c.try_into().unwrap()))
-        })
+        b.as_chunks::<8>()
+            .0
+            .iter()
+            .fold(0u64, |a, c| a.wrapping_add(u64::from_le_bytes(*c)))
     };
 
     let mut best = 0f64;
@@ -106,8 +107,8 @@ pub fn memcpy_probe_gbps(threads: usize) -> f64 {
         let total: u64 = if threads <= 1 {
             sum(&src)
         } else {
-            // Aligned down to the 8-byte checksum word. `sum` walks
-            // `chunks_exact(8)` and drops any short tail, so an unaligned split
+            // Aligned down to the 8-byte checksum word. `sum` walks 8-byte
+            // chunks and drops any short tail, so an unaligned split
             // would leave a few bytes per worker unread while the rate below
             // still divides by all of BYTES -- a tiny overstatement, but this
             // function exists to not overstate things.

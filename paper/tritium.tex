@@ -1,0 +1,679 @@
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[margin=0.85in]{geometry}
+\usepackage{times}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+
+\captionsetup{font=small,labelfont=bf}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  columns=fullflexible,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  rulecolor=\color{gray!50},
+  backgroundcolor=\color{gray!5},
+  xleftmargin=2pt,
+  aboveskip=6pt,
+  belowskip=6pt,
+}
+
+\title{\vspace{-2em}\textbf{Tritium: One Weight Format for Ternary Inference\\on Commodity CPUs and Multiplier-Free Hardware}}
+
+\author{
+Bahadir Kosapinar\\
+\small\texttt{https://github.com/jackthepunished/tritium}
+}
+
+\date{\small August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+BitNet b1.58 models constrain every weight to $\{-1, 0, +1\}$, which replaces
+multiply-accumulate with select-accumulate and removes the multiplier from the
+dominant operation of transformer inference. Existing runtimes realise this on
+hardware that has multipliers anyway, using weight layouts designed for a CPU.
+We describe \emph{Tritium}, a ternary inference stack built around a single
+weight layout, \texttt{.trit} v1, in which one 16-byte \emph{beat} is
+simultaneously one iteration of a SIMD kernel's inner loop and one cycle's
+weight input to a multiplier-free hardware core. A memory-mapped model file is
+therefore not decoded into a runtime representation; it is the representation,
+on both targets.
+
+We report the format, the CPU kernels, the SystemVerilog core, and a
+verification methodology in which three independent implementations of the same
+arithmetic are required to agree \emph{exactly} rather than within a tolerance.
+On BitNet b1.58 2B4T the runtime reproduces HuggingFace reference logits at mean
+cosine 0.9991 with 100\% top-1 agreement, the reference and production
+implementations agree at cosine 1.000000 at every position, and the hardware
+core produces byte-identical output to the CPU path while Yosys asserts zero
+multiplier cells on every build.
+
+On an AMD Ryzen 9 8945HX it decodes at 27.9 tokens/s, ahead of both llama.cpp
+and bitnet.cpp up to four threads and 1.43$\times$ bitnet.cpp per core, and
+behind bitnet.cpp above four threads where our curve peaks and declines. We
+report that asymmetry, and the measurement errors we made and corrected while
+producing it, because we think the interesting contribution is not throughput
+but the co-designed layout and the verification discipline that makes a hardware
+path credible before fabrication.
+\end{abstract}
+
+\section{Introduction}
+
+Autoregressive decoding at batch size 1 is memory-bound. Throughput is bounded
+by
+\begin{equation}
+\text{tok/s} \approx \frac{\text{effective memory bandwidth}}{\text{bytes touched per token}}
+\end{equation}
+because every weight is read once per token and almost no arithmetic is reused.
+The standard response is to shrink the weights, which is what four-bit and
+eight-bit post-training quantisation do.
+
+Ternary models attack a different term. BitNet b1.58~\cite{bitnet158} trains
+with weights constrained to $\{-1, 0, +1\}$, so the inner product
+\begin{equation}
+y_r = \sum_c W_{rc}\, x_c, \qquad W_{rc} \in \{-1,0,+1\}
+\end{equation}
+contains no multiplication at all:
+\begin{equation}
+y_r = \sum_{c\,:\,W_{rc}=+1} x_c \;-\; \sum_{c\,:\,W_{rc}=-1} x_c .
+\end{equation}
+Each weight participates additively, subtractively, or not at all. We refer to
+this as \emph{select-accumulate}. On the 2B4T checkpoint 42.19\% of weights are
+exactly zero, so nearly half of the terms are skips.
+
+This is well known. What is less examined is that the runtimes which execute
+these models store weights in layouts chosen for a CPU, and a datapath with no
+multipliers in it would have to rewrite those bytes before it could consume
+them. The arithmetic is hardware-friendly; the encoding is not.
+
+Tritium~\cite{tritium} is an attempt to remove that seam. Its contributions
+are:
+
+\begin{enumerate}
+\item \textbf{A bit-plane weight layout} (Section~\ref{sec:format}) whose
+      16-byte unit is simultaneously one SIMD inner-loop iteration and one
+      hardware cycle's weight input, at exactly 2.000 bits per weight.
+\item \textbf{A multiplier-free hardware core} (Section~\ref{sec:rtl}) that
+      consumes that layout directly from a memory-mapped file, verified
+      bit-exact against a software reference and asserted free of multiplier
+      cells by synthesis on every build.
+\item \textbf{An exactness-based verification methodology}
+      (Section~\ref{sec:verification}) in which three independent
+      implementations must produce identical integers. We give a concrete
+      defect this caught that no tolerance-based test would have.
+\item \textbf{An evaluation that includes its own negative results}
+      (Section~\ref{sec:eval}), including the thread counts at which Tritium
+      loses, and three measurement errors we made and corrected while producing
+      it.
+\end{enumerate}
+
+\section{Background}
+
+\subsection{The model}
+
+All measurements use \texttt{microsoft/bitnet-b1.58-2B-4T}, a 2.4B-parameter
+decoder-only transformer: 30 layers, hidden size 2560, FFN width 6912, 20
+attention heads with 5 key/value heads (4:1 grouped-query attention), vocabulary
+128256, squared-ReLU activation, tied input and output embeddings. Ternary
+weights appear in all seven projections per layer; norms, embeddings and the
+language-model head are dense.
+
+\subsection{Where the bytes are}
+
+Table~\ref{tab:bytes} gives the per-token traffic. The result is not what a
+ternary-focused design anticipates: even in bf16 the dense tied head rivals
+every ternary projection combined, and it exceeded them 2.52:1 while we stored
+it widened to f32. Any runtime that vectorises the ternary kernel and leaves the
+head alone has not moved end-to-end throughput.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+ & bytes/token & share \\
+\midrule
+Ternary weights (30 layers)     & 521{,}011{,}200   & 44\% \\
+Tied head / embeddings (bf16)   & 656{,}670{,}720   & 56\% \\
+\midrule
+\textbf{Total}                  & \textbf{1{,}177{,}681{,}920} & \\
+\midrule
+KV cache (f32, 2048 ctx)        & 314{,}572{,}800   & resident \\
+\bottomrule
+\end{tabular}
+\caption{Per-token weight traffic, BitNet b1.58 2B4T.}
+\label{tab:bytes}
+\end{table}
+
+\section{The \texttt{.trit} v1 layout}
+\label{sec:format}
+
+A ternary weight has three states, so two bits is the natural budget under any
+encoding. The question is how those two bits are arranged.
+
+\subsection{Interleaved codes versus bit planes}
+
+The obvious encoding assigns a 2-bit code per weight (\texttt{00}$=0$,
+\texttt{01}$=+1$, \texttt{10}$=-1$), packing four weights per byte. Extracting
+the sign of lane $k$ then requires a shift by $2k$ and a mask, per weight. This
+defeats vectorisation: there is no SIMD instruction whose operand is
+``every other pair of bits, sign-extended''. An earlier version of this system
+used that encoding and ran a branch per weight at 0.16 tokens/s.
+
+Tritium instead stores weights as \emph{bit planes}. A \emph{beat} is 16 bytes
+carrying 64 consecutive columns of one row as two 64-bit masks:
+
+\begin{lstlisting}
+bytes 0..8    pos   bit k set => W[r][c+k] = +1
+bytes 8..16   neg   bit k set => W[r][c+k] = -1
+\end{lstlisting}
+
+Neither bit set encodes zero. Both bits set is \emph{invalid} and is rejected at
+load and flagged by a sticky error in hardware. Defining it as an error rather
+than assigning it a value is deliberate: a kernel that accumulates the two
+planes separately would compute $+x-x=0$, while a lane that tests \texttt{pos}
+first would compute $+x$. Making it illegal is what prevents the software and
+hardware paths from disagreeing on a file neither should have accepted.
+
+Under this layout each of the two sums in Equation~3 is a \emph{mask applied to
+a vector of activations}. On AVX-512 the mask is literally a \texttt{k}
+register, and the operation is two masked loads and two \texttt{vpdpbusd}. The
+decision ``does this weight participate, and with which sign'' costs no branch,
+no table lookup, and no per-weight arithmetic.
+
+\subsection{The property that matters}
+
+The bit count is identical to the interleaved encoding. What changes is that
+\textbf{one beat is simultaneously one iteration of the CPU kernel's inner loop
+and one cycle's weight input to the hardware core}. A memory-mapped
+\texttt{.trit} file is not a container that the runtime decodes into some other
+layout; it \emph{is} the layout. Nothing between the page cache and the
+accumulator rewrites a byte, on either target.
+
+This is the design commitment the rest of the system is organised around. The
+CPU and the hardware are not two implementations of one idea kept in
+correspondence by discipline. They consume the same bytes.
+
+\subsection{Invariants}
+
+Two invariants are checked on demand and are load-bearing for both targets.
+
+\textbf{P1: planes are disjoint.} $\texttt{pos} \wedge \texttt{neg} = 0$ for
+every beat.
+
+\textbf{P2: padding is clear.} When \texttt{cols} is not a multiple of 64, the
+final beat of each row covers columns that do not exist. Those bits must be zero
+in both planes. With
+\begin{equation*}
+\texttt{tail} =
+\begin{cases}
+\texttt{UINT64\_MAX} & \texttt{cols} \bmod 64 = 0\\
+(\texttt{UINT64\_C(1)} \ll (\texttt{cols} \bmod 64)) - 1 & \text{otherwise}
+\end{cases}
+\end{equation*}
+every row's last beat satisfies
+$(\texttt{pos} \mid \texttt{neg}) \wedge \sim\!\texttt{tail} = 0$.
+
+P2 is what makes zero padding \emph{exact} rather than conventional: a padded
+column contributes nothing, so a kernel may process whole 64-column blocks
+unconditionally and never needs a scalar tail loop. Both invariants are cheap to
+establish at write time and $O(\text{payload})$ to verify.
+
+At column counts that are multiples of 64, which every projection in this model
+class satisfies, the layout costs exactly 2.000 bits per weight.
+
+\section{CPU kernels}
+
+Kernels exist for AVX-512 VNNI, AVX-512BW, AVX2, NEON, NEON with the
+\texttt{dotprod} extension, and a portable scalar path. All read the planes in
+place. Because the accumulators are \texttt{i32} and integer addition is exact
+and order-independent, every kernel is \emph{bit-identical} to the portable one.
+That is what permits the differential tests of
+Section~\ref{sec:verification} to demand equality rather than a tolerance, and
+why changing kernels can never move a logit.
+
+Kernel selection is resolved once by runtime feature detection. An override
+pins a kernel by name and \emph{errors} if the CPU cannot run it rather than
+falling back, so a benchmark can never silently measure a path other than the
+one it names, and a CI runner without AVX-512 fails loudly instead of
+re-testing the scalar path under a different label.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Kernel & ms & GB/s & vs scalar \\
+\midrule
+scalar        & 9.10 & 0.5  & 1.00$\times$ \\
+avx2          & 0.66 & 6.7  & 13.87$\times$ \\
+avx512bw      & 0.38 & 11.6 & 23.91$\times$ \\
+avx512vnni    & 0.28 & 15.8 & \textbf{32.45}$\times$ \\
+bitserial     & 6.12 & 0.7  & 1.49$\times$ \\
+\bottomrule
+\end{tabular}
+\caption{Ternary matvec on a $2560\times6912$ tensor, planes resident in L3.}
+\label{tab:kernels}
+\end{table}
+
+\subsection{On popcount}
+
+Population count is the natural primitive when \emph{activations} are also
+1-bit. Here weights are 1.58-bit but activations are int8, so a popcount of a
+weight mask only counts participating terms and cannot recover their sum. The
+production kernels mask activation bytes and accumulate the two planes
+separately.
+
+The bit-serial popcount formulation is nonetheless implemented, because it is
+the formulation that maps directly onto the hardware adder tree. It measures
+22$\times$ slower than the AVX-512 path at int8 activations
+(Table~\ref{tab:kernels}). It is retained as a third independent implementation
+for differential testing, and because it becomes the correct kernel if
+activations ever drop below 8 bits.
+
+\section{The hardware core}
+\label{sec:rtl}
+
+\texttt{trit\_matvec.sv} is a streaming ternary matrix-vector core. Weights
+arrive as two 64-bit planes per beat, matching the \texttt{.trit} v1 payload
+byte for byte. Activations are preloaded as int8. Each of 64 lanes muxes
+$\{+x, -x, 0\}$ into a combinational adder tree feeding a 32-bit accumulator.
+
+Two details are worth stating because they are where naive implementations
+diverge from software. First, lanes sign-extend to the accumulator width
+\emph{before} negating: $x = -128$ has no positive counterpart in eight bits,
+and any implementation that negates in the int8 domain produces a different
+answer on that input. The golden vector set includes an \texttt{extremes} case
+that feeds $-128$ deliberately, and it must never be weakened. Second, the
+four lane states are expressed as a \texttt{unique case} rather than a nested
+conditional, which tells synthesis they are mutually exclusive; written as an
+if-chain the module synthesises to 48.4k cells instead of 33.7k.
+
+Yosys generic synthesis reports 33{,}659 cells at 64 lanes, of which
+approximately 4.1k flip-flops are the flattened activation memory (block RAM on
+any real device). \textbf{The build asserts zero \texttt{\$mul} and zero
+\texttt{\$macc} cells on every run.} Norm folding
+(Section~\ref{sec:numerics}) additionally removes the reciprocal square root
+and the divide from the element datapath.
+
+\subsection{Hardware in the loop}
+
+The core is exposed to the runtime as an ordinary backend behind the same trait
+as the CPU kernels, driven through a C shim over the Verilated model. Because
+v1 stores planes in the core's beat order, mapped model bytes stream in
+directly with no repacking between the file and the device under test.
+
+The full 2B4T model decodes end to end through this path, producing
+\textbf{byte-identical output} to the CPU backend, at 24.4 seconds per token
+under simulation. That figure is a simulator speed, not a device speed, and no
+FPGA performance is claimed anywhere in this paper.
+
+\section{Numerics}
+\label{sec:numerics}
+
+Three evaluation modes form a ladder, each a strictly more exact evaluation of
+the same model, selected automatically to the best the architecture supports.
+
+\textbf{Reference.} Textbook. RMSNorm materialised, activations quantised per
+matvec.
+
+\textbf{Folded.} The per-element $1/\text{rms}$ divide leaves the datapath
+entirely. Absmax quantisation codes are invariant under a uniform positive
+scale, so the codes may be computed from $x \odot g$ directly and the rms
+survives as a single per-token scalar folded into the output scale. This is a
+numerics result and a synthesis result at once: it is why the hardware needs no
+divider.
+
+\textbf{IntMlp.} The squared-ReLU stage never exists in floating point. With
+$g = a_g S_g$ and $u = a_u S_u$ from the gate and up projections and uniform
+positive scales, $\mathrm{relu}(g)^2 u = t K$ for integer
+$t = \mathrm{relu}(a_g)^2 a_u$ with $|t| < 2^{55}$, exact in \texttt{i64}, and
+uniform $K = S_g^2 S_u$.
+
+Both upper rungs were validated against the real checkpoint before being made
+the default. Measured activation ranges motivated the design: the residual
+stream reaches $\sim$138k and the squared-ReLU stage $\sim$1.5$\times10^{10}$,
+so int16 is not viable for those stages and the wide accumulators are not
+conservatism.
+
+\section{Verification}
+\label{sec:verification}
+
+Three independent implementations of the same arithmetic must agree:
+
+\begin{itemize}
+\item \textbf{The oracle.} A deliberately naive scalar implementation that
+      expands bit planes to one \texttt{i8} per weight. Its job is to be
+      evidently correct, not fast.
+\item \textbf{The runtime.} Zero-copy, vectorised, threaded.
+\item \textbf{The hardware core}, under Verilator.
+\end{itemize}
+
+Agreement on the integer path is demanded \emph{exactly}. Lane order, thread
+count and the hardware's beat-serial accumulation must all produce identical
+bits. This is achievable by construction rather than by tuning, because integer
+addition is exact and order-independent; an implementation that cannot meet it
+is wrong, not approximate. Only the floating-point tail (attention, the head)
+admits reassociation.
+
+\subsection{Why exactness, concretely}
+
+Tolerance-based testing fails on this workload because the failure mode is
+silent and delayed. A wrong logit does not crash; it perturbs a probability, and
+the divergence appears many tokens later as a different word.
+
+The runtime once folded two scale factors into a single constant and multiplied
+once, where the reference multiplies by each in turn. Floating-point
+multiplication is not associative, so $a(bc)$ and $(ab)c$ round differently. The
+observed consequence: cosine similarity 1.000000 for four token positions,
+0.999624 by position seven, and at token sixteen the generated text read
+``known'' where the reference read ``the''. No tolerance that admits legitimate
+reassociation in the attention tail would have flagged the first four positions,
+and no human reading either the code or the output would have found it.
+
+\subsection{Gates}
+
+Results are recorded in a frozen gate document. Correctness gates are
+invariants: they may not move at all. Resource gates are targets and are
+expected to move, but only accompanied by a written argument naming the change
+and its before/after. Table~\ref{tab:gates} lists the measured values.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+Gate & Measured \\
+\midrule
+Logits vs HuggingFace     & cosine 0.9991, top-1 100\% \\
+Oracle vs runtime         & cosine 1.000000, all positions \\
+Greedy text               & byte-identical, all modes \\
+Hardware vs golden vectors& bit-exact, incl.\ $x=-128$ \\
+Synthesis                 & 0 \texttt{\$mul}, 0 \texttt{\$macc} \\
+Hardware in the loop      & byte-identical to CPU \\
+\bottomrule
+\end{tabular}
+\caption{Correctness gates. All are invariants.}
+\label{tab:gates}
+\end{table}
+
+\subsection{Defects this methodology found}
+
+Beyond the scale-folding bug, two are worth reporting because both were latent
+in code that a test matrix claimed to cover.
+
+The NEON kernel accumulated into \texttt{i16} and flushed every 64 \emph{beats},
+under a comment reasoning about 64 \emph{accumulation steps}. Each beat issues
+four pairwise-add-accumulate instructions, so the interval was 256 steps against
+a safe bound of 128; the per-step bound was also understated, since two lanes of
+$-128$ pairwise-add to $-256$. The worst case, a 6912-column row of $-1$ weights
+against $-128$ activations, wrapped silently and produced a wrong row. It had
+never executed: the aarch64 CI job had failed at a linter since it was added and
+never reached an assertion, while the matrix advertised ARM coverage. A job that
+cannot reach its assertions is not coverage.
+
+Separately, streaming detokenisation routed each token through a decode call
+that terminates in a lossy UTF-8 conversion. On this vocabulary U+1F600 splits
+across token 76460 (bytes \texttt{f0 9f 98}) and token 222 (byte \texttt{80});
+decoding each alone returns the replacement character, so every emoji, flag and
+multi-byte sequence emitted by the streaming API was corrupted while a one-shot
+decode of the same sequence was correct.
+
+\section{Evaluation}
+\label{sec:eval}
+
+\subsection{Method}
+
+All measurements are on an AMD Ryzen 9 8945HX (Zen 4, AVX-512 VNNI, 32 threads,
+DDR5), greedy decoding, 32 tokens, four-prompt suite, page cache pre-warmed,
+median of three invocations. Raw data is committed to the repository.
+
+Three methodological points, each of which changed a published number:
+
+\textbf{Median, not best.} Reporting our best run against a baseline's median
+tilts every comparison. All runtimes are now reported as medians. Where a
+speedup is claimed it is an interleaved paired measurement, because this host
+drifts by up to 30\% between runs and sequential blocks cannot survive that.
+
+\textbf{Pre-warm.} The model file lives on a mount whose cold reads are slow. A
+cold measurement read 11.25 tokens/s where three consecutive warm ones read
+13.5--13.9. An earlier version of Table~\ref{tab:compare} claimed Tritium was
+fastest single-threaded; that was an artifact of our model being warm in page
+cache while freshly downloaded baseline models were not.
+
+\textbf{A measured roofline.} Achieved bandwidth is divided by a streaming-read
+probe run on the same machine in the same invocation, best of five passes. A
+single-pass probe under-reported by 10--15\%, which inflated every reported
+fraction. The probe is still noisy after the fix, reading 48--58 GB/s across the
+runs in one sweep, so we quote it alongside the fraction it produced rather than
+claiming a fixed ceiling for the host.
+
+\subsection{Absolute performance}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+Decode                    & 27.90 tok/s \\
+Time to first token       & 239 ms \\
+Peak RSS                  & 1220 MB \\
+Achieved bandwidth        & 32.9 GB/s \\
+Probe, same invocation    & 57.2 GB/s \\
+Fraction of it            & 57\% \\
+\bottomrule
+\end{tabular}
+\caption{Tritium, 4 threads.}
+\label{tab:abs}
+\end{table}
+
+For reference, the pre-format-change system decoded at 0.16 tokens/s with a peak
+resident set of 6.10 GiB.
+
+\subsection{Comparison}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{rrrr}
+\toprule
+threads & Tritium & llama.cpp & bitnet.cpp \\
+        & ternary & Q4\_K\_M  & I2\_S \\
+\midrule
+1  & \textbf{19.40} & 15.40 & 13.61 \\
+2  & \textbf{26.73} & 22.06 & 19.10 \\
+4  & \textbf{27.90} & 27.83 & 26.72 \\
+8  & 25.93 & 26.18 & \textbf{32.49} \\
+16 & 20.72 & 23.88 & \textbf{31.21} \\
+\bottomrule
+\end{tabular}
+\caption{Decode tokens/s. bitnet.cpp runs the identical checkpoint. llama.cpp
+runs Qwen2.5-3B Q4\_K\_M, since mainline cannot load the \texttt{i2\_s} type and
+its converter has no BitNet entry: a different model at a different quality
+point, included for context rather than as a like-for-like comparison.}
+\label{tab:compare}
+\end{table}
+
+Table~\ref{tab:compare} splits cleanly. Tritium leads at one, two and four
+threads and is 1.43$\times$ bitnet.cpp per core on the identical checkpoint.
+Above four threads it loses: its curve peaks and declines while bitnet.cpp keeps
+climbing to 32.49. Scaling from one thread to eight is 1.34$\times$ against
+bitnet.cpp's 2.39$\times$.
+
+An earlier version of this table had Tritium last per core. Two changes moved
+it: a persistent worker pool worth 1.17$\times$, and storing the head in the
+bf16 the checkpoint already used rather than widened f32, worth 1.37$\times$.
+The second was a defect rather than an optimisation. bitnet.cpp already stored
+its embedding table in f16, and that was most of its remaining advantage.
+
+\subsection{Diagnosis: bytes are not time}
+
+An instrumented decode contradicts the byte analysis. Measured before either
+change in Section~\ref{sec:eval} landed, with an f32 head and a
+single-threaded ternary path: the head was 42\% of wall time despite being
+72\% of the bytes at that point, because the two halves ran at opposite ends of
+the machine's efficiency range, 48.8 GB/s against 13.9 GB/s. Both figures have
+since moved -- the head is bf16 and 56\% of the bytes, and the ternary path
+uses the pool -- but the lesson is why they were worth measuring separately.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+ & per token & share & achieved \\
+\midrule
+30 transformer layers & 37.5 ms & 58\% & 13.9 GB/s \\
+Language-model head   & 26.9 ms & 42\% & 48.8 GB/s \\
+\bottomrule
+\end{tabular}
+\caption{Where decode time was spent at 4 threads, \emph{before} the bf16 head
+and the persistent pool. Retained because both conclusions drawn from it held.}
+\label{tab:time}
+\end{table}
+
+Two opposite conclusions followed, and both held. The head was close enough to
+what the memory system delivers that no kernel work moved it: forcing the dense
+kernel to scalar, AVX2 and AVX-512 in turn gave 28.8, 28.1 and 27.1 ms. Only
+moving fewer bytes helped, which is what storing it in bf16 does. The ternary
+path was the opposite, compute-bound in the kernel at approximately 15.8 GB/s
+per core and barely above what it achieved from DRAM, so it would scale with
+cores if the runtime could use them.
+
+\subsection{Why it does not scale}
+
+A decode step issues 210 ternary matvecs whose largest is 4.4 MB, and each one
+paid a work-stealing fork/join. Lowering the threshold at which matvecs
+parallelise made matters dramatically worse, not better
+(Table~\ref{tab:par}, row \emph{rayon-global}): even two threads was
+1.8$\times$ slower than not parallelising at all.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Mechanism & 1t & 2t & 4t & 8t \\
+\midrule
+serial (previous) & 37.6 & 37.6 & 36.9 & 36.7 \\
+rayon, global pool& 36.0 & 65.0 & 108.8& 174.0 \\
+rayon, sized pool & 35.8 & 50.0 & 69.7 & 148.9 \\
+rayon, broadcast  & 35.9 & 47.2 & 57.5 & 89.8 \\
+persistent spin barrier & 37.1 & \textbf{20.0} & \textbf{12.8} & 14.1 \\
+\bottomrule
+\end{tabular}
+\caption{Layer time in ms by parallel mechanism. All produce byte-identical
+output.}
+\label{tab:par}
+\end{table}
+
+Table~\ref{tab:par} ruled out the cheap explanations. A dedicated pool sized to
+the requested thread count helped substantially and was still worse than serial
+execution. A broadcast primitive helped more and was still worse. Only a
+persistent worker pool on a sequence counter, the mechanism ggml uses, beat
+serial execution, at 2.9$\times$ on the layer path.
+
+That pool is what ships. Measured end to end against the previous
+implementation in interleaved pairs, because this host drifts by up to 30\%
+between runs, it is worth \textbf{1.17}$\times$ and lifts one-to-eight scaling
+from 1.15$\times$ to 1.34$\times$. An isolated prototype had suggested
+1.59$\times$; the smaller figure is the one measured on the whole decode, and it
+is the one we report.
+
+\section{Limitations}
+
+We state these because several are the first thing a reader should check.
+
+\begin{itemize}
+\item \textbf{Throughput above four threads.} Decode peaks at four threads and
+      declines, where bitnet.cpp climbs to eight and reaches 32.49 against our
+      25.93. The persistent pool improved one-to-eight scaling from
+      1.15$\times$ to 1.34$\times$ and did not close the gap.
+\item \textbf{No energy measurement.} Joules per token is the metric this
+      architecture exists to improve and we have never reported one, because no
+      machine in our loop exposes a counter. The field is left empty rather than
+      estimated.
+\item \textbf{No silicon.} The hardware core is simulation-first and not
+      timing-closed. The single-cycle 64-term reduction and 64 parallel
+      activation reads are fine under Verilator and unproven on a device.
+      Activation memory is capped at 8192 columns.
+\item \textbf{No ARM timing.} The NEON kernels are verified bit-exact on
+      aarch64 hardware in CI and have never been timed. No ARM performance
+      figure exists.
+\item \textbf{Scope.} Batch size 1, no batched prefill, context capped at 2048
+      with an f32 preallocated KV cache.
+\end{itemize}
+
+\section{Related work}
+
+\texttt{bitnet.cpp}~\cite{bitnetcpp} is the reference ternary runtime and the
+comparison point in Table~\ref{tab:compare}. It is faster than Tritium on CPU
+today. It targets CPUs, and its \texttt{i2\_s} tensor type is specific to that
+fork; mainline \texttt{llama.cpp}~\cite{llamacpp} cannot load it. Ternary tensor
+types exist in mainline (\texttt{TQ1\_0}, \texttt{TQ2\_0}) but its HuggingFace
+converter has no BitNet entry.
+
+The distinction we draw is not throughput but target. These are fast CPU
+runtimes whose weight layouts serve a CPU. Tritium's layout is a hardware
+interface that a CPU also happens to consume efficiently, which is what makes
+the path in Section~\ref{sec:rtl} available without a repacking step.
+
+\section{Future work}
+
+An energy measurement on a machine with a power counter is first, because it
+converts the central claim of this architecture from an argument into a number,
+and because nothing else on the list changes what the project is. Then the
+decline above four threads, which the persistent pool improved without
+eliminating. Then ARM throughput, where the kernels are verified correct and
+have never been timed. Then board bring-up.
+
+\section{Conclusion}
+
+Ternary weights make the multiplier optional, but only if the weights are stored
+in a form a multiplier-free datapath can consume. Tritium's contribution is a
+layout in which one 16-byte unit is both a SIMD inner-loop iteration and a
+hardware cycle, so a memory-mapped model file is the interface to both targets
+rather than an input to be repacked for either.
+
+We do not claim throughput leadership; on CPU we are measurably behind, for a
+diagnosed and prototyped reason. We claim that the arithmetic is proven correct
+against an independent reference, that the hardware core is proven bit-exact
+against that same reference and free of multipliers by construction, and that
+this is the order in which a silicon architecture should be de-risked: the
+expensive irreversible step last, not first.
+
+\begin{thebibliography}{9}
+\small
+\bibitem{bitnet158}
+S.~Ma et al.,
+``The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits,''
+arXiv:2402.17764, 2024.
+
+\bibitem{bitnetcpp}
+Microsoft,
+``BitNet: Inference framework for 1-bit LLMs,''
+\url{https://github.com/microsoft/BitNet}.
+
+\bibitem{llamacpp}
+G.~Gerganov et al.,
+``llama.cpp,''
+\url{https://github.com/ggml-org/llama.cpp}.
+
+\bibitem{tritium}
+B.~Kosapinar,
+``Tritium,''
+\url{https://github.com/jackthepunished/tritium}.
+\end{thebibliography}
+
+\end{document}

@@ -208,17 +208,9 @@ fn forced_kernel_matches_the_reference() {
     check_kernel(&name);
 }
 
-/// Every dense f32 kernel this CPU can run must agree with the sequential
-/// reference.
-///
-/// Forced by name from CI, one process per kernel, for the same reason the
-/// ternary suite is: the dispatcher prefers AVX-512 where it exists, so on such
-/// a runner the AVX2 path would otherwise never execute and its coverage would
-/// be imaginary.
-///
-/// Tolerance rather than equality, unlike the ternary kernels: f32 addition is
-/// not associative and a vectorized reduction sums in a different order. The
-/// bound is far tighter than the scale at which a top-1 selection could move.
+/// Forced by name from CI, one process per kernel: the dispatcher prefers
+/// AVX-512, so the AVX2 path would otherwise never execute. Tolerance rather
+/// than equality, since a vectorized reduction sums in a different order.
 #[test]
 fn forced_f32_kernel_matches_the_reference() {
     let Ok(name) = std::env::var("TRIT_F32_KERNEL") else {
@@ -252,8 +244,7 @@ fn default_f32_kernel_matches_the_reference() {
 
 fn check_f32_kernel() {
     let mut rng = Rng(0xF32D);
-    // Shapes chosen to straddle every unrolled block size in the kernels: 64
-    // floats for AVX-512, 32 for AVX2, 16 for NEON. Each of these leaves a
+    // Straddles every unrolled block size (64/32/16), so each leaves a
     // different scalar tail.
     for (rows, cols) in [
         (3usize, 1usize),
@@ -283,6 +274,61 @@ fn check_f32_kernel() {
     }
 }
 
+/// Pins the losslessness claim: weights exactly representable in bf16 must give
+/// the same result through either precision.
+#[test]
+fn bf16_weights_agree_with_the_same_values_as_f32() {
+    use trit_core::backend::{bf16_to_f32, DenseWeights};
+
+    let mut rng = Rng(0xB16);
+    for (rows, cols) in [
+        (3usize, 1usize),
+        (5, 31),
+        (4, 64),
+        (9, 65),
+        (7, 127),
+        (2, 2560),
+    ] {
+        // Patterns first, so the f32 side holds the same values exactly.
+        let bits: Vec<u16> = (0..rows * cols)
+            .map(|_| {
+                let v = rng.i8() as f32 * 0.01;
+                let b = v.to_bits();
+                (b.wrapping_add(((b >> 16) & 1) + 0x7fff) >> 16) as u16
+            })
+            .collect();
+        let widened: Vec<f32> = bits.iter().copied().map(bf16_to_f32).collect();
+        let x: Vec<f32> = (0..cols).map(|_| rng.i8() as f32 * 0.01).collect();
+
+        for threads in [1usize, 4] {
+            let mut from_f32 = vec![0f32; rows];
+            let mut from_bf16 = vec![0f32; rows];
+            trit_cpu::f32_kernels::dense_matvec(
+                DenseWeights::F32(&widened),
+                rows,
+                cols,
+                &x,
+                &mut from_f32,
+                threads,
+            );
+            trit_cpu::f32_kernels::dense_matvec(
+                DenseWeights::Bf16(&bits),
+                rows,
+                cols,
+                &x,
+                &mut from_bf16,
+                threads,
+            );
+            for (i, (a, b)) in from_f32.iter().zip(&from_bf16).enumerate() {
+                assert!(
+                    (a - b).abs() <= 1e-4 * a.abs().max(1.0),
+                    "{rows}x{cols} row {i} at {threads} threads: {a} vs {b}"
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn unsupported_f32_kernel_errors_rather_than_falling_back() {
     let err = trit_cpu::f32_kernels::force_f32_kernel("not-a-real-kernel").unwrap_err();
@@ -301,11 +347,8 @@ fn unsupported_kernel_errors_rather_than_falling_back() {
     assert!(msg.contains("scalar"), "{msg}");
 }
 
-/// Forcing a kernel that cannot take effect must fail loudly.
-///
-/// Run as its own process so the OnceLock starts unset: resolve one kernel,
-/// then ask for a different one. Returning `Ok` with the first kernel would let
-/// a CI job believe it had covered the second.
+/// Returning `Ok` with the first kernel would let CI believe it covered the
+/// second.
 #[test]
 fn forcing_a_second_different_kernel_is_an_error() {
     let available = trit_cpu::available_kernels();

@@ -8,3 +8,4 @@ logits*.json
 rtl/vectors/
 rtl/obj_dir/
 numerics*.json
+docs/07-BLUEPRINT-II-SOURCE.md

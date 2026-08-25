@@ -145,8 +145,10 @@ pub fn read(path: &Path) -> Result<V0File> {
             tensors.push(V0Tensor {
                 trits: None,
                 f32: Some(
-                    data.chunks_exact(4)
-                        .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
+                    data.as_chunks::<4>()
+                        .0
+                        .iter()
+                        .map(|c| f32::from_le_bytes(*c))
                         .collect(),
                 ),
                 name: m.name,

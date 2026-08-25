@@ -25,6 +25,7 @@ use trit_core::backend::MatvecBackend;
 use trit_core::planes::TritPlanes;
 
 pub mod f32_kernels;
+pub mod pool;
 pub mod scalar;
 
 #[cfg(target_arch = "x86_64")]
@@ -178,13 +179,9 @@ pub fn kernel_name() -> &'static str {
 ///
 /// `xq` must be at least `planes.padded_cols()` long with zeros in the padding;
 /// padded columns are clear in both planes, so they contribute nothing.
-/// Establish every length relation the kernels rely on.
-///
-/// Factored out of [`ternary_matvec_planes`] so the threaded path in
-/// [`CpuBackend::matvec`] can hold the identical contract before it calls a raw
-/// kernel. `CpuBackend::matvec` is public trait API: an `xq` shorter than
-/// `padded_cols()` would otherwise be read past the end through
-/// `xq.as_ptr().add(b * LANES)` -- undefined behaviour rather than a panic.
+/// Length relations the kernels rely on. Both the serial and threaded paths
+/// must establish these: a short `xq` is read past the end by the SIMD kernels,
+/// which is UB rather than a panic.
 fn assert_shapes(planes: &TritPlanes<'_>, xq: &[i8], y: &[i32]) {
     assert!(
         xq.len() >= planes.padded_cols(),
@@ -231,13 +228,19 @@ pub struct CpuBackend {
     name: String,
 }
 
+/// Ceiling on the automatic thread count. Interleaved pairs measured 1.17x at
+/// two, 1.18x at four, 1.17x at eight and 0.94x at sixteen, so one per core is
+/// the wrong answer to "decide for me". Explicit `--threads` is unaffected.
+const DEFAULT_MAX_THREADS: usize = 8;
+
 impl CpuBackend {
-    /// `threads = 0` means one thread per available core.
+    /// `threads = 0` means one per core, up to [`DEFAULT_MAX_THREADS`].
     pub fn new(threads: usize) -> Self {
         let threads = if threads == 0 {
             std::thread::available_parallelism()
                 .map(|n| n.get())
                 .unwrap_or(1)
+                .min(DEFAULT_MAX_THREADS)
         } else {
             threads
         };
@@ -254,30 +257,55 @@ impl Default for CpuBackend {
     }
 }
 
-/// Minimum plane bytes before a ternary matvec is worth splitting across
-/// threads.
+/// Minimum plane bytes before splitting a matvec at all.
 ///
-/// Measured, not guessed. A decode step on BitNet 2B4T issues 210 ternary
-/// matvecs, and the largest of them is 4.4 MB of planes. Splitting each one
-/// across the machine costs more in fork/join than it saves: on a 32-core Zen 4,
-/// end-to-end decode measured 14.06 tok/s single-threaded against 2.40 tok/s at
-/// 32 threads -- nearly 6x slower. The threshold is set above every per-layer
-/// tensor in this model class, so they run inline, and the parallelism that does
-/// pay goes to the LM head (1313 MB/token) via the dense f32 path.
+/// Was 32 MiB, sized to keep every per-layer tensor off a work-stealing pool
+/// whose per-job cost exceeded the matvec. With [`pool`] the crossover drops
+/// about three orders of magnitude; what is left is a floor below which the
+/// wake-up is not worth it.
+const PARALLEL_MIN_BYTES: usize = 64 << 10;
+
+/// Plane bytes per slot.
 ///
-/// Batched prefill, or a model whose projections are an order of magnitude
-/// larger, would want this revisited -- with a measurement, not an intuition.
-const PARALLEL_MIN_BYTES: usize = 32 << 20;
+/// Slot count tracks the work, not the machine. Uncapped, decode peaked at
+/// 20.28 tok/s on four threads and fell to 11.00 on sixteen; at 256 KiB the
+/// peak is within 1.5% and sixteen recovers to 14.70.
+const BYTES_PER_SLOT_DEFAULT: usize = 256 << 10;
+
+/// `TRIT_BYTES_PER_SLOT=0` disables the cap; that is how the default was chosen.
+pub(crate) fn bytes_per_slot() -> usize {
+    static V: OnceLock<usize> = OnceLock::new();
+    *V.get_or_init(|| {
+        std::env::var("TRIT_BYTES_PER_SLOT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(BYTES_PER_SLOT_DEFAULT)
+    })
+}
+
+/// Slots for a job of `bytes`, bounded by pool width and available rows.
+pub(crate) fn slots_for(bytes: usize, threads: usize, rows: usize) -> usize {
+    let per_slot = bytes_per_slot();
+    if per_slot == 0 {
+        return threads.min(rows).max(1);
+    }
+    (bytes / per_slot).clamp(1, threads).min(rows).max(1)
+}
 
 impl MatvecBackend for CpuBackend {
     fn matvec(&self, planes: &TritPlanes<'_>, xq: &[i8], y: &mut [i32]) {
-        if self.threads == 1 || planes.as_bytes().len() < PARALLEL_MIN_BYTES {
+        let pool = (self.threads > 1)
+            .then(|| pool::global(self.threads))
+            .flatten();
+        let Some(pool) = pool else {
+            return ternary_matvec_planes(planes, xq, y);
+        };
+        if planes.as_bytes().len() < PARALLEL_MIN_BYTES {
             return ternary_matvec_planes(planes, xq, y);
         }
         // The threaded branch calls the raw kernel, so it must establish the
         // same preconditions the dispatching wrapper would have.
         assert_shapes(planes, xq, y);
-        use rayon::prelude::*;
         let bpr = planes.beats_per_row();
         let stride = bpr * trit_core::planes::BEAT_BYTES;
         let beats = planes.as_bytes();
@@ -285,9 +313,14 @@ impl MatvecBackend for CpuBackend {
         // Chunk by rows. Each chunk is an independent set of outputs reading a
         // disjoint slice of beats, so no reduction is split and the result does
         // not depend on how the work was divided.
-        let chunk = planes.rows().div_ceil(self.threads).max(1);
-        y.par_chunks_mut(chunk).enumerate().for_each(|(i, out)| {
-            let start = i * chunk;
+        // Slots are bounded by the work as well as by the pool.
+        let slots = slots_for(planes.as_bytes().len(), self.threads, planes.rows());
+        if slots < 2 {
+            return ternary_matvec_planes(planes, xq, y);
+        }
+        let chunk = planes.rows().div_ceil(slots).max(1);
+        pool.run(y, chunk, &|slot, out| {
+            let start = slot * chunk;
             let sub = &beats[start * stride..(start + out.len()) * stride];
             // SAFETY: same contract as ternary_matvec_planes; lengths are
             // derived from the validated planes view.
@@ -305,5 +338,16 @@ impl MatvecBackend for CpuBackend {
 
     fn f32_matvec(&self, w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32]) {
         f32_kernels::f32_matvec(w, rows, cols, x, y, self.threads)
+    }
+
+    fn dense_matvec(
+        &self,
+        w: trit_core::backend::DenseWeights<'_>,
+        rows: usize,
+        cols: usize,
+        x: &[f32],
+        y: &mut [f32],
+    ) {
+        f32_kernels::dense_matvec(w, rows, cols, x, y, self.threads)
     }
 }

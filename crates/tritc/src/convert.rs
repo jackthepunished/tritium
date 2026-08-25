@@ -27,16 +27,22 @@ pub struct Report {
 fn to_f32(dtype: Dtype, data: &[u8]) -> Result<Vec<f32>> {
     Ok(match dtype {
         Dtype::F32 => data
-            .chunks_exact(4)
-            .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|c| f32::from_le_bytes(*c))
             .collect(),
         Dtype::BF16 => data
-            .chunks_exact(2)
-            .map(|c| bf16::from_le_bytes(c.try_into().unwrap()).to_f32())
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|c| bf16::from_le_bytes(*c).to_f32())
             .collect(),
         Dtype::F16 => data
-            .chunks_exact(2)
-            .map(|c| half::f16::from_le_bytes(c.try_into().unwrap()).to_f32())
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|c| half::f16::from_le_bytes(*c).to_f32())
             .collect(),
         d => anyhow::bail!("unsupported dtype {d:?}"),
     })
@@ -119,6 +125,12 @@ pub fn convert(input_dir: &Path, output: &Path) -> Result<Report> {
                 esum += recon;
                 n_tern += 1;
                 writer.write_trit(&name, &shape, &trits, scale)?;
+            } else if shape.len() == 2 && view.dtype() == Dtype::BF16 {
+                // Keep the source precision: widening added no information and
+                // doubled the largest stream in decode. Exact, since every
+                // value round-trips. 1-D norm gains stay f32; they are tiny and
+                // feed the absmax quantiser.
+                writer.write_bf16(&name, &shape, &data)?;
             } else {
                 writer.write_f32(&name, &shape, &data)?;
             }

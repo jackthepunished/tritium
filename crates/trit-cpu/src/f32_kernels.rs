@@ -24,15 +24,75 @@ pub fn f32_matvec_scalar(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut
 mod x86 {
     use std::arch::x86_64::*;
 
+    /// bf16 widened in-register, then ordinary FMA against f32 activations.
+    ///
+    /// Not `vdpbf16ps`: it needs both operands in bf16, rounding the
+    /// activations too. Measured 1.25e-1 max relative deviation against 9.7e-6
+    /// here, and it was not faster.
+    ///
+    /// # Safety
+    /// Requires `avx512f` and `avx512bw`.
+    #[target_feature(enable = "avx512f,avx512bw")]
+    pub unsafe fn dot_bf16_avx512(w: *const u16, x: *const f32, n: usize) -> f32 {
+        #[inline]
+        unsafe fn widen(p: *const u16) -> __m512 {
+            let raw = _mm256_loadu_si256(p as *const __m256i);
+            _mm512_castsi512_ps(_mm512_slli_epi32(_mm512_cvtepu16_epi32(raw), 16))
+        }
+        let (mut a0, mut a1) = (_mm512_setzero_ps(), _mm512_setzero_ps());
+        let (mut a2, mut a3) = (_mm512_setzero_ps(), _mm512_setzero_ps());
+        let chunks = n / 64;
+        for i in 0..chunks {
+            let (p, q) = (w.add(i * 64), x.add(i * 64));
+            a0 = _mm512_fmadd_ps(widen(p), _mm512_loadu_ps(q), a0);
+            a1 = _mm512_fmadd_ps(widen(p.add(16)), _mm512_loadu_ps(q.add(16)), a1);
+            a2 = _mm512_fmadd_ps(widen(p.add(32)), _mm512_loadu_ps(q.add(32)), a2);
+            a3 = _mm512_fmadd_ps(widen(p.add(48)), _mm512_loadu_ps(q.add(48)), a3);
+        }
+        let acc = _mm512_add_ps(_mm512_add_ps(a0, a1), _mm512_add_ps(a2, a3));
+        let mut total = _mm512_reduce_add_ps(acc);
+        for i in chunks * 64..n {
+            total += f32::from_bits((*w.add(i) as u32) << 16) * *x.add(i);
+        }
+        total
+    }
+
+    /// # Safety
+    /// Requires `avx2` and `fma`.
+    #[target_feature(enable = "avx2,fma")]
+    pub unsafe fn dot_bf16_avx2(w: *const u16, x: *const f32, n: usize) -> f32 {
+        #[inline]
+        unsafe fn widen(p: *const u16) -> __m256 {
+            let raw = _mm_loadu_si128(p as *const __m128i);
+            _mm256_castsi256_ps(_mm256_slli_epi32(_mm256_cvtepu16_epi32(raw), 16))
+        }
+        let (mut a0, mut a1) = (_mm256_setzero_ps(), _mm256_setzero_ps());
+        let (mut a2, mut a3) = (_mm256_setzero_ps(), _mm256_setzero_ps());
+        let chunks = n / 32;
+        for i in 0..chunks {
+            let (p, q) = (w.add(i * 32), x.add(i * 32));
+            a0 = _mm256_fmadd_ps(widen(p), _mm256_loadu_ps(q), a0);
+            a1 = _mm256_fmadd_ps(widen(p.add(8)), _mm256_loadu_ps(q.add(8)), a1);
+            a2 = _mm256_fmadd_ps(widen(p.add(16)), _mm256_loadu_ps(q.add(16)), a2);
+            a3 = _mm256_fmadd_ps(widen(p.add(24)), _mm256_loadu_ps(q.add(24)), a3);
+        }
+        let acc = _mm256_add_ps(_mm256_add_ps(a0, a1), _mm256_add_ps(a2, a3));
+        let lo = _mm256_castps256_ps128(acc);
+        let sm = _mm_add_ps(lo, _mm256_extractf128_ps(acc, 1));
+        let sm = _mm_add_ps(sm, _mm_movehl_ps(sm, sm));
+        let sm = _mm_add_ss(sm, _mm_shuffle_ps(sm, sm, 1));
+        let mut total = _mm_cvtss_f32(sm);
+        for i in chunks * 32..n {
+            total += f32::from_bits((*w.add(i) as u32) << 16) * *x.add(i);
+        }
+        total
+    }
+
+    /// Indistinguishable from AVX2 at one thread, where a core saturates around
+    /// 40 GB/s either way; 1.34x at four, where AVX2 cannot issue fast enough.
+    ///
     /// # Safety
     /// Requires `avx512f`. Lengths are checked by the safe caller.
-    ///
-    /// Worth having even though the head is a streaming read: at one thread this
-    /// is indistinguishable from the AVX2 path, because a single core saturates
-    /// around 40 GB/s either way. At four it is 1.34x, because four cores can
-    /// pull ~55 GB/s and AVX2 cannot issue loads fast enough to use it. The
-    /// bottleneck moves from the memory system to the core as threads are added,
-    /// which is why measuring this single-threaded would have found nothing.
     #[target_feature(enable = "avx512f")]
     pub unsafe fn dot_avx512(a: *const f32, b: *const f32, n: usize) -> f32 {
         let (mut a0, mut a1) = (_mm512_setzero_ps(), _mm512_setzero_ps());
@@ -89,6 +149,39 @@ mod x86 {
 #[cfg(target_arch = "aarch64")]
 mod arm {
     use std::arch::aarch64::*;
+
+    /// bf16 widened in-register, then FMA against f32 activations.
+    ///
+    /// aarch64 is the target this project exists for and the dense head is now
+    /// the largest stream in decode, so it should not fall to scalar here.
+    ///
+    /// # Safety
+    /// Requires `neon`. Lengths are checked by the safe caller.
+    #[target_feature(enable = "neon")]
+    pub unsafe fn dot_bf16(w: *const u16, x: *const f32, n: usize) -> f32 {
+        #[inline]
+        unsafe fn widen(p: *const u16) -> float32x4_t {
+            vreinterpretq_f32_u32(vshlq_n_u32(vmovl_u16(vld1_u16(p)), 16))
+        }
+        let mut acc0 = vdupq_n_f32(0.0);
+        let mut acc1 = vdupq_n_f32(0.0);
+        let mut acc2 = vdupq_n_f32(0.0);
+        let mut acc3 = vdupq_n_f32(0.0);
+        let chunks = n / 16;
+        for i in 0..chunks {
+            let (p, q) = (w.add(i * 16), x.add(i * 16));
+            acc0 = vfmaq_f32(acc0, widen(p), vld1q_f32(q));
+            acc1 = vfmaq_f32(acc1, widen(p.add(4)), vld1q_f32(q.add(4)));
+            acc2 = vfmaq_f32(acc2, widen(p.add(8)), vld1q_f32(q.add(8)));
+            acc3 = vfmaq_f32(acc3, widen(p.add(12)), vld1q_f32(q.add(12)));
+        }
+        let acc = vaddq_f32(vaddq_f32(acc0, acc1), vaddq_f32(acc2, acc3));
+        let mut total = vaddvq_f32(acc);
+        for i in chunks * 16..n {
+            total += f32::from_bits((*w.add(i) as u32) << 16) * *x.add(i);
+        }
+        total
+    }
 
     /// # Safety
     /// Requires `neon`. Lengths are checked by the safe caller.
@@ -221,6 +314,99 @@ pub fn f32_kernel_name() -> &'static str {
     resolve_f32().0
 }
 
+/// One row's bf16-weight dot product against f32 activations.
+pub type Bf16DotFn = unsafe fn(*const u16, *const f32, usize) -> f32;
+
+/// # Safety
+/// Always safe; the signature matches [`Bf16DotFn`].
+unsafe fn dot_bf16_scalar(w: *const u16, x: *const f32, n: usize) -> f32 {
+    let mut total = 0.0f32;
+    for i in 0..n {
+        total += trit_core::backend::bf16_to_f32(*w.add(i)) * *x.add(i);
+    }
+    total
+}
+
+/// Selected by the same name as the f32 kernel, so forcing one forces both.
+///
+/// Features are re-checked rather than inherited: the f32 AVX-512 kernel needs
+/// only `avx512f`, while widening bf16 uses `vpmovzxwd` on a zmm and needs
+/// `avx512bw` too. An AVX512F-only CPU selecting "avx512f" would otherwise
+/// execute an instruction it does not have.
+fn bf16_dot_for(name: &str) -> Bf16DotFn {
+    #[cfg(target_arch = "x86_64")]
+    {
+        let avx512 = is_x86_feature_detected!("avx512f") && is_x86_feature_detected!("avx512bw");
+        let avx2 = is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma");
+        match name {
+            "avx512f" if avx512 => x86::dot_bf16_avx512 as Bf16DotFn,
+            "avx512f" | "avx2" if avx2 => x86::dot_bf16_avx2 as Bf16DotFn,
+            _ => dot_bf16_scalar as Bf16DotFn,
+        }
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        match name {
+            "neon" | "neon-dotprod" => arm::dot_bf16 as Bf16DotFn,
+            _ => dot_bf16_scalar as Bf16DotFn,
+        }
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    {
+        let _ = name;
+        dot_bf16_scalar as Bf16DotFn
+    }
+}
+
+/// Dense matvec over weights in whatever precision the file stores them.
+pub fn dense_matvec(
+    w: trit_core::backend::DenseWeights<'_>,
+    rows: usize,
+    cols: usize,
+    x: &[f32],
+    y: &mut [f32],
+    threads: usize,
+) {
+    assert_eq!(w.len(), rows * cols);
+    assert_eq!(x.len(), cols);
+    assert_eq!(y.len(), rows);
+
+    let (name, f32_dot) = resolve_f32();
+    let bf16_dot = bf16_dot_for(name);
+
+    // One closure per precision: no per-row branch.
+    let row: &(dyn Fn(usize) -> f32 + Sync) = match w {
+        // SAFETY: r < rows so the row lies inside w, cols matches x, and the
+        // dispatch table only yields kernels this CPU supports.
+        trit_core::backend::DenseWeights::F32(w) => {
+            &move |r: usize| unsafe { f32_dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
+        }
+        trit_core::backend::DenseWeights::Bf16(w) => {
+            &move |r: usize| unsafe { bf16_dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
+        }
+    };
+
+    let pool = (threads > 1)
+        .then(|| crate::pool::global(threads))
+        .flatten();
+    let slots = pool
+        .map(|_| crate::slots_for(w.bytes(), threads, rows))
+        .unwrap_or(1);
+    let (Some(pool), true) = (pool, slots > 1) else {
+        for (r, out) in y.iter_mut().enumerate() {
+            *out = row(r);
+        }
+        return;
+    };
+    let chunk = rows.div_ceil(slots).max(1);
+    pool.run(y, chunk, &|slot, out| {
+        let base = slot * chunk;
+        for (j, o) in out.iter_mut().enumerate() {
+            *o = row(base + j);
+        }
+    });
+}
+
 /// Dispatching dense f32 matvec. Rows are independent, so this parallelizes and
 /// vectorizes without changing the summation order within any single row.
 pub fn f32_matvec(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32], threads: usize) {
@@ -237,17 +423,29 @@ pub fn f32_matvec(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32],
         unsafe { dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
     };
 
-    if threads <= 1 || rows < 4096 {
+    // The pool the ternary path uses. Two pools contend for the same cores, and
+    // these matvecs alternate all decode.
+    let pool = (threads > 1)
+        .then(|| crate::pool::global(threads))
+        .flatten();
+    let Some(pool) = pool else {
+        for (r, out) in y.iter_mut().enumerate() {
+            *out = row(r);
+        }
+        return;
+    };
+    let slots = crate::slots_for(rows * cols * 4, threads, rows);
+    if slots < 2 {
         for (r, out) in y.iter_mut().enumerate() {
             *out = row(r);
         }
         return;
     }
-    use rayon::prelude::*;
-    let chunk = rows.div_ceil(threads).max(1);
-    y.par_chunks_mut(chunk).enumerate().for_each(|(i, out)| {
+    let chunk = rows.div_ceil(slots).max(1);
+    pool.run(y, chunk, &|slot, out| {
+        let base = slot * chunk;
         for (j, o) in out.iter_mut().enumerate() {
-            *o = row(i * chunk + j);
+            *o = row(base + j);
         }
     });
 }

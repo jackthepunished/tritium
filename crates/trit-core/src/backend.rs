@@ -29,6 +29,25 @@ pub trait MatvecBackend: Send + Sync + std::fmt::Debug {
         1
     }
 
+    /// Dense matvec over weights in the precision the file stores them in.
+    /// Widening on load would double the bytes the largest stream in decode
+    /// moves per token.
+    fn dense_matvec(
+        &self,
+        w: DenseWeights<'_>,
+        rows: usize,
+        cols: usize,
+        x: &[f32],
+        y: &mut [f32],
+    ) {
+        // F32 goes through `f32_matvec` so a backend that overrides only that
+        // keeps its override; only Bf16 falls to the reference.
+        match w {
+            DenseWeights::F32(w) => self.f32_matvec(w, rows, cols, x, y),
+            DenseWeights::Bf16(_) => dense_matvec_reference(w, rows, cols, x, y),
+        }
+    }
+
     /// Dense f32 matrix-vector product, row-major.
     ///
     /// Not ternary, and not incidental: the LM head is 128256 x 2560 f32 on
@@ -39,6 +58,60 @@ pub trait MatvecBackend: Send + Sync + std::fmt::Debug {
     /// The default is the portable reference; backends override it.
     fn f32_matvec(&self, w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32]) {
         f32_matvec_reference(w, rows, cols, x, y)
+    }
+}
+
+/// A dense weight matrix as stored. Widening bf16 is `bits << 16` reinterpreted
+/// as f32, which is exact, so a kernel widens in registers instead.
+#[derive(Clone, Copy, Debug)]
+pub enum DenseWeights<'a> {
+    F32(&'a [f32]),
+    Bf16(&'a [u16]),
+}
+
+impl DenseWeights<'_> {
+    pub fn len(&self) -> usize {
+        match self {
+            DenseWeights::F32(w) => w.len(),
+            DenseWeights::Bf16(w) => w.len(),
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+    /// Bytes streamed per pass, which is what decode is bounded by.
+    pub fn bytes(&self) -> usize {
+        match self {
+            DenseWeights::F32(w) => w.len() * 4,
+            DenseWeights::Bf16(w) => w.len() * 2,
+        }
+    }
+}
+
+#[inline]
+pub fn bf16_to_f32(bits: u16) -> f32 {
+    f32::from_bits((bits as u32) << 16)
+}
+
+/// Portable reference over either precision.
+pub fn dense_matvec_reference(
+    w: DenseWeights<'_>,
+    rows: usize,
+    cols: usize,
+    x: &[f32],
+    y: &mut [f32],
+) {
+    assert_eq!(w.len(), rows * cols);
+    assert_eq!(x.len(), cols);
+    assert_eq!(y.len(), rows);
+    match w {
+        DenseWeights::F32(w) => f32_matvec_reference(w, rows, cols, x, y),
+        DenseWeights::Bf16(w) => {
+            for (r, out) in y.iter_mut().enumerate() {
+                let row = &w[r * cols..(r + 1) * cols];
+                *out = row.iter().zip(x).map(|(a, b)| bf16_to_f32(*a) * b).sum();
+            }
+        }
     }
 }
 

@@ -462,9 +462,9 @@ impl Model {
 
         // ---- logits ----
         math::rmsnorm_into(&s.x, &self.final_norm, cfg.rms_eps, &mut s.normed[..h]);
-        let head = self.file.dense(self.lm_head);
+        let head = self.file.dense_weights(self.lm_head)?;
         self.backend
-            .f32_matvec(&head, cfg.vocab_size, h, &s.normed[..h], logits);
+            .dense_matvec(head, cfg.vocab_size, h, &s.normed[..h], logits);
         Ok(())
     }
 }

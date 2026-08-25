@@ -634,17 +634,50 @@ impl TritFile {
                     // Format guarantees alignment, so this is unreachable for a
                     // well-formed file; decode rather than fail if it happens.
                     std::borrow::Cow::Owned(
-                        raw.chunks_exact(4)
-                            .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
+                        raw.as_chunks::<4>()
+                            .0
+                            .iter()
+                            .map(|c| f32::from_le_bytes(*c))
                             .collect(),
                     )
                 }
             }
             DType::Bf16 => std::borrow::Cow::Owned(
-                raw.chunks_exact(2)
-                    .map(|c| bf16_bits_to_f32(u16::from_le_bytes(c.try_into().unwrap())))
+                raw.as_chunks::<2>()
+                    .0
+                    .iter()
+                    .map(|c| bf16_bits_to_f32(u16::from_le_bytes(*c)))
                     .collect(),
             ),
+            DType::Trit => unreachable!("dense_span rejects ternary tensors"),
+        }
+    }
+
+    /// Borrow a dense tensor without widening it. [`Self::dense`] returns f32
+    /// and so must materialise a bf16 tensor, which for the tied head is 1.3 GB
+    /// per decode step.
+    pub fn dense_weights(&self, s: DenseSpan) -> Result<crate::backend::DenseWeights<'_>> {
+        let raw = &self.mmap[s.start..s.start + s.len];
+        match s.dtype {
+            DType::F32 => {
+                // SAFETY: any bit pattern is a valid f32; align_to reports
+                // misalignment rather than assuming it away.
+                let (head, mid, tail) = unsafe { raw.align_to::<f32>() };
+                ensure!(
+                    head.is_empty() && tail.is_empty(),
+                    "dense tensor is not 4-byte aligned in the mapping"
+                );
+                Ok(crate::backend::DenseWeights::F32(mid))
+            }
+            DType::Bf16 => {
+                // SAFETY: as above.
+                let (head, mid, tail) = unsafe { raw.align_to::<u16>() };
+                ensure!(
+                    head.is_empty() && tail.is_empty(),
+                    "dense tensor is not 2-byte aligned in the mapping"
+                );
+                Ok(crate::backend::DenseWeights::Bf16(mid))
+            }
             DType::Trit => unreachable!("dense_span rejects ternary tensors"),
         }
     }
