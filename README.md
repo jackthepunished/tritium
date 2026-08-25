@@ -38,7 +38,7 @@ Every number here is reproducible with `tritd bench`; the frozen reference is
 | Time to first token | ~33 s | **239 ms** |
 | Peak RSS | 6.10 GiB | **1.19 GiB** |
 | Bytes per token | 1834 MB | **1178 MB** |
-| Achieved bandwidth | ~0.3 GB/s | **32.9 GB/s** (57% of what this host sustains) |
+| Achieved bandwidth | ~0.3 GB/s | **32.9 GB/s** (57% of a 57.2 GB/s probe in the same run) |
 | Quality vs the HF reference | mean logit cosine 0.9991, top-1 100% | unchanged |
 
 Decoding at batch 1 touches every weight once per token, so throughput is bounded
@@ -93,7 +93,7 @@ Closing that is the open work.
 |---|---|---|
 | `crates/tritc` | Converter: HF BitNet checkpoint → packed `.trit` v1. Folds norms, quantizes, verifies. | working |
 | `crates/trit-core` | Format, transformer, KV cache, RoPE, sampler, tokenizer traits. No `unsafe` outside one mmap. | working |
-| `crates/trit-cpu` | Bit-sliced SIMD kernels, a dense bf16/f32 kernel, and the worker pool both run on. | x86 and aarch64 both verified on hardware in CI |
+| `crates/trit-cpu` | Bit-sliced ternary SIMD kernels, dense bf16/f32 kernels, and the worker pool they share. | x86 and aarch64 both verified on hardware in CI |
 | `crates/tritd` | Host daemon and C runtime: `run`, `serve`, `bench`, `info`, plus a C ABI. | working |
 | `crates/trit-rtl` | Hardware-in-the-loop backend over the Verilated core. | working |
 | `crates/tritsim` | Independent golden reference. The oracle every other path is diffed against. | working |

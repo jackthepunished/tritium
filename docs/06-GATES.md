@@ -151,11 +151,16 @@ on the environment of record with `models/bitnet-2b4t.trit`:
 | Time to first token | ~33 s | 470 ms | **239 ms** |
 | Peak RSS | 6,401,024 KB | 1,891,184 KB | **1,249,280 KB** |
 | Bytes per token | 1,834,352,640 | 1,834,352,640 | **1,177,681,920** |
-| Achieved bandwidth | ~0.3 GB/s | 27.3 GB/s | **32.9 GB/s** (57% of measured) |
+| Achieved bandwidth | ~0.3 GB/s | 27.3 GB/s | **32.9 GB/s** |
 
-Decode is at 4 threads, which is where this host peaks. The pivot figure of
-14.89 was measured against a bandwidth probe that under-reported, so its
-"66% of roofline" was optimistic; see the probe row below.
+Decode is at 4 threads, which is where this host peaks.
+
+The roofline fraction is a ratio against a probe run in the same invocation, and
+that probe is itself noisy: across the five thread counts in the committed CSV
+it read 48.25, 58.27, 57.24, 52.67 and 49.78 GB/s. At 4 threads, 32.85 against
+57.24 is **57%**. Quote the pair, never the fraction alone, and never a fixed
+ceiling for this host. The pivot's "66% of roofline" was computed against a
+single-pass probe that under-reported, so it was optimistic on top of that.
 
 Kernel throughput on a 2560x6912 tensor, planes resident in L3:
 

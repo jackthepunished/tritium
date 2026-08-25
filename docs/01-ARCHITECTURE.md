@@ -105,13 +105,16 @@ Measured on an AMD Ryzen 9 8945HX (Zen 4, AVX-512 VNNI), 4 threads,
 |---|---|
 | Decode | 27.9 tok/s |
 | Achieved bandwidth | 32.9 GB/s |
-| Fraction of measured roofline | ~57% |
+| Streaming-read probe, same invocation | 57.2 GB/s |
+| Fraction of it | 57% |
 | Peak RSS | 1220 MB |
 | Time to first token | 239 ms |
 
 The roofline figure is a **measured ratio**, not an assumption about what the
 memory system can do: `tritd bench` runs a streaming-read probe on the same
-machine in the same invocation, best of five passes, and divides by it.
+machine in the same invocation, best of five passes, and divides by it. The
+probe itself reads 48-58 GB/s across runs, so the pair belongs together and this
+host has no single ceiling worth quoting.
 
 This machine drifts by up to 30% between runs, so absolute figures here are not
 comparable across sessions. Anything claiming a speedup should be an interleaved
