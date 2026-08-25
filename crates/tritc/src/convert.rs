@@ -27,16 +27,22 @@ pub struct Report {
 fn to_f32(dtype: Dtype, data: &[u8]) -> Result<Vec<f32>> {
     Ok(match dtype {
         Dtype::F32 => data
-            .chunks_exact(4)
-            .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|c| f32::from_le_bytes(*c))
             .collect(),
         Dtype::BF16 => data
-            .chunks_exact(2)
-            .map(|c| bf16::from_le_bytes(c.try_into().unwrap()).to_f32())
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|c| bf16::from_le_bytes(*c).to_f32())
             .collect(),
         Dtype::F16 => data
-            .chunks_exact(2)
-            .map(|c| half::f16::from_le_bytes(c.try_into().unwrap()).to_f32())
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|c| half::f16::from_le_bytes(*c).to_f32())
             .collect(),
         d => anyhow::bail!("unsupported dtype {d:?}"),
     })

@@ -634,15 +634,19 @@ impl TritFile {
                     // Format guarantees alignment, so this is unreachable for a
                     // well-formed file; decode rather than fail if it happens.
                     std::borrow::Cow::Owned(
-                        raw.chunks_exact(4)
-                            .map(|c| f32::from_le_bytes(c.try_into().unwrap()))
+                        raw.as_chunks::<4>()
+                            .0
+                            .iter()
+                            .map(|c| f32::from_le_bytes(*c))
                             .collect(),
                     )
                 }
             }
             DType::Bf16 => std::borrow::Cow::Owned(
-                raw.chunks_exact(2)
-                    .map(|c| bf16_bits_to_f32(u16::from_le_bytes(c.try_into().unwrap())))
+                raw.as_chunks::<2>()
+                    .0
+                    .iter()
+                    .map(|c| bf16_bits_to_f32(u16::from_le_bytes(*c)))
                     .collect(),
             ),
             DType::Trit => unreachable!("dense_span rejects ternary tensors"),
