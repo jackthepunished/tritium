@@ -33,6 +33,10 @@ unsafe impl Send for Task {}
 unsafe impl Sync for Task {}
 
 struct Shared {
+    /// One job at a time. `MatvecBackend` is `Sync` and the pool is
+    /// process-wide, so without this a second caller can overwrite `task` and
+    /// reset `done` while the first job's workers still hold its pointers.
+    dispatch: Mutex<()>,
     seq: AtomicUsize,
     done: AtomicUsize,
     task: Mutex<Option<Task>>,
@@ -51,6 +55,7 @@ pub struct Pool {
 impl Pool {
     fn new(threads: usize) -> Self {
         let shared = Arc::new(Shared {
+            dispatch: Mutex::new(()),
             seq: AtomicUsize::new(0),
             done: AtomicUsize::new(0),
             task: Mutex::new(None),
@@ -95,6 +100,13 @@ impl Pool {
         if parts.is_empty() {
             return;
         }
+        // Held for the whole dispatch. Uncontended in the decode loop, and the
+        // alternative is two jobs sharing one slot.
+        let _dispatch = self
+            .shared
+            .dispatch
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         assert!(
             parts.len() <= self.shared.threads,
             "{} chunks for {} slots",
@@ -264,6 +276,28 @@ mod tests {
             });
             assert!(y.iter().all(|&v| v == 7), "a slot had not finished");
         }
+    }
+
+    /// Concurrent callers must not share a job slot.
+    #[test]
+    fn concurrent_runs_do_not_corrupt_each_other() {
+        let pool = Arc::new(Pool::new(4));
+        std::thread::scope(|s| {
+            for t in 0..4usize {
+                let pool = Arc::clone(&pool);
+                s.spawn(move || {
+                    for _ in 0..200 {
+                        let mut y = vec![0i32; 256];
+                        pool.run(&mut y, 64, &|slot, out| {
+                            out.iter_mut().for_each(|v| *v = (t * 10 + slot) as i32);
+                        });
+                        for (i, v) in y.iter().enumerate() {
+                            assert_eq!(*v, (t * 10 + i / 64) as i32, "thread {t} saw {v}");
+                        }
+                    }
+                });
+            }
+        });
     }
 
     /// Wake-only-the-working-slots is safe only if idle slots stay silent.

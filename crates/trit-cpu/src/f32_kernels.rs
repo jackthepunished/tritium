@@ -150,6 +150,39 @@ mod x86 {
 mod arm {
     use std::arch::aarch64::*;
 
+    /// bf16 widened in-register, then FMA against f32 activations.
+    ///
+    /// aarch64 is the target this project exists for and the dense head is now
+    /// the largest stream in decode, so it should not fall to scalar here.
+    ///
+    /// # Safety
+    /// Requires `neon`. Lengths are checked by the safe caller.
+    #[target_feature(enable = "neon")]
+    pub unsafe fn dot_bf16(w: *const u16, x: *const f32, n: usize) -> f32 {
+        #[inline]
+        unsafe fn widen(p: *const u16) -> float32x4_t {
+            vreinterpretq_f32_u32(vshlq_n_u32(vmovl_u16(vld1_u16(p)), 16))
+        }
+        let mut acc0 = vdupq_n_f32(0.0);
+        let mut acc1 = vdupq_n_f32(0.0);
+        let mut acc2 = vdupq_n_f32(0.0);
+        let mut acc3 = vdupq_n_f32(0.0);
+        let chunks = n / 16;
+        for i in 0..chunks {
+            let (p, q) = (w.add(i * 16), x.add(i * 16));
+            acc0 = vfmaq_f32(acc0, widen(p), vld1q_f32(q));
+            acc1 = vfmaq_f32(acc1, widen(p.add(4)), vld1q_f32(q.add(4)));
+            acc2 = vfmaq_f32(acc2, widen(p.add(8)), vld1q_f32(q.add(8)));
+            acc3 = vfmaq_f32(acc3, widen(p.add(12)), vld1q_f32(q.add(12)));
+        }
+        let acc = vaddq_f32(vaddq_f32(acc0, acc1), vaddq_f32(acc2, acc3));
+        let mut total = vaddvq_f32(acc);
+        for i in chunks * 16..n {
+            total += f32::from_bits((*w.add(i) as u32) << 16) * *x.add(i);
+        }
+        total
+    }
+
     /// # Safety
     /// Requires `neon`. Lengths are checked by the safe caller.
     #[target_feature(enable = "neon")]
@@ -295,13 +328,33 @@ unsafe fn dot_bf16_scalar(w: *const u16, x: *const f32, n: usize) -> f32 {
 }
 
 /// Selected by the same name as the f32 kernel, so forcing one forces both.
+///
+/// Features are re-checked rather than inherited: the f32 AVX-512 kernel needs
+/// only `avx512f`, while widening bf16 uses `vpmovzxwd` on a zmm and needs
+/// `avx512bw` too. An AVX512F-only CPU selecting "avx512f" would otherwise
+/// execute an instruction it does not have.
 fn bf16_dot_for(name: &str) -> Bf16DotFn {
-    match name {
-        #[cfg(target_arch = "x86_64")]
-        "avx512f" => x86::dot_bf16_avx512 as Bf16DotFn,
-        #[cfg(target_arch = "x86_64")]
-        "avx2" => x86::dot_bf16_avx2 as Bf16DotFn,
-        _ => dot_bf16_scalar as Bf16DotFn,
+    #[cfg(target_arch = "x86_64")]
+    {
+        let avx512 = is_x86_feature_detected!("avx512f") && is_x86_feature_detected!("avx512bw");
+        let avx2 = is_x86_feature_detected!("avx2") && is_x86_feature_detected!("fma");
+        match name {
+            "avx512f" if avx512 => x86::dot_bf16_avx512 as Bf16DotFn,
+            "avx512f" | "avx2" if avx2 => x86::dot_bf16_avx2 as Bf16DotFn,
+            _ => dot_bf16_scalar as Bf16DotFn,
+        }
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        match name {
+            "neon" | "neon-dotprod" => arm::dot_bf16 as Bf16DotFn,
+            _ => dot_bf16_scalar as Bf16DotFn,
+        }
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    {
+        let _ = name;
+        dot_bf16_scalar as Bf16DotFn
     }
 }
 

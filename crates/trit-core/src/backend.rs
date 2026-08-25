@@ -40,7 +40,12 @@ pub trait MatvecBackend: Send + Sync + std::fmt::Debug {
         x: &[f32],
         y: &mut [f32],
     ) {
-        dense_matvec_reference(w, rows, cols, x, y)
+        // F32 goes through `f32_matvec` so a backend that overrides only that
+        // keeps its override; only Bf16 falls to the reference.
+        match w {
+            DenseWeights::F32(w) => self.f32_matvec(w, rows, cols, x, y),
+            DenseWeights::Bf16(_) => dense_matvec_reference(w, rows, cols, x, y),
+        }
     }
 
     /// Dense f32 matrix-vector product, row-major.
