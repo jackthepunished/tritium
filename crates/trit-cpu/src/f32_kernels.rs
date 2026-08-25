@@ -237,17 +237,32 @@ pub fn f32_matvec(w: &[f32], rows: usize, cols: usize, x: &[f32], y: &mut [f32],
         unsafe { dot(w.as_ptr().add(r * cols), x.as_ptr(), cols) }
     };
 
-    if threads <= 1 || rows < 4096 {
+    // The same pool the ternary path uses, not a second one.
+    //
+    // These two matvecs alternate throughout a decode step, so two independent
+    // thread pools means two sets of workers contending for the same cores. At
+    // sixteen threads that cost more than the parallelism returned.
+    let pool = (threads > 1)
+        .then(|| crate::pool::global(threads))
+        .flatten();
+    let Some(pool) = pool else {
+        for (r, out) in y.iter_mut().enumerate() {
+            *out = row(r);
+        }
+        return;
+    };
+    let slots = crate::slots_for(rows * cols * 4, threads, rows);
+    if slots < 2 {
         for (r, out) in y.iter_mut().enumerate() {
             *out = row(r);
         }
         return;
     }
-    use rayon::prelude::*;
-    let chunk = rows.div_ceil(threads).max(1);
-    y.par_chunks_mut(chunk).enumerate().for_each(|(i, out)| {
+    let chunk = rows.div_ceil(slots).max(1);
+    pool.run(y, chunk, &|slot, out| {
+        let base = slot * chunk;
         for (j, o) in out.iter_mut().enumerate() {
-            *o = row(i * chunk + j);
+            *o = row(base + j);
         }
     });
 }

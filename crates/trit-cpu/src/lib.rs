@@ -25,6 +25,7 @@ use trit_core::backend::MatvecBackend;
 use trit_core::planes::TritPlanes;
 
 pub mod f32_kernels;
+pub mod pool;
 pub mod scalar;
 
 #[cfg(target_arch = "x86_64")]
@@ -231,13 +232,28 @@ pub struct CpuBackend {
     name: String,
 }
 
+/// Ceiling on the automatically chosen thread count.
+///
+/// Decode at batch 1 is memory-bound, so past a handful of cores the extra
+/// threads contend for bandwidth instead of adding it, and the per-job wake-ups
+/// start to cost more than the slice they enable. Measured against the previous
+/// implementation in interleaved pairs on a 32-thread Zen 4: 1.17x at two
+/// threads, 1.18x at four, 1.17x at eight, and 0.94x at sixteen.
+///
+/// So one thread per core is the wrong automatic answer on a large machine. An
+/// explicit `--threads` is still honoured exactly, including into the region
+/// where it regresses; this only changes what "decide for me" means.
+const DEFAULT_MAX_THREADS: usize = 8;
+
 impl CpuBackend {
-    /// `threads = 0` means one thread per available core.
+    /// `threads = 0` means "choose", which is one per core up to
+    /// [`DEFAULT_MAX_THREADS`].
     pub fn new(threads: usize) -> Self {
         let threads = if threads == 0 {
             std::thread::available_parallelism()
                 .map(|n| n.get())
                 .unwrap_or(1)
+                .min(DEFAULT_MAX_THREADS)
         } else {
             threads
         };
@@ -257,27 +273,68 @@ impl Default for CpuBackend {
 /// Minimum plane bytes before a ternary matvec is worth splitting across
 /// threads.
 ///
-/// Measured, not guessed. A decode step on BitNet 2B4T issues 210 ternary
-/// matvecs, and the largest of them is 4.4 MB of planes. Splitting each one
-/// across the machine costs more in fork/join than it saves: on a 32-core Zen 4,
-/// end-to-end decode measured 14.06 tok/s single-threaded against 2.40 tok/s at
-/// 32 threads -- nearly 6x slower. The threshold is set above every per-layer
-/// tensor in this model class, so they run inline, and the parallelism that does
-/// pay goes to the LM head (1313 MB/token) via the dense f32 path.
+/// This was 32 MiB, chosen to keep *every* per-layer tensor in this model class
+/// on one thread, because splitting them through a work-stealing pool cost more
+/// than the matvec: end-to-end decode measured 14.06 tok/s single-threaded
+/// against 2.40 tok/s at 32 threads. That threshold was a workaround for the
+/// dispatch mechanism, not a property of the work.
 ///
-/// Batched prefill, or a model whose projections are an order of magnitude
-/// larger, would want this revisited -- with a measurement, not an intuition.
-const PARALLEL_MIN_BYTES: usize = 32 << 20;
+/// With [`pool`], dispatch is a sequence-counter bump and an unpark, so the
+/// crossover moves down by roughly three orders of magnitude. What remains is a
+/// floor below which even that is not worth it: a 64 KiB tensor is around 4000
+/// beats, which one core finishes in the time the wake-up takes.
+const PARALLEL_MIN_BYTES: usize = 64 << 10;
+
+/// Plane bytes each slot should get before another slot is worth waking.
+///
+/// Slot count has to track the work, not the machine. A decode step's matvecs
+/// run from roughly 400 KiB to 4.4 MiB, and splitting the small ones across
+/// every core costs more in wake-ups than the slice saves: measured end-to-end,
+/// an uncapped pool peaked at 20.28 tok/s on four threads and fell to 16.46 on
+/// eight and 11.00 on sixteen, worse than not parallelising at all. At 256 KiB
+/// the peak is within 1.5% of uncapped and the sixteen-thread case recovers to
+/// 14.70. Larger slices (1 MiB) give up too much at two and four threads.
+///
+/// With a cap the thread count becomes a ceiling rather than an instruction, so
+/// asking for more threads than the work can use is harmless.
+const BYTES_PER_SLOT_DEFAULT: usize = 256 << 10;
+
+/// Resolved once. `TRIT_BYTES_PER_SLOT=0` disables the cap entirely, which is
+/// how the default was chosen rather than guessed.
+pub(crate) fn bytes_per_slot() -> usize {
+    static V: OnceLock<usize> = OnceLock::new();
+    *V.get_or_init(|| {
+        std::env::var("TRIT_BYTES_PER_SLOT")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(BYTES_PER_SLOT_DEFAULT)
+    })
+}
+
+/// How many slots a job of `bytes` should use, given the pool width and the
+/// number of independent output rows available to split.
+pub(crate) fn slots_for(bytes: usize, threads: usize, rows: usize) -> usize {
+    let per_slot = bytes_per_slot();
+    if per_slot == 0 {
+        return threads.min(rows).max(1);
+    }
+    (bytes / per_slot).clamp(1, threads).min(rows).max(1)
+}
 
 impl MatvecBackend for CpuBackend {
     fn matvec(&self, planes: &TritPlanes<'_>, xq: &[i8], y: &mut [i32]) {
-        if self.threads == 1 || planes.as_bytes().len() < PARALLEL_MIN_BYTES {
+        let pool = (self.threads > 1)
+            .then(|| pool::global(self.threads))
+            .flatten();
+        let Some(pool) = pool else {
+            return ternary_matvec_planes(planes, xq, y);
+        };
+        if planes.as_bytes().len() < PARALLEL_MIN_BYTES {
             return ternary_matvec_planes(planes, xq, y);
         }
         // The threaded branch calls the raw kernel, so it must establish the
         // same preconditions the dispatching wrapper would have.
         assert_shapes(planes, xq, y);
-        use rayon::prelude::*;
         let bpr = planes.beats_per_row();
         let stride = bpr * trit_core::planes::BEAT_BYTES;
         let beats = planes.as_bytes();
@@ -285,9 +342,14 @@ impl MatvecBackend for CpuBackend {
         // Chunk by rows. Each chunk is an independent set of outputs reading a
         // disjoint slice of beats, so no reduction is split and the result does
         // not depend on how the work was divided.
-        let chunk = planes.rows().div_ceil(self.threads).max(1);
-        y.par_chunks_mut(chunk).enumerate().for_each(|(i, out)| {
-            let start = i * chunk;
+        // Slots are bounded by the work as well as by the pool.
+        let slots = slots_for(planes.as_bytes().len(), self.threads, planes.rows());
+        if slots < 2 {
+            return ternary_matvec_planes(planes, xq, y);
+        }
+        let chunk = planes.rows().div_ceil(slots).max(1);
+        pool.run(y, chunk, &|slot, out| {
+            let start = slot * chunk;
             let sub = &beats[start * stride..(start + out.len()) * stride];
             // SAFETY: same contract as ternary_matvec_planes; lengths are
             // derived from the validated planes view.
