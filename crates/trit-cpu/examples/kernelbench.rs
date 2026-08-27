@@ -136,6 +136,67 @@ fn main() {
     }
 
     streaming_pass();
+    dense_pass();
+}
+
+/// The dense head, which is 56% of per-token traffic and has its own kernels.
+///
+/// bf16 and f32 are reported side by side over the same values, so the row
+/// shows the bandwidth saved rather than only the time.
+fn dense_pass() {
+    let (rows, cols) = (16384usize, 2560usize);
+    let mut rng = Rng(0x0DE5);
+    let bits: Vec<u16> = (0..rows * cols)
+        .map(|_| ((rng.next() >> 40) as u16 & 0x7f7f) | 0x3c00)
+        .collect();
+    let widened: Vec<f32> = bits
+        .iter()
+        .map(|b| trit_core::backend::bf16_to_f32(*b))
+        .collect();
+    let x: Vec<f32> = (0..cols)
+        .map(|_| ((rng.next() >> 40) as f32 / (1u64 << 24) as f32) - 0.5)
+        .collect();
+
+    println!();
+    println!(
+        "Dense pass: {rows}x{cols}, {:.0} MB f32 against {:.0} MB bf16",
+        (rows * cols * 4) as f64 / 1e6,
+        (rows * cols * 2) as f64 / 1e6
+    );
+    println!(
+        "{:<14} {:>10} {:>10} {:>10}",
+        "precision", "threads", "ms", "GB/s"
+    );
+    for threads in [1usize, 4] {
+        for (name, w, bytes) in [
+            (
+                "f32",
+                trit_core::backend::DenseWeights::F32(&widened),
+                rows * cols * 4,
+            ),
+            (
+                "bf16",
+                trit_core::backend::DenseWeights::Bf16(&bits),
+                rows * cols * 2,
+            ),
+        ] {
+            let mut y = vec![0f32; rows];
+            trit_cpu::f32_kernels::dense_matvec(w, rows, cols, &x, &mut y, threads);
+            let reps = 5;
+            let t = Instant::now();
+            for _ in 0..reps {
+                trit_cpu::f32_kernels::dense_matvec(w, rows, cols, &x, &mut y, threads);
+            }
+            let ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
+            println!(
+                "{:<14} {:>10} {:>10.2} {:>10.1}",
+                name,
+                threads,
+                ms,
+                bytes as f64 / (ms / 1000.0) / 1e9
+            );
+        }
+    }
 }
 
 /// A working set far larger than L3, which is the regime batch-1 decoding
@@ -181,14 +242,14 @@ fn streaming_pass() {
         be.matvec(&planes, &x, &mut y);
         let ms = t.elapsed().as_secs_f64() * 1000.0;
         let gbps = bytes / (ms / 1000.0) / 1e9;
-        // 521 MB of ternary + 1315 MB of dense per token on BitNet 2B4T.
+        // 521 MB ternary + 657 MB bf16 dense per token on BitNet 2B4T.
         println!(
             "{:<14} {:>10.2} {:>10.1} {:>17.1}",
             threads,
             ms,
             gbps,
-            gbps * 1e9 / 1.836e9
+            gbps * 1e9 / 1.178e9
         );
     }
-    println!("*at this bandwidth against the full 1836 MB/token, ternary + dense.");
+    println!("*at this bandwidth against the full 1178 MB/token, ternary + dense.");
 }

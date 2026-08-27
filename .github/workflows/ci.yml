@@ -44,6 +44,12 @@ jobs:
       # trit-rtl is excluded: building it runs Verilator, which the rtl job owns.
       - run: cargo test --workspace --exclude trit-rtl --release
 
+      # The only performance figures this project has for aarch64. Needs no
+      # checkpoint, so it runs on both runners and the ARM row is real hardware
+      # rather than a projection.
+      - name: kernel throughput
+        run: cargo run --release -q -p trit-cpu --example kernelbench
+
       - name: differential tests, once per available kernel
         shell: bash
         run: |
