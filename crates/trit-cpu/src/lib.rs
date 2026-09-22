@@ -228,9 +228,14 @@ pub struct CpuBackend {
     name: String,
 }
 
-/// Ceiling on the automatic thread count. Interleaved pairs measured 1.17x at
-/// two, 1.18x at four, 1.17x at eight and 0.94x at sixteen, so one per core is
-/// the wrong answer to "decide for me". Explicit `--threads` is unaffected.
+/// Ceiling on the automatic thread count.
+///
+/// Re-measured after [`pool`] stopped parking between dispatches. Interleaved
+/// pairs on the reference host: 17.9 tok/s at one thread, 28.6 at two, 33.4 at
+/// four, 34.8 at eight and 33.3 at sixteen. Eight is still the peak and sixteen
+/// still loses, so the ceiling stands -- but it now caps a curve that rises to
+/// it, where before the curve had already turned over at four. Explicit
+/// `--threads` is unaffected.
 const DEFAULT_MAX_THREADS: usize = 8;
 
 impl CpuBackend {
