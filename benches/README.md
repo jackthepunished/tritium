@@ -49,6 +49,24 @@ tensors. Streaming "implied tok/s" is a bandwidth projection, not a model decode
 measurement; use the full-model harness for the latter. ARM emulation can check
 kernel correctness, but its timings must not be reported as ARM throughput.
 
+For attributing decode time to phases, or for diagnosing dispatch cost:
+
+```sh
+cargo run --release -p tritd --example decode_profile -- --threads 4
+cargo run --release -p tritd --example decode_profile -- --threads 8 --pool-probe
+cargo run --release -p tritd --example decode_profile -- --threads 8 --bw-probe
+```
+
+`decode_profile` wraps the injected `MatvecBackend`, so it attributes a real
+decode to ternary projections, the dense head and the serial remainder without
+changing the runtime. It asserts 210 ternary and one dense call per token, so a
+wrong attribution window fails rather than printing a plausible split.
+`--pool-probe` times empty dispatches against a sweep of inter-job gaps;
+`--bw-probe` compares per-matvec dispatch against a fork-once static
+partitioning of identical work, which is how the memory system's actual ceiling
+was separated from dispatch cost. One thread count per process, for the reason
+above.
+
 ## Baselines
 
 `run.sh` looks for llama.cpp and bitnet.cpp and records a row either way:
