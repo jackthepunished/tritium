@@ -4,6 +4,7 @@
 //! batch 1 is memory bound, so a kernel's job is to saturate the link, not to
 //! minimize instructions.
 
+use std::hint::black_box;
 use std::time::Instant;
 use trit_core::backend::MatvecBackend;
 use trit_core::planes::{beats_per_row, pack_planes, TritPlanes, LANES};
@@ -19,6 +20,37 @@ impl Rng {
 }
 
 fn main() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let threads = match args.as_slice() {
+        [] => 1,
+        [flag] if flag == "--list-kernels" => {
+            println!("{}", trit_cpu::available_kernels().join(" "));
+            return;
+        }
+        [flag, count] if flag == "--threads" => {
+            match count.parse::<usize>().ok().filter(|n| *n > 0) {
+                Some(n) => n,
+                None => {
+                    eprintln!("--threads requires a positive integer");
+                    std::process::exit(2);
+                }
+            }
+        }
+        _ => {
+            eprintln!("usage: kernelbench [--threads N | --list-kernels]");
+            std::process::exit(2);
+        }
+    };
+    // The runtime pool keeps its first width. One width per process ensures
+    // later measurements cannot silently fall back to serial execution.
+    let pool_threads = if threads > 1 {
+        trit_cpu::pool::global(threads)
+            .expect("benchmark pool must match the requested width")
+            .threads()
+    } else {
+        1
+    };
+    println!("requested threads: {threads}, pool threads: {pool_threads}");
     // down_proj from BitNet b1.58 2B4T: the widest tensor in the model.
     let (rows, cols) = (2560usize, 6912usize);
     let mut rng = Rng(0xBEEF);
@@ -93,6 +125,7 @@ fn main() {
         let t = Instant::now();
         for _ in 0..reps {
             f(&beats, rows, bpr, &x, &mut y);
+            black_box(&y);
         }
         let ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
         if name == "scalar" {
@@ -117,7 +150,7 @@ fn main() {
 
     println!();
     println!("{:<14} {:>10} {:>10}", "threads", "ms", "GB/s");
-    for threads in [1usize, 2, 4, 8, 16, 32] {
+    {
         let be = trit_cpu::CpuBackend::new(threads);
         let mut y = vec![0i32; rows];
         be.matvec(&planes, &x, &mut y);
@@ -125,6 +158,7 @@ fn main() {
         let t = Instant::now();
         for _ in 0..reps {
             be.matvec(&planes, &x, &mut y);
+            black_box(&y);
         }
         let ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
         println!(
@@ -135,15 +169,15 @@ fn main() {
         );
     }
 
-    streaming_pass();
-    dense_pass();
+    streaming_pass(threads);
+    dense_pass(threads);
 }
 
 /// The dense head, which is 56% of per-token traffic and has its own kernels.
 ///
 /// bf16 and f32 are reported side by side over the same values, so the row
 /// shows the bandwidth saved rather than only the time.
-fn dense_pass() {
+fn dense_pass(threads: usize) {
     let (rows, cols) = (16384usize, 2560usize);
     let mut rng = Rng(0x0DE5);
     let bits: Vec<u16> = (0..rows * cols)
@@ -167,7 +201,7 @@ fn dense_pass() {
         "{:<14} {:>10} {:>10} {:>10}",
         "precision", "threads", "ms", "GB/s"
     );
-    for threads in [1usize, 4] {
+    {
         for (name, w, bytes) in [
             (
                 "f32",
@@ -186,6 +220,7 @@ fn dense_pass() {
             let t = Instant::now();
             for _ in 0..reps {
                 trit_cpu::f32_kernels::dense_matvec(w, rows, cols, &x, &mut y, threads);
+                black_box(&y);
             }
             let ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
             println!(
@@ -202,7 +237,7 @@ fn dense_pass() {
 /// A working set far larger than L3, which is the regime batch-1 decoding
 /// actually runs in: every weight is touched once per token and none of it is
 /// resident. This is the number that predicts tokens/sec.
-fn streaming_pass() {
+fn streaming_pass(threads: usize) {
     let (rows, cols) = (65536usize, 6912usize); // ~113 MB of planes
     let mut rng = Rng(0xF00D);
     let trits: Vec<i8> = (0..rows * cols)
@@ -234,12 +269,13 @@ fn streaming_pass() {
         "{:<14} {:>10} {:>10} {:>18}",
         "threads", "ms", "GB/s", "implied tok/s*"
     );
-    for threads in [1usize, 2, 4, 8, 16, 32] {
+    {
         let be = trit_cpu::CpuBackend::new(threads);
         let mut y = vec![0i32; rows];
         be.matvec(&planes, &x, &mut y);
         let t = Instant::now();
         be.matvec(&planes, &x, &mut y);
+        black_box(&y);
         let ms = t.elapsed().as_secs_f64() * 1000.0;
         let gbps = bytes / (ms / 1000.0) / 1e9;
         // 521 MB ternary + 657 MB bf16 dense per token on BitNet 2B4T.

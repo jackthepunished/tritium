@@ -31,6 +31,24 @@ Those tensors are L3-resident, so they measure compute throughput rather than th
 streaming regime a real decode runs in. Use `tritd bench` for the end-to-end
 number.
 
+For per-kernel, streaming ternary, and dense-head measurements:
+
+```sh
+cargo build --release -p trit-cpu --example kernelbench
+for T in 1 2 4 8 16; do
+    target/release/examples/kernelbench --threads "$T"
+done
+python3 benches/test_kernelbench.py target/release/examples/kernelbench
+```
+
+Each invocation measures one positive thread count (default 1) and reports the
+actual pool width. The runtime pool keeps the width of its first initialization,
+so sweeping counts inside one process would silently run later widths serially.
+`--list-kernels` lists supported ternary kernels without allocating benchmark
+tensors. Streaming "implied tok/s" is a bandwidth projection, not a model decode
+measurement; use the full-model harness for the latter. ARM emulation can check
+kernel correctness, but its timings must not be reported as ARM throughput.
+
 ## Baselines
 
 `run.sh` looks for llama.cpp and bitnet.cpp and records a row either way:

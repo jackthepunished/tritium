@@ -177,9 +177,18 @@ on the same machine.
 
 ## A5. ARM throughput
 
-The NEON kernels are *correct* — executed on aarch64 CI hardware, matching the
-reference across the differential corpus including the worst case for the `i16`
-accumulators. They have never been *timed*, so no ARM performance claim exists.
+Software preparation, 2026-09-22: kernelbench now measures one thread count per
+process, avoiding the global pool's silent serial fallback at later widths.
+A new sparse flush-boundary regression exposed a baseline NEON overflow; the
+fix passes the actual ARM kernels under QEMU, with native CI validation still
+pending. The fresh x86 baseline and reproduction commands are in
+[the WSL validation report](../benches/results/WSL-20260922.md). There is no
+current access to a physical target device, so the end-to-end ARM gate remains
+open; emulation timings are not ARM throughput measurements.
+
+The earlier differential corpus passed on aarch64 CI hardware, including wide
+all-nonzero rows. The newly added sparse cases extend that coverage as described
+above. No ARM timing has been published, so no ARM performance claim exists.
 
 This matters disproportionately for positioning: the edge devices this project
 targets are overwhelmingly ARM, so "verified on x86" is a weaker story than it
