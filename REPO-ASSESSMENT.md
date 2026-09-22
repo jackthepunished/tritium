@@ -135,3 +135,29 @@ runs its CLI checks. The global pool's behavior for library callers requesting
 multiple widths remains unchanged. Fresh checks and the local thread-scaling
 baseline are recorded in [the validation report](benches/results/WSL-20260922.md).
 The earlier assessment describes the repository before these fixes.
+
+
+## Follow-up: A2 closed — 22 September 2026
+
+The assessment above lists A2 as partially complete, with decode peaking at
+four threads and declining beyond it. That decline is now diagnosed and fixed.
+It was neither the memory system nor the serial fraction: a fork-once static
+partitioning of the same work holds 42-43 GB/s from four threads to
+thirty-two, while per-matvec dispatch collapses to 16.9, and the serial scalar
+remainder is a flat 3.3-3.6 ms/token. The cause was the pool's spin window
+expiring inside decode's own inter-matvec gaps, so most of the 210 dispatches
+per token paid a futex wake.
+
+Replacing the iteration count with a 200 us deadline moves decode from
+26.5/24.3/20.3 to 33.4/34.8/33.3 tok/s at 4/8/16 threads in interleaved pairs,
+and the peak moves to eight threads. It spends 14-43% more CPU per token above
+four threads and slightly less at or below four; energy remains unmeasured.
+
+Two defects the diagnosis exposed are recorded and unfixed: dispatch still
+costs 218 us at sixteen slots with workers hot, and the `k`/`v` projections
+fall below the slot threshold and never parallelise. Neither would raise the
+peak. Details, method and limitations in
+[the A2 report](benches/results/WSL-20260922-A2.md).
+
+The assessment's point 4 still stands unaddressed: TTFT is still a minimum
+rather than a median, and `prefill_tok_per_s` is still hardcoded to zero.

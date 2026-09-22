@@ -100,28 +100,84 @@ figure is produced the same way the baselines' are.
 
 Two levers fall out of it, and they reorder the rest of this track.
 
-## A2. Parallel scaling — DONE, partly
+## A2. Parallel scaling — DONE
 
 `crates/trit-cpu/src/pool.rs` replaces per-matvec fork/join with a persistent
 pool on a sequence counter. Four mechanisms were measured in the real decode
 loop first; a dedicated work-stealing pool and a broadcast primitive both stayed
 slower than not parallelising at all.
 
-**Worth 1.17x**, measured in interleaved pairs against the previous
-implementation because this host drifts up to 30% between runs. That is well
-short of the 1.59x the isolated prototype suggested, and the smaller number is
-the true one.
+The pool was **worth 1.17x** on its own, and left the curve peaking at four
+threads and declining — which this item then carried as its open remainder.
 
-The gate asked for the slope, not the peak, and the slope improved: 1.34x from
-one thread to eight, against 1.15x before. It is still short of bitnet.cpp's
-2.39x, and the curve now peaks at four threads and declines rather than
-flattening. **That decline is what is left of this item**, and it is why the
-automatic thread count caps at eight.
+**That decline is closed, 2026-09-22.** It was not the memory system and it was
+not Amdahl's law. It was the cost of waking parked workers, 210 times per token.
+Three measurements separated the candidates, all through
+`cargo run --release -p tritd --example decode_profile`, which times a real
+decode by wrapping the injected backend and so needs no change to the runtime:
 
-Worth noting the desktop understates it. On a four-core edge part, which is the
-hardware this project exists for, going from effectively single-threaded to
-using the cores is worth more than it is on a 32-thread machine that was already
-fast.
+- **Where the time goes.** The decline lives entirely in the ternary
+  projections: 23.47 ms/token at four threads, 33.53 at sixteen. The dense head
+  is flat. The serial scalar remainder is 3.3-3.6 ms and barely moves, so a
+  fixed serial fraction was never going to explain a curve that bends back down.
+- **Whether width buys bandwidth.** Streaming 535 MB in 4.42 MB tiles, a
+  fork-once static partitioning reaches 41.4 GB/s at four threads and holds
+  42-43 at eight, sixteen and thirty-two. Per-matvec dispatch over the same work
+  gives 40.8, then collapses to 26.9 and 16.9. The memory system saturates and
+  then *stays* saturated; only dispatch degrades.
+- **Why dispatch is expensive.** With workers still spinning, an empty dispatch
+  at four slots costs 1-4 us. Once they have parked it costs 50-60 us. The spin
+  window was 4000 `pause` instructions, sized against a belief that jobs arrive
+  ~300 us apart; the profile puts the gap between consecutive matvecs at ~17 us.
+  The window was expiring inside decode's own gaps.
+
+The fix is a spin **deadline** (200 us, `TRIT_POOL_SPIN_US`) instead of an
+iteration count. Interleaved A/B, one process per thread count, median of three:
+
+| threads | before | after | ratio |
+|---|---|---|---|
+| 1  | 17.996 | 17.947 | 1.00x |
+| 2  | 26.018 | 28.618 | 1.10x |
+| 4  | 26.467 | 33.417 | 1.26x |
+| 8  | 24.341 | **34.790** | 1.43x |
+| 16 | 20.295 | 33.337 | 1.64x |
+
+One-to-eight scaling goes from 1.35x to **1.94x**, against bitnet.cpp's 2.39x,
+and the curve now rises to its peak instead of having already turned over. The
+automatic cap stays at eight because sixteen still trails it — but it now caps
+a rising curve rather than a falling one.
+
+The ternary path reaches 39-47 GB/s per tensor afterwards, against the 41-43
+the static probe says this access pattern can reach, so ternary and the dense
+head are now within 2% of each other in time. That is the balance the 44/56
+byte split always predicted and that dispatch cost was hiding.
+
+**It is not free above four threads.** Same workload, CPU seconds per token:
+132.3 ms after against 136.3 before at four threads, but 253.5 against 222.1 at
+eight and 532.6 against 373.4 at sixteen. At one, two and four threads it is a
+strict improvement — the futex traffic it removes costs more than the spinning
+it adds, and system time falls 4-6x at every width. Above four it buys latency
+with CPU. Whether it costs or saves *energy* per token is **not** measured and
+is not inferable from CPU time; that is A4.
+
+Two defects it exposed and did not fix, both recorded in
+[the report](../benches/results/WSL-20260922-A2.md):
+
+- Sixteen slots still cost 218 us per empty dispatch with workers hot — the
+  shared task mutex, the shared completion counter and a serial `unpark` loop.
+  Fixing it would not raise the peak, since the memory system has nothing left
+  above four threads.
+- `k` and `v` are 0.41 MB and fall below `slots_for`'s threshold, so they always
+  run serial at 12-14 GB/s while every other tensor reaches 42-47, costing
+  ~14% of ternary time. A lower threshold fixes the phase measurement (1.81 to
+  0.78 ms/token) but did not survive an interleaved end-to-end A/B, so the
+  default is unchanged.
+
+Worth noting the desktop understates the whole item. On a four-core edge part,
+which is the hardware this project exists for, going from effectively
+single-threaded to using the cores is worth more than it is on a 32-thread
+machine that was already fast — and at four threads this change is the version
+that costs no extra CPU.
 
 ## A3. The f32 LM head — DONE
 

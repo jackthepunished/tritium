@@ -87,6 +87,14 @@ faster than bitnet.cpp per core on the identical checkpoint. But its curve peaks
 at four threads and declines, where bitnet.cpp keeps climbing to 32.49 at eight.
 Closing that is the open work.
 
+> **This table predates the A2 dispatch fix (2026-09-22) and is no longer a
+> current head-to-head.** Tritium's own figures have since moved to 33.0 / 34.6 /
+> 32.9 tok/s at 4 / 8 / 16 threads, peaking at eight rather than four. The
+> baseline columns have **not** been re-measured, so the two sides are no longer
+> from the same session; re-running it with both baselines installed is the
+> outstanding measurement. See
+> [benches/results/WSL-20260922-A2.md](benches/results/WSL-20260922-A2.md).
+
 ## Architecture
 
 | Crate | What it is | Status |
@@ -213,10 +221,14 @@ Full specification, including both plane invariants and the v0 migration path:
 - No FPGA silicon yet. The RTL is simulation-first: the 64-term single-cycle
   reduction and 64 parallel activation reads are fine under Verilator and are not
   yet timing-closed on a board.
-- **Scaling stops at four threads.** Decode peaks there and declines, where
-  bitnet.cpp climbs to eight. Fixed in part: a persistent worker pool replaced
-  per-matvec fork/join and lifted one-to-eight scaling from 1.15x to 1.34x, but
-  bitnet.cpp still reaches 2.39x.
+- **Scaling above four threads cost CPU to fix.** Decode used to peak at four
+  threads and decline; the cause was measured as the cost of waking parked
+  workers 210 times per token, and a spin deadline replaced the old iteration
+  count. One-to-eight scaling is now 1.94x against 1.35x before, and the peak
+  moved to eight threads — but above four threads the fix spends 14-43% more CPU
+  per token to get there, and whether that costs or saves energy is unmeasured.
+  bitnet.cpp's slope is 2.39x. Two known defects remain: dispatch still costs
+  218 us at sixteen slots, and the `k`/`v` projections never parallelise.
 - Energy per token is reported only where a real counter exists. It is never
   estimated.
 
