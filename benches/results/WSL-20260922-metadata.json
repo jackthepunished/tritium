@@ -1,0 +1,28 @@
+{
+  "description": "WSL baseline after NEON sparse-flush and kernelbench thread-count fixes; local working tree, not a claimed speedup",
+  "source_base": "6ea2939223d0b4abe98df23a0c8af319929a6474",
+  "branch": "a5-arm-throughput",
+  "system": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "cpu": "AMD Ryzen 9 8945HX with Radeon Graphics",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "files_sha256": {
+    "Cargo.lock": "e62134395520a08aaef685364917303cea6b27df839d6209c54fcb05104957b7",
+    "crates/trit-cpu/src/aarch64.rs": "b4d1aec5962f88b937833d366b6d60b0a37fdba95dc824deb581bb29bacfc7b6",
+    "crates/trit-cpu/examples/kernelbench.rs": "d7bb5c2918199feaf4489d68a534f5dc2c364866efe06a3cc79f1944834cfc4c",
+    "crates/trit-cpu/tests/differential.rs": "6af8f05b5630f99f549752a7f598ade1d699aa3e1d9814a5672a6dd5d1288a7a",
+    "benches/prompts/short.jsonl": "539b1771020e8441ecdf785629d7194c9f81e5aae3f7dfe673563cafaa6a22cb"
+  },
+  "threads": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "tokens_per_prompt": 32,
+  "runs": 3,
+  "suite": "benches/prompts/short.jsonl",
+  "energy": "unavailable; no exposed counter",
+  "arm_validation": "QEMU emulation only; no ARM timings",
+  "model_sha256": "d245c5b58159cf1dad8116b7fa5b1144b2298c9954bea03eae74bc505b93060d"
+}

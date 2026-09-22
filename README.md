@@ -68,13 +68,13 @@ context, because `llama-bench` takes no prompt file. Both are steady-state
 batch-1 decode — see [benches/README.md](benches/README.md) for what that does
 and does not make comparable.
 
-| threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
-|---|---|---|---|
-| 1  | **19.40** | 15.40 | 13.61 |
-| 2  | **26.73** | 22.06 | 19.10 |
-| 4  | **27.90** | 27.83 | 26.72 |
-| 8  | 25.93 | 26.18 | **32.49** |
-| 16 | 20.72 | 23.88 | **31.21** |
+| threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S | vs bitnet.cpp |
+|---|---|---|---|---|
+| 1  | **17.29** | 14.71 | 12.70 | 1.36x |
+| 2  | **26.41** | 22.49 | 20.43 | 1.29x |
+| 4  | **34.53** | 22.80 | 28.08 | 1.23x |
+| 8  | **34.03** | 25.64 | 31.13 | 1.09x |
+| 16 | **32.64** | 23.66 | 30.28 | 1.08x |
 
 bitnet.cpp runs the identical checkpoint, so that column is the honest
 comparison. llama.cpp runs Qwen2.5-3B Q4_K_M, because mainline cannot load the
@@ -82,10 +82,20 @@ comparison. llama.cpp runs Qwen2.5-3B Q4_K_M, because mainline cannot load the
 bits-per-weight column is in the CSV and why this table should not be read as
 "ternary beats 4-bit".
 
-**Tritium leads at 1, 2 and 4 threads, and loses above that.** It is 1.43x
-faster than bitnet.cpp per core on the identical checkpoint. But its curve peaks
-at four threads and declines, where bitnet.cpp keeps climbing to 32.49 at eight.
-Closing that is the open work.
+**Tritium leads at every thread count**, by 1.08-1.36x over bitnet.cpp on the
+identical checkpoint. Before the A2 dispatch fix it led at one, two and four
+and lost at eight and sixteen; closing that was the open work, and
+[the report](benches/results/WSL-20260922-A2.md) is what closed it.
+
+Two honest caveats on this table. **llama.cpp's four-thread figure is
+suspect** — 22.80 against 27.83 in the August run, and below its own
+eight-thread number, which its August curve did not do. It should be re-run;
+it does not affect the bitnet.cpp column, which is an independent invocation
+and lands within 4% of August at every width. And the whole September session
+reads a little below August, Tritium's own one-thread figure included
+(19.40 to 17.29), which is why both sides are measured in one session rather
+than carried across. Detail in
+[benches/results/WSL-20260923-compare.md](benches/results/WSL-20260923-compare.md).
 
 ## Architecture
 
@@ -213,10 +223,14 @@ Full specification, including both plane invariants and the v0 migration path:
 - No FPGA silicon yet. The RTL is simulation-first: the 64-term single-cycle
   reduction and 64 parallel activation reads are fine under Verilator and are not
   yet timing-closed on a board.
-- **Scaling stops at four threads.** Decode peaks there and declines, where
-  bitnet.cpp climbs to eight. Fixed in part: a persistent worker pool replaced
-  per-matvec fork/join and lifted one-to-eight scaling from 1.15x to 1.34x, but
-  bitnet.cpp still reaches 2.39x.
+- **Scaling above four threads cost CPU to fix.** Decode used to peak at four
+  threads and decline; the cause was measured as the cost of waking parked
+  workers 210 times per token, and a spin deadline replaced the old iteration
+  count. One-to-eight scaling is now 1.94x against 1.35x before, and the peak
+  moved to eight threads — but above four threads the fix spends 14-43% more CPU
+  per token to get there, and whether that costs or saves energy is unmeasured.
+  bitnet.cpp's slope is 2.39x. Two known defects remain: dispatch still costs
+  218 us at sixteen slots, and the `k`/`v` projections never parallelise.
 - Energy per token is reported only where a real counter exists. It is never
   estimated.
 

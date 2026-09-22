@@ -6,15 +6,62 @@
 //! here. A right-sized pool and a broadcast primitive were also measured and
 //! both stayed slower than serial.
 //!
-//! Workers spin briefly then park; jobs arrive ~300 us apart and spinning
-//! through that wastes a core per worker on the four-core parts this targets.
+//! Workers spin for a deadline and then park. How long that deadline is turned
+//! out to be the single biggest lever on scaling above two threads: a decode
+//! profile put the serial scalar work between consecutive matvecs at about
+//! 17 us, not the ~300 us this file originally assumed, so the old 4000-pause
+//! window expired inside almost every gap and every dispatch paid a futex wake.
+//! Measured empty-dispatch cost at four slots is 1-2 us with workers spinning
+//! and 50-60 us once they have parked, against 210 dispatches per token.
 
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
+use std::time::{Duration, Instant};
 
-const SPIN_LIMIT: u32 = 4_000;
+/// Pause instructions between clock reads while waiting. Long enough that the
+/// clock read is amortized, short enough to stay responsive.
+const SPIN_BATCH: u32 = 256;
+
+/// Pauses the dispatching thread spins on the completion barrier before it
+/// starts yielding. It is waiting on workers that are *running*, not on workers
+/// that must first be woken, so this is a plain backoff and not a deadline.
+const BARRIER_SPINS: u32 = SPIN_BATCH * 64;
+
+/// How long a waiting worker spins before parking.
+///
+/// This used to be a fixed 4000 `pause` instructions, chosen when jobs were
+/// believed to arrive ~300 us apart. A decode profile says otherwise: the
+/// serial scalar work between consecutive matvecs is about 17 us on average,
+/// and four of the seven projections in a layer follow a longer gap (the
+/// attention block, the norm/quantize stages, the integer MLP fold). An
+/// iteration count also means something different on every core, where a
+/// deadline does not.
+///
+/// The cost of getting it wrong is asymmetric and measured. With workers still
+/// spinning, an empty dispatch costs 1-2 us at four slots; once they have
+/// parked, the same dispatch costs 50-60 us, because every wake is a futex
+/// round trip. Decode issues 210 dispatches per token, so parking between them
+/// is worth several milliseconds per token.
+///
+/// Spinning is not free -- it burns a core per waiting worker, which is exactly
+/// what the four-core edge parts this runtime targets cannot afford when idle.
+/// The budget is therefore long enough to cover the gaps *inside* a decode step
+/// and short enough that an idle model parks promptly.
+const SPIN_BUDGET_US: u64 = 200;
+
+fn spin_budget() -> Duration {
+    static V: OnceLock<Duration> = OnceLock::new();
+    *V.get_or_init(|| {
+        Duration::from_micros(
+            std::env::var("TRIT_POOL_SPIN_US")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(SPIN_BUDGET_US),
+        )
+    })
+}
 
 /// Erased closure plus a trampoline monomorphised over its concrete type, so
 /// nothing here transmutes a fat pointer.
@@ -152,7 +199,7 @@ impl Pool {
         let mut spins = 0u32;
         while self.shared.done.load(Ordering::Acquire) < reporters {
             spins = spins.saturating_add(1);
-            if spins < SPIN_LIMIT {
+            if spins < BARRIER_SPINS {
                 std::hint::spin_loop();
             } else {
                 thread::yield_now();
@@ -194,20 +241,33 @@ fn run_slot(task: &Task, slot: usize) -> Result<(), Box<dyn std::any::Any + Send
 
 fn worker(shared: Arc<Shared>, slot: usize) {
     let mut last = shared.seq.load(Ordering::Acquire);
+    let budget = spin_budget();
     shared.ready.fetch_add(1, Ordering::Release);
     loop {
         // `unpark` leaves a token, so parking just after a wake returns at once.
-        let mut spins = 0u32;
+        // The budget restarts once per job, so it measures idleness since the
+        // last dispatch rather than time since the worker started.
+        let since = Instant::now();
         loop {
             let now = shared.seq.load(Ordering::Acquire);
             if now != last {
                 last = now;
                 break;
             }
-            spins = spins.saturating_add(1);
-            if spins < SPIN_LIMIT {
+            for _ in 0..SPIN_BATCH {
                 std::hint::spin_loop();
-            } else {
+            }
+            // The clock is read once per batch, not once per pause.
+            if since.elapsed() >= budget {
+                // `since` is deliberately not reset here. `run` unparks before
+                // the worker breaks out of this loop, so the worker carries a
+                // permit through the job it then runs, and the first `park`
+                // after it returns immediately consuming that stale permit.
+                // Restarting the budget there would spend a second full one
+                // before the worker actually blocks. Leaving the deadline
+                // expired means the next iteration parks for real. Work that
+                // arrives in the meantime is caught by the sequence check at
+                // the top of the loop, not by the deadline.
                 thread::park();
             }
         }

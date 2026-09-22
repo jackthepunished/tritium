@@ -125,6 +125,24 @@ fn corpus() -> Vec<Case> {
         trits: vec![-1; 6912],
         x: vec![-128; 6912],
     });
+    // Zero beats at the NEON flush boundaries must not postpone widening.
+    // 45 active beats * 64 lanes * +/-128 exceeds each i16 accumulator.
+    for sign in [-1, 1] {
+        for activation in [-128, 127] {
+            let cols = 48 * LANES;
+            let mut trits = vec![sign; cols];
+            for beat in [15, 31, 47] {
+                trits[beat * LANES..(beat + 1) * LANES].fill(0);
+            }
+            cases.push(Case {
+                name: format!("zero_flush_beats_w{sign}_x{activation}"),
+                rows: 1,
+                cols,
+                trits,
+                x: vec![activation; cols],
+            });
+        }
+    }
     // Sparse: one bit set in the last beat, exercising the tail mask.
     {
         let cols = 6912;

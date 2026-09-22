@@ -11,14 +11,16 @@
 //!
 //! # Verification status
 //!
-//! **Correctness: verified on hardware.** The `ubuntu-24.04-arm` CI job runs
+//! **Correctness:** the `ubuntu-24.04-arm` CI job runs
 //! `tests/differential.rs` against each kernel this CPU supports, forced by
 //! name -- `force_kernel` errors rather than falling back, so a green run
 //! cannot mean the scalar path was silently retested. Both `neon` and
 //! `neon-dotprod` match the reference and a naive dense dot product across the
-//! whole corpus, including `widest_row_all_nonzero`: 6912 columns of `-1`
-//! weights against `-128` activations, which is the worst case for the `i16`
-//! accumulators in the baseline kernel.
+//! whole corpus on hardware. New cases with zero beats on flush boundaries
+//! exposed an i16 overflow that the all-nonzero rows missed. The corrected
+//! kernel passed them first under emulation and then on the `ubuntu-24.04-arm`
+//! runner, forced by name, against both the reference and a naive dense dot
+//! product.
 //!
 //! That job spent its whole existence failing at clippy before reaching a test,
 //! so these kernels went unexecuted for far longer than the CI matrix suggested.
@@ -91,18 +93,19 @@ pub unsafe fn matvec(beats: &[u8], rows: usize, beats_per_row: usize, xq: &[i8],
             let o = b * BEAT_BYTES;
             let pos = u64::from_le_bytes(*(row.add(o) as *const [u8; 8]));
             let neg = u64::from_le_bytes(*(row.add(o + 8) as *const [u8; 8]));
-            if pos | neg == 0 {
-                continue;
+            if pos | neg != 0 {
+                let xbase = xq.as_ptr().add(b * LANES);
+                for g in 0..4 {
+                    let x = vld1q_s8(xbase.add(g * 16));
+                    let pm = vreinterpretq_s8_u8(spread16(pos, g));
+                    let nm = vreinterpretq_s8_u8(spread16(neg, g));
+                    // Pairwise-add the masked bytes into the i16 accumulators.
+                    acc_p16 = vpadalq_s8(acc_p16, vandq_s8(x, pm));
+                    acc_n16 = vpadalq_s8(acc_n16, vandq_s8(x, nm));
+                }
             }
-            let xbase = xq.as_ptr().add(b * LANES);
-            for g in 0..4 {
-                let x = vld1q_s8(xbase.add(g * 16));
-                let pm = vreinterpretq_s8_u8(spread16(pos, g));
-                let nm = vreinterpretq_s8_u8(spread16(neg, g));
-                // Pairwise-add the masked bytes into the i16 accumulators.
-                acc_p16 = vpadalq_s8(acc_p16, vandq_s8(x, pm));
-                acc_n16 = vpadalq_s8(acc_n16, vandq_s8(x, nm));
-            }
+            // A zero beat can fall on a flush boundary. Skipping this flush
+            // would let later nonzero beats overflow the i16 accumulators.
             if (b + 1) % FLUSH == 0 {
                 acc32 = vpadalq_s16(acc32, acc_p16);
                 acc32 = vsubq_s32(acc32, vpaddlq_s16(acc_n16));

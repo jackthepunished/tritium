@@ -44,6 +44,22 @@ jobs:
       # trit-rtl is excluded: building it runs Verilator, which the rtl job owns.
       - run: cargo test --workspace --exclude trit-rtl --release
 
+      # The only performance figures this project has for aarch64. Needs no
+      # checkpoint, so it runs on both runners and the ARM row is real hardware
+      # rather than a projection.
+      - name: kernel throughput
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release -p trit-cpu --example kernelbench
+          # A pool keeps its first width: use a fresh process for each count.
+          for T in 1 2 4; do
+            target/release/examples/kernelbench --threads "$T"
+          done
+
+      - name: kernel benchmark CLI regressions
+        run: python3 benches/test_kernelbench.py target/release/examples/kernelbench
+
       - name: differential tests, once per available kernel
         shell: bash
         run: |
@@ -53,9 +69,7 @@ jobs:
           # Ask the binary which kernels this CPU can actually run, rather than
           # guessing from the runner name. force_kernel errors on an unsupported
           # kernel, so a silent fallback cannot make this pass vacuously.
-          for K in $("$BIN" --list 2>/dev/null >/dev/null; \
-                     cargo run --release -q -p trit-cpu --example kernelbench 2>/dev/null \
-                       | sed -n 's/.*kernels: \[\(.*\)\]/\1/p' | tr -d '"' | tr ',' ' '); do
+          for K in $(target/release/examples/kernelbench --list-kernels); do
             echo "== kernel $K =="
             TRIT_CPU_KERNEL="$K" "$BIN" --exact forced_kernel_matches_the_reference
           done
