@@ -16,9 +16,11 @@
 //! name -- `force_kernel` errors rather than falling back, so a green run
 //! cannot mean the scalar path was silently retested. Both `neon` and
 //! `neon-dotprod` match the reference and a naive dense dot product across the
-//! original corpus on hardware. New cases with zero beats on flush boundaries
+//! whole corpus on hardware. New cases with zero beats on flush boundaries
 //! exposed an i16 overflow that the all-nonzero rows missed. The corrected
-//! kernel passes those cases under ARM emulation; a native CI rerun is pending.
+//! kernel passed them first under emulation and then on the `ubuntu-24.04-arm`
+//! runner, forced by name, against both the reference and a naive dense dot
+//! product.
 //!
 //! That job spent its whole existence failing at clippy before reaching a test,
 //! so these kernels went unexecuted for far longer than the CI matrix suggested.

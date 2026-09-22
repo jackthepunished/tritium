@@ -240,15 +240,40 @@ on the same machine.
 Software preparation, 2026-09-22: kernelbench now measures one thread count per
 process, avoiding the global pool's silent serial fallback at later widths.
 A new sparse flush-boundary regression exposed a baseline NEON overflow; the
-fix passes the actual ARM kernels under QEMU, with native CI validation still
-pending. The fresh x86 baseline and reproduction commands are in
+fix passed under QEMU and then on the `ubuntu-24.04-arm` runner, forced by
+kernel name, against both the reference and a naive dense dot product. The fresh x86 baseline and reproduction commands are in
 [the WSL validation report](../benches/results/WSL-20260922.md). There is no
 current access to a physical target device, so the end-to-end ARM gate remains
 open; emulation timings are not ARM throughput measurements.
 
-The earlier differential corpus passed on aarch64 CI hardware, including wide
-all-nonzero rows. The newly added sparse cases extend that coverage as described
-above. No ARM timing has been published, so no ARM performance claim exists.
+**First ARM timing, 2026-09-23.** kernelbench now runs on the ARM runner, so
+the project has ARM numbers for the first time. They do not close this gate --
+the gate asks for decode tok/s on real ARM hardware, and this is a kernel
+microbenchmark on a shared, virtualized CI runner of unstated silicon. Absolute
+figures from it are soft. Single thread, 2560x6912, L3-resident:
+
+| kernel | ms | GB/s | vs scalar |
+|---|---|---|---|
+| `neon-dotprod` | 2.35 | 1.9 | 4.21x |
+| `neon` | 2.50 | 1.8 | 3.96x |
+| `scalar` | 9.88 | 0.4 | 1.00x |
+
+The ratio inside one run is the robust part, and it is unflattering. NEON with
+`dotprod` is **4.2x scalar where AVX-512 VNNI is 30.7x** on the x86 host. More
+telling, on the same runner in the same invocation the *dense* f32 path reaches
+24.7 GB/s at one thread and 41.1 at two, while the ternary streaming pass gets
+1.9 and 3.7. The ternary kernel is therefore compute-bound on ARM by roughly an
+order of magnitude, where on x86 it is bandwidth-bound. **ARM decode would be
+kernel-bound, not memory-bound**, which inverts the design assumption the whole
+roofline argument rests on.
+
+The suspect is `spread16`: NEON has no mask registers, so every 16-lane group
+pays a duplicate, a table load and a `vtstq` before the `sdot`, four times per
+beat and twice per plane. That is the shape of the work to do, and it is worth
+doing before buying an ARM board rather than after.
+
+The threading fix carries: the streaming pass scales 1.9 to 3.7 GB/s from one
+thread to two, and the pool reports the width it was asked for at 1, 2 and 4.
 
 This matters disproportionately for positioning: the edge devices this project
 targets are overwhelmingly ARM, so "verified on x86" is a weaker story than it
