@@ -245,9 +245,9 @@ fn worker(shared: Arc<Shared>, slot: usize) {
     shared.ready.fetch_add(1, Ordering::Release);
     loop {
         // `unpark` leaves a token, so parking just after a wake returns at once.
-        // The budget restarts here, so it measures idleness since the last job
-        // rather than time since the worker started.
-        let mut since = Instant::now();
+        // The budget restarts once per job, so it measures idleness since the
+        // last dispatch rather than time since the worker started.
+        let since = Instant::now();
         loop {
             let now = shared.seq.load(Ordering::Acquire);
             if now != last {
@@ -259,11 +259,16 @@ fn worker(shared: Arc<Shared>, slot: usize) {
             }
             // The clock is read once per batch, not once per pause.
             if since.elapsed() >= budget {
+                // `since` is deliberately not reset here. `run` unparks before
+                // the worker breaks out of this loop, so the worker carries a
+                // permit through the job it then runs, and the first `park`
+                // after it returns immediately consuming that stale permit.
+                // Restarting the budget there would spend a second full one
+                // before the worker actually blocks. Leaving the deadline
+                // expired means the next iteration parks for real. Work that
+                // arrives in the meantime is caught by the sequence check at
+                // the top of the loop, not by the deadline.
                 thread::park();
-                // A wake -- real or spurious -- restarts the budget, so a
-                // worker that has just been busy does not park immediately
-                // afterwards on a stale deadline.
-                since = Instant::now();
             }
         }
 

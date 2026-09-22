@@ -110,8 +110,9 @@ slower than not parallelising at all.
 The pool was **worth 1.17x** on its own, and left the curve peaking at four
 threads and declining — which this item then carried as its open remainder.
 
-**That decline is closed, 2026-09-22.** It was not the memory system and it was
-not Amdahl's law. It was the cost of waking parked workers, 210 times per token.
+**The four-to-eight decline is closed, 2026-09-22**, which moves the peak to
+eight threads; sixteen still trails eight. It was not the memory system and it
+was not Amdahl's law. It was the cost of waking parked workers, 210 times per token.
 Three measurements separated the candidates, all through
 `cargo run --release -p tritd --example decode_profile`, which times a real
 decode by wrapping the injected backend and so needs no change to the runtime:
@@ -142,10 +143,10 @@ iteration count. Interleaved A/B, one process per thread count, median of three:
 | 8  | 24.341 | **34.790** | 1.43x |
 | 16 | 20.295 | 33.337 | 1.64x |
 
-One-to-eight scaling goes from 1.35x to **1.94x**, against bitnet.cpp's 2.39x,
-and the curve now rises to its peak instead of having already turned over. The
-automatic cap stays at eight because sixteen still trails it — but it now caps
-a rising curve rather than a falling one.
+One-to-eight scaling goes from 1.35x to **1.94x**, and the curve now rises to
+its peak instead of having already turned over at four. Sixteen still trails
+eight, so the automatic cap stays at eight — but it now caps a rising curve
+rather than a falling one.
 
 The ternary path reaches 39-47 GB/s per tensor afterwards, against the 41-43
 the static probe says this access pattern can reach, so ternary and the dense
@@ -200,19 +201,22 @@ what moved Tritium ahead per core.
 
 ## Where that leaves the comparison
 
-Same host, same session, greedy, 32 tokens, median of three:
+Re-measured 2026-09-23 after the A2 dispatch fix. Same host, same session for
+all three runtimes, greedy, 32 tokens, one process per thread count:
 
-| threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S |
-|---|---|---|---|
-| 1  | **19.40** | 15.40 | 13.61 |
-| 2  | **26.73** | 22.06 | 19.10 |
-| 4  | **27.90** | 27.83 | 26.72 |
-| 8  | 25.93 | 26.18 | **32.49** |
-| 16 | 20.72 | 23.88 | **31.21** |
+| threads | tritium | llama.cpp Q4_K_M | bitnet.cpp I2_S | vs bitnet.cpp |
+|---|---|---|---|---|
+| 1  | **17.29** | 14.71 | 12.70 | 1.36x |
+| 2  | **26.41** | 22.49 | 20.43 | 1.29x |
+| 4  | **34.53** | 22.80 | 28.08 | 1.23x |
+| 8  | **34.03** | 25.64 | 31.13 | 1.09x |
+| 16 | **32.64** | 23.66 | 30.28 | 1.08x |
 
-Ahead at 1, 2 and 4 threads, and 1.43x bitnet.cpp per core on the identical
-checkpoint, having been last in that column before A2 and A3. Still behind above
-four threads, where bitnet.cpp keeps climbing and Tritium declines.
+**Ahead at every thread count** on the identical checkpoint, having been last
+in that column before A2 and A3 and having lost above four threads before the
+dispatch fix. bitnet.cpp lands within 4% of its August figures across the two
+sessions; llama.cpp's four-thread point does not, and is suspect until re-run.
+Both caveats are in [the report](../benches/results/WSL-20260923-compare.md).
 
 ## A4. Energy per token
 

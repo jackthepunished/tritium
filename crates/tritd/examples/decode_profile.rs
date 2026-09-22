@@ -14,7 +14,11 @@
 //!
 //! Dispatch and synchronization cost is measured separately by `--pool-probe`,
 //! which runs the real pool with a closure that does nothing. Multiply its
-//! per-dispatch figure by 211 to get the per-token synchronization floor.
+//! per-dispatch figure by 151 to get the per-token synchronization floor:
+//! a decode step issues 210 ternary matvecs, but `k` and `v` are 0.41 MB and
+//! fall below twice `BYTES_PER_SLOT`, so `slots_for` returns one slot and they
+//! run serial without ever reaching the pool. That leaves 5 of the 7
+//! projections in each of the 30 layers, plus the dense head: 151 dispatches.
 //!
 //! The wrapper costs two `Instant::now()` calls per matvec, about 10 us per
 //! token against a token that takes tens of milliseconds.
@@ -206,6 +210,11 @@ fn parse() -> Result<Args> {
         }
     }
     anyhow::ensure!(a.threads > 0, "--threads must be positive");
+    // Zero decoded tokens makes every per-token figure a 0/0 NaN, and the
+    // attribution assertion then fails on the NaN comparison rather than on
+    // the argument that caused it. Reject it where it can still be explained.
+    anyhow::ensure!(a.tokens > 0, "--tokens must be positive");
+    anyhow::ensure!(a.runs > 0, "--runs must be positive");
     Ok(a)
 }
 
@@ -304,7 +313,7 @@ fn bw_probe(threads: usize) {
         rng ^= rng << 17;
         rng
     };
-    for w in buf.chunks_exact_mut(16) {
+    for w in buf.as_chunks_mut::<16>().0 {
         let (a, b) = (next(), next());
         w[..8].copy_from_slice(&(a & !b).to_le_bytes());
         w[8..].copy_from_slice(&(b & !a).to_le_bytes());

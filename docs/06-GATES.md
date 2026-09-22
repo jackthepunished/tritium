@@ -190,13 +190,23 @@ Ahead at 1, 2 and 4 threads, 1.43x bitnet.cpp per core. Still behind above
 4 threads: our curve peaks and declines where bitnet.cpp keeps climbing to
 32.49. That gap is the remaining scaling work.
 
-**Superseded on our side by the A2 dispatch fix (2026-09-22).** Tritium now
-measures 33.02/34.61/32.89 tok/s at 4/8/16 threads and peaks at eight rather
-than four. The baseline columns above are **not** re-run -- llama.cpp and
-bitnet.cpp are not configured in the WSL working setup -- so the two sides of
-this table are no longer from the same session and it must not be read as a
-current head-to-head. Re-running it with both baselines installed is the
-outstanding measurement.
+**Superseded by a fresh three-way run, 2026-09-23.** All three runtimes
+re-measured on the same host in the same session after the A2 dispatch fix:
+
+| threads | tritium | llama.cpp | bitnet.cpp |
+|---|---|---|---|
+| 1  | **17.29** | 14.71 | 12.70 |
+| 2  | **26.41** | 22.49 | 20.43 |
+| 4  | **34.53** | 22.80 | 28.08 |
+| 8  | **34.03** | 25.64 | 31.13 |
+| 16 | **32.64** | 23.66 | 30.28 |
+
+Tritium leads at every thread count, 1.08-1.36x over bitnet.cpp on the
+identical checkpoint. bitnet.cpp lands within 4% of its August figures, which
+is the main reason to trust the session; llama.cpp's four-thread point is 18%
+below its August figure and below its own eight-thread number, so that single
+point is suspect until re-run. Full report:
+[../benches/results/WSL-20260923-compare.md](../benches/results/WSL-20260923-compare.md).
 
 ### Threading
 
@@ -238,7 +248,7 @@ the before/after.
 | C | RTL weight interface | `w_data[127:0]` | `w_pos`/`w_neg` | Synthesis is unchanged at 33,659 cells, still multiplier-free. |
 | A2 | Automatic thread count | one per core | one per core, max 8 | Interleaved pairs give 1.17x at 2, 1.18x at 4, 1.17x at 8 and **0.94x at 16**. One per core is the wrong automatic answer on a large machine. Explicit `--threads` is unchanged. |
 | A3 | Dense 2-D tensor storage | f32 | bf16 when the source is bf16 | The checkpoint is bf16 and `tritc` was widening it, so this restores the source precision rather than reducing it. Every value round-trips. Bytes per token 1,834,352,640 -> 1,177,681,920; G2 and G3 unchanged. Existing `.trit` files still load; the benefit needs a re-convert, and narrowing an existing file is not offered because a stored f32 does not record whether it was bf16 first. |
-| A2b | Pool spin window | 4000 `pause` iterations | 200 us deadline (`TRIT_POOL_SPIN_US`) | The old window was sized against a belief that jobs arrive ~300 us apart; a decode profile measures the gap between consecutive matvecs at ~17 us, so the window expired inside decode's own gaps and most of the 210 dispatches per token paid a futex wake. An empty dispatch at four slots costs 1-4 us with workers spinning and 50-60 us once parked. Decode at 4/8/16 threads moves 26.47/24.34/20.30 to 33.42/34.79/33.34 tok/s in interleaved pairs, the peak moves from four threads to eight, and the decline above four is gone. G1-G3 and G8 unchanged; G3 verified byte-identical at 1/2/4/8/16 threads and in all three numerics rungs. Costs CPU above four threads (+14% at eight, +43% at sixteen) and saves it at or below four; energy unmeasured. Full report: [../benches/results/WSL-20260922-A2.md](../benches/results/WSL-20260922-A2.md). |
+| A2b | Pool spin window | 4000 `pause` iterations | 200 us deadline (`TRIT_POOL_SPIN_US`) | The old window was sized against a belief that jobs arrive ~300 us apart; a decode profile measures the gap between consecutive matvecs at ~17 us, so the window expired inside decode's own gaps and most of the 210 dispatches per token paid a futex wake. An empty dispatch at four slots costs 1-4 us with workers spinning and 50-60 us once parked. Decode at 4/8/16 threads moves 26.47/24.34/20.30 to 33.42/34.79/33.34 tok/s in interleaved pairs, and the peak moves from four threads to eight. Sixteen threads still trails eight (33.34 against 34.79), so this moves the peak rather than removing every decline. G1-G3 and G8 unchanged; G3 verified byte-identical at 1/2/4/8/16 threads and in all three numerics rungs. Costs CPU above four threads (+14% at eight, +43% at sixteen) and saves it at or below four; energy unmeasured. Full report: [../benches/results/WSL-20260922-A2.md](../benches/results/WSL-20260922-A2.md). |
 | A3 | Bandwidth probe | single pass | best of five | The single-pass probe scattered 45-50 GB/s where the machine sustains ~53, so `roofline_pct` flattered every result. Reported fraction drops from ~62% to 53-57% with no runtime change. |
 
 The one change already anticipated: RoPE currently computes
