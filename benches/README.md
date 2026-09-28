@@ -126,3 +126,13 @@ Render one with:
 ```sh
 python3 benches/report.py benches/results/<host>-<date>.csv
 ```
+
+ARM kernel changes can use `.github/workflows/arm-kernel-comparison.yml` for a
+paired native comparison against the PR base. It builds both revisions before
+timing, alternates AB/BA order for four pairs at 1/2/4 threads, and uploads
+raw outputs plus CPU/compiler and binary identities. The parser's regressions
+run with `python3 benches/test_compare_arm.py`. On a native aarch64 host, use
+`python3 benches/compare_arm.py BASELINE_BINARY CANDIDATE_BINARY --out RESULTS`.
+Check cache capacity before interpreting the 113 MB pass as DRAM traffic: the
+Neoverse-N2 CI runner reports 128 MiB L3. These results measure kernels, not
+full-model decode or energy.

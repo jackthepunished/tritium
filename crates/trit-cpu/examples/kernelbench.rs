@@ -142,10 +142,10 @@ fn main() {
 
     println!();
     println!(
-        "Note: {:.1} MB of planes fits in L3, so the table above measures",
+        "Note: {:.1} MB of planes may fit in cache; check the host cache sizes.",
         bytes / 1e6
     );
-    println!("compute throughput, not memory throughput. Real decoding streams");
+    println!("This is a kernel measurement. Real decoding streams");
     println!("521 MB of weights per token from DRAM; see the streaming pass below.");
 
     println!();
@@ -234,9 +234,9 @@ fn dense_pass(threads: usize) {
     }
 }
 
-/// A working set far larger than L3, which is the regime batch-1 decoding
-/// actually runs in: every weight is touched once per token and none of it is
-/// resident. This is the number that predicts tokens/sec.
+/// A larger working set (113 MB). This only approximates weight streaming
+/// from DRAM when it exceeds the host cache; check the reported cache sizes
+/// before interpreting the implied token-rate projection.
 fn streaming_pass(threads: usize) {
     let (rows, cols) = (65536usize, 6912usize); // ~113 MB of planes
     let mut rng = Rng(0xF00D);
@@ -262,7 +262,7 @@ fn streaming_pass(threads: usize) {
 
     println!();
     println!(
-        "Streaming pass: {rows}x{cols} = {:.0} MB of planes, well past L3",
+        "Streaming pass: {rows}x{cols} = {:.0} MB of planes; cache residency depends on the host",
         bytes / 1e6
     );
     println!(
