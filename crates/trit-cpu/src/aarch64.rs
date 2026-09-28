@@ -27,8 +27,8 @@
 //! Two real defects were sitting in code the matrix claimed to cover. A job that
 //! cannot reach its assertions is not coverage.
 //!
-//! **Performance: still unmeasured.** No aarch64 timing has been taken, on CI
-//! or anywhere else. Do not quote an ARM throughput number until one has.
+//! **Performance:** native ARM CI measures kernel throughput. Full-model ARM
+//! decode and energy remain unmeasured; emulation only checks correctness.
 
 use std::arch::aarch64::*;
 use trit_core::planes::{BEAT_BYTES, LANES};
@@ -41,12 +41,14 @@ const BIT_SEL: [u8; 16] = [1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 
 #[inline]
 #[target_feature(enable = "neon")]
 unsafe fn spread16(mask: u64, group: usize) -> uint8x16_t {
-    let b0 = (mask >> (group * 16)) as u8;
-    let b1 = (mask >> (group * 16 + 8)) as u8;
-    let spread = vcombine_u8(vdup_n_u8(b0), vdup_n_u8(b1));
-    // vtstq is a bitwise AND followed by "!= 0", giving 0xFF where the bit is
-    // set -- one instruction instead of AND + CMPEQ.
-    vtstq_u8(spread, vld1q_u8(BIT_SEL.as_ptr()))
+    // Keep mask bytes in a vector register. TBL replicates the two bytes for
+    // this group without scalar shifts and two broadcasts per expansion.
+    let bytes = vreinterpretq_u8_u64(vdupq_n_u64(mask));
+    let indices = vcombine_u8(
+        vdup_n_u8((group * 2) as u8),
+        vdup_n_u8((group * 2 + 1) as u8),
+    );
+    vtstq_u8(vqtbl1q_u8(bytes, indices), vld1q_u8(BIT_SEL.as_ptr()))
 }
 
 /// Baseline NEON. 16 columns per step, four steps per beat.
@@ -189,5 +191,28 @@ pub unsafe fn matvec_dotprod(
             }
         }
         *out = vaddvq_s32(acc_p) - vaddvq_s32(acc_n);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_group_expands_all_sixteen_bit_masks() {
+        // NEON is baseline on aarch64. Other groups are deliberately nonzero
+        // so a shuffle selecting bytes from the wrong group cannot pass.
+        for group in 0..4 {
+            for bits in 0..=u16::MAX {
+                let shift = group * 16;
+                let mask =
+                    (0xa55a_3cc3_f00f_6996u64 & !(0xffffu64 << shift)) | ((bits as u64) << shift);
+                let mut lanes = [0u8; 16];
+                unsafe { vst1q_u8(lanes.as_mut_ptr(), spread16(mask, group)) };
+                for (lane, value) in lanes.iter().enumerate() {
+                    assert_eq!(*value, if bits & (1 << lane) != 0 { 255 } else { 0 });
+                }
+            }
+        }
     }
 }

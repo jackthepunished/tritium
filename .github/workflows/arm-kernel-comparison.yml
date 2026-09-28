@@ -1,0 +1,42 @@
+name: ARM kernel comparison
+on:
+  pull_request:
+    paths:
+      - 'crates/trit-cpu/src/aarch64.rs'
+      - 'benches/compare_arm.py'
+      - '.github/workflows/arm-kernel-comparison.yml'
+permissions:
+  contents: read
+jobs:
+  paired-kernels:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: baseline
+      - name: Build both versions before measuring
+        run: |
+          cargo build --manifest-path baseline/Cargo.toml --release --locked -p trit-cpu --example kernelbench
+          cargo build --manifest-path candidate/Cargo.toml --release --locked -p trit-cpu --example kernelbench
+      - name: Record environment and compare
+        run: |
+          mkdir results
+          rustc -Vv > results/rustc.txt
+          lscpu > results/lscpu.txt
+          uname -a > results/uname.txt
+          git -C baseline rev-parse HEAD > results/base.txt
+          git -C candidate rev-parse HEAD > results/candidate.txt
+          sha256sum baseline/target/release/examples/kernelbench candidate/target/release/examples/kernelbench > results/binaries.sha256
+          python3 candidate/benches/compare_arm.py baseline/target/release/examples/kernelbench candidate/target/release/examples/kernelbench --out results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arm-kernel-comparison
+          path: results/
