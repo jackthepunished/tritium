@@ -356,3 +356,20 @@ impl MatvecBackend for CpuBackend {
         f32_kernels::dense_matvec(w, rows, cols, x, y, self.threads)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{CpuBackend, DEFAULT_MAX_THREADS};
+    use trit_core::backend::MatvecBackend;
+
+    #[test]
+    fn automatic_thread_count_matches_documented_cap() {
+        let available = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(1);
+        assert_eq!(
+            CpuBackend::new(0).threads(),
+            available.min(DEFAULT_MAX_THREADS)
+        );
+    }
+}
