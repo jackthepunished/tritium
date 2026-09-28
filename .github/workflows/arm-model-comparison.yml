@@ -45,6 +45,7 @@ jobs:
           git -C bitnet rev-parse HEAD > results/bitnet.txt
           git -C bitnet submodule status --recursive > results/bitnet-submodules.txt
           python3 candidate/benches/test_compare_model.py
+          python3 candidate/benches/test_audit_bitnet_i2s.py
       - name: Build all binaries before measurement
         run: |
           cargo build --manifest-path baseline/Cargo.toml --release --locked -p tritd

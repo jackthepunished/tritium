@@ -177,6 +177,8 @@ After building and acquiring the models, reproduce the timing stage with:
 
 ```sh
 python3 benches/test_compare_model.py
+python3 benches/audit_bitnet_i2s.py \
+  --llama-source /path/to/bitnet/3rdparty/llama.cpp --out results
 python3 benches/compare_model.py \
   --baseline /path/to/baseline/target/release/tritd \
   --candidate /path/to/candidate/target/release/tritd \
@@ -185,7 +187,9 @@ python3 benches/compare_model.py \
   --gguf /path/to/ggml-model-i2_s.gguf \
   --tokenizer models/bitnet-2b4t/tokenizer.json \
   --suite benches/prompts/short.jsonl \
-  --profile target/release/examples/decode_profile --out results
+  --profile target/release/examples/decode_profile \
+  --bitnet-audit results/bitnet-i2s-validation.json \
+  --out results
 ```
 
 The harness runs four rounds at each width, with balanced runtime order and

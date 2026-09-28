@@ -27,7 +27,7 @@ CI suite and require the real checkpoint to exist before the ignored oracle test
 
 The PR's bootstrap runs used a path-filtered pull-request trigger. After native
 validation, retain the expensive checkpoint run as an explicit workflow dispatch
-and run the seven harness regressions on every PR. Documentation-only pushes do
+and run the lightweight harness regressions on every PR. Documentation-only pushes do
 not need another full-model experiment. Independent review found that
 `--pool-probe` exits before model loading; model profiles and empty dispatch
 diagnostics now use separate processes, with a regression requiring phase rows.

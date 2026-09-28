@@ -16,6 +16,13 @@ import tempfile
 from pathlib import Path
 
 
+def run_step(command, *, label, timeout):
+    try:
+        return subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(f'BitNet arithmetic audit: {label} timed out after {timeout} seconds') from error
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--llama-source', required=True, type=Path)
@@ -54,10 +61,11 @@ int main(void) {
     with tempfile.TemporaryDirectory(prefix='bitnet-i2s-audit-') as directory:
         binary = Path(directory) / 'probe'
         command = [args.cc, '-std=c11', '-O2', '-U__AVX2__', str(cfile), '-o', str(binary)]
-        build = subprocess.run(command, capture_output=True, text=True)
+        build = run_step(command, label='compiler', timeout=120)
         (args.out / 'bitnet-i2s-compile.txt').write_text(build.stdout + build.stderr)
         build.check_returncode()
-        result = subprocess.run([str(binary)], check=True, capture_output=True, text=True)
+        result = run_step([str(binary)], label='probe', timeout=10)
+        result.check_returncode()
     cases = []
     for row in result.stdout.splitlines():
         code, raw, actual, expected = map(float, row.split())
@@ -72,8 +80,9 @@ int main(void) {
                   caller_path='ggml/src/ggml-cpu/ggml-cpu.c',
                   source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                   caller_sha256=hashlib.sha256(caller.read_bytes()).hexdigest(), cases=cases)
-    report['compiler_version'] = subprocess.run([args.cc, '--version'], check=True,
-                                                capture_output=True, text=True).stdout
+    version = run_step([args.cc, '--version'], label='compiler version', timeout=10)
+    version.check_returncode()
+    report['compiler_version'] = version.stdout
     output = json.dumps(report, indent=2) + '\n'
     (args.out / 'bitnet-i2s-validation.json').write_text(output)
     print(output)
