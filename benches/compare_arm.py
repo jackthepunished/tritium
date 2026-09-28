@@ -6,6 +6,7 @@ before starting this script. Raw output and runner metadata accompany results.
 """
 import argparse
 import json
+import math
 import platform
 import statistics
 import subprocess
@@ -38,7 +39,7 @@ def parse(output):
             raise ValueError(f'Invalid measurement row: {line}') from e
     expected = {'kernel/scalar', 'kernel/neon', 'kernel/neon-dotprod',
                 'cached', 'streaming', 'dense/f32', 'dense/bf16'}
-    if set(metrics) != expected or any(v <= 0 for v in metrics.values()):
+    if set(metrics) != expected or any(not math.isfinite(v) or v <= 0 for v in metrics.values()):
         raise ValueError(f'Incomplete or invalid ARM measurements: {metrics}')
     return metrics
 

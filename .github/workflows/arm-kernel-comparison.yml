@@ -4,6 +4,7 @@ on:
     paths:
       - 'crates/trit-cpu/src/aarch64.rs'
       - 'benches/compare_arm.py'
+      - 'benches/test_compare_arm.py'
       - '.github/workflows/arm-kernel-comparison.yml'
 permissions:
   contents: read
@@ -21,6 +22,8 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event.pull_request.base.sha }}
           path: baseline
+      - name: Validate comparison parser
+        run: python3 candidate/benches/test_compare_arm.py
       - name: Build both versions before measuring
         run: |
           cargo build --manifest-path baseline/Cargo.toml --release --locked -p trit-cpu --example kernelbench
