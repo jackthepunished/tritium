@@ -1,0 +1,30 @@
+{
+  "description": "A2 pool spin-budget change: dispatch-cost diagnosis and interleaved before/after. Not an ARM or energy measurement.",
+  "source_base": "6ea2939223d0b4abe98df23a0c8af319929a6474",
+  "branch": "a5-arm-throughput",
+  "system": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "cpu": "AMD Ryzen 9 8945HX with Radeon Graphics (16 cores / 32 threads)",
+  "rustc": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "change": "crates/trit-cpu/src/pool.rs: worker spin window is a 200us deadline (TRIT_POOL_SPIN_US) instead of 4000 pause iterations",
+  "files_sha256": {
+    "crates/trit-cpu/src/pool.rs": "4b521cb183ce1f1a85cb0490221e780edd7b374b6f73718038cce7a6f5ca361e",
+    "crates/trit-cpu/src/lib.rs": "c6f644015055350f44fa18882891332c26ad6a07bdc9174c2d5d402977fd6a82",
+    "crates/tritd/examples/decode_profile.rs": "9bee486d7183072cc50f9217c1f286b7988488d9f7cd512cc2f9f806fdcef9f0",
+    "benches/prompts/short.jsonl": "539b1771020e8441ecdf785629d7194c9f81e5aae3f7dfe673563cafaa6a22cb",
+    "Cargo.lock": "e62134395520a08aaef685364917303cea6b27df839d6209c54fcb05104957b7"
+  },
+  "threads": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "tokens_per_prompt": 32,
+  "suite": "benches/prompts/short.jsonl",
+  "method": "interleaved A/B, alternating binaries in one session, one process per thread count, median of 3 (6 at one thread)",
+  "energy": "unavailable; no exposed RAPL counter",
+  "arm": "none; no ARM hardware and no ARM timing",
+  "baselines": "llama.cpp and bitnet.cpp not configured in this setup; CSV records them unavailable",
+  "model_sha256": "d245c5b58159cf1dad8116b7fa5b1144b2298c9954bea03eae74bc505b93060d"
+}

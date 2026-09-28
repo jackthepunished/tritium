@@ -1,0 +1,16 @@
+host,date,runtime,runtime_version,model,quant,bits_per_weight,suite,threads,kernel,backend,decode_tok_per_s,ttft_ms,weight_bytes_per_token,achieved_gbps,memcpy_gbps,roofline_pct,peak_rss_mb,joules_per_token,energy_source,status,note
+DESKTOP-HV2MQTM,2026-09-22T12:56:25Z,tritium,0.1.0,models/bitnet-2b4t.trit,ternary-1.58,2.0,benches/prompts/short.jsonl,1,avx512vnni,cpu/avx512vnnix1,15.796,427.2,1177681920,18.6,44.12851142331982,42.15451517236992,1221,,none,ok,
+DESKTOP-HV2MQTM,2026-09-22T12:56:25Z,llama.cpp,,,Q4_K_M,4.5,llama-bench:tg32-empty-context,1,,,,,,,,,,,none,unavailable,no llama-bench on PATH; set LLAMA_CPP_BIN to a llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:56:25Z,bitnet.cpp,,,I2_S,2.0,llama-bench:tg32-empty-context,1,,,,,,,,,,,none,unavailable,set BITNET_CPP_BIN to bitnet.cpp's llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:57:02Z,tritium,0.1.0,models/bitnet-2b4t.trit,ternary-1.58,2.0,benches/prompts/short.jsonl,2,avx512vnni,cpu/avx512vnnix2,23.987,260.3,1177681920,28.25,46.97463232418295,60.136461900830184,1221,,none,ok,
+DESKTOP-HV2MQTM,2026-09-22T12:57:02Z,llama.cpp,,,Q4_K_M,4.5,llama-bench:tg32-empty-context,2,,,,,,,,,,,none,unavailable,no llama-bench on PATH; set LLAMA_CPP_BIN to a llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:57:02Z,bitnet.cpp,,,I2_S,2.0,llama-bench:tg32-empty-context,2,,,,,,,,,,,none,unavailable,set BITNET_CPP_BIN to bitnet.cpp's llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:57:27Z,tritium,0.1.0,models/bitnet-2b4t.trit,ternary-1.58,2.0,benches/prompts/short.jsonl,4,avx512vnni,cpu/avx512vnnix4,25.423,257.2,1177681920,29.94,51.78343378552009,57.817826788664284,1221,,none,ok,
+DESKTOP-HV2MQTM,2026-09-22T12:57:27Z,llama.cpp,,,Q4_K_M,4.5,llama-bench:tg32-empty-context,4,,,,,,,,,,,none,unavailable,no llama-bench on PATH; set LLAMA_CPP_BIN to a llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:57:27Z,bitnet.cpp,,,I2_S,2.0,llama-bench:tg32-empty-context,4,,,,,,,,,,,none,unavailable,set BITNET_CPP_BIN to bitnet.cpp's llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:57:49Z,tritium,0.1.0,models/bitnet-2b4t.trit,ternary-1.58,2.0,benches/prompts/short.jsonl,8,avx512vnni,cpu/avx512vnnix8,24.427,273.1,1177681920,28.77,53.38924859884165,53.88174276033059,1220,,none,ok,
+DESKTOP-HV2MQTM,2026-09-22T12:57:49Z,llama.cpp,,,Q4_K_M,4.5,llama-bench:tg32-empty-context,8,,,,,,,,,,,none,unavailable,no llama-bench on PATH; set LLAMA_CPP_BIN to a llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:57:49Z,bitnet.cpp,,,I2_S,2.0,llama-bench:tg32-empty-context,8,,,,,,,,,,,none,unavailable,set BITNET_CPP_BIN to bitnet.cpp's llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:58:13Z,tritium,0.1.0,models/bitnet-2b4t.trit,ternary-1.58,2.0,benches/prompts/short.jsonl,16,avx512vnni,cpu/avx512vnnix16,20.094,331.2,1177681920,23.66,51.27483088847029,46.15228545313574,1218,,none,ok,
+DESKTOP-HV2MQTM,2026-09-22T12:58:13Z,llama.cpp,,,Q4_K_M,4.5,llama-bench:tg32-empty-context,16,,,,,,,,,,,none,unavailable,no llama-bench on PATH; set LLAMA_CPP_BIN to a llama-bench binary
+DESKTOP-HV2MQTM,2026-09-22T12:58:13Z,bitnet.cpp,,,I2_S,2.0,llama-bench:tg32-empty-context,16,,,,,,,,,,,none,unavailable,set BITNET_CPP_BIN to bitnet.cpp's llama-bench binary

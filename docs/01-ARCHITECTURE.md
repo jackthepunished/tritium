@@ -324,10 +324,21 @@ remained slower than not parallelising at all. Only a persistent pool on a
 sequence counter beat serial execution, at 2.9x on the layer path.
 
 `crates/trit-cpu/src/pool.rs` is that pool: workers spawned once, waiting on a
-counter, with no allocation and no scheduler involvement per job. They spin
-briefly and then park, because jobs arrive roughly every 300 us and spinning
-through that gap wastes a core per worker, which the four-core parts this
-runtime targets cannot afford.
+counter, with no scheduler involvement per job. They spin and then park.
+
+**How long they spin turned out to be the largest single lever on scaling.**
+The window was 4000 `pause` instructions, sized against a belief that jobs
+arrive roughly every 300 us. An instrumented decode measured the serial scalar
+work between consecutive matvecs at about 17 us, so the window expired inside
+almost every gap and most of the 210 dispatches per token paid a futex wake:
+an empty dispatch at four slots costs 1-4 us with workers spinning and 50-60 us
+once they have parked. Replacing the iteration count with a 200 us deadline
+moved decode from 26.5/24.3/20.3 to 33.4/34.8/33.3 tok/s at 4/8/16 threads.
+
+Spinning still is not free, and the trade reverses with width: at one, two and
+four threads the change costs the same or less CPU per token than it saves in
+futex traffic, and above four it buys latency with CPU. Energy per token is
+unmeasured and is not inferable from either.
 
 Two properties are load-bearing and both are tested:
 
@@ -343,8 +354,16 @@ The automatic thread count caps at eight: sixteen measures 0.94x against the
 previous implementation, so one per core is the wrong answer to "decide for me"
 on a large machine.
 
-What remains is that the curve peaks at four threads and declines, where
-bitnet.cpp keeps climbing to eight. That is the open gap.
+The curve now rises to a peak at eight threads instead of turning over at four,
+and one-to-eight scaling is 1.94x against 1.35x before. Two defects the
+diagnosis exposed are still open: sixteen slots cost 218 us per empty dispatch
+even with workers hot -- the shared task mutex, the shared completion counter
+and a serial `unpark` loop -- and the `k`/`v` projections are small enough that
+`slots_for` never splits them, so they run serial at 12-14 GB/s while every
+other tensor reaches 42-47. Neither would raise the peak: a fork-once static
+partitioning of the same work shows the memory system saturating near 43 GB/s
+at four threads and holding there to thirty-two, so there is no bandwidth left
+above four threads to win back.
 
 ## 8. The silicon track
 

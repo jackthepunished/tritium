@@ -1,0 +1,33 @@
+{
+  "description": "Three-way decode comparison after the A2 dispatch fix; all three runtimes, same host, same session",
+  "branch": "a5-arm-throughput",
+  "system": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "cpu": "AMD Ryzen 9 8945HX with Radeon Graphics (16 cores / 32 threads)",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "llama_cpp": {
+    "commit": "eab8ee4",
+    "built": "2026-08-25",
+    "model": "qwen2.5-3b-instruct-q4_k_m.gguf",
+    "quant": "Q4_K_M",
+    "note": "different model and quality point"
+  },
+  "bitnet_cpp": {
+    "commit": "0b341e5",
+    "built": "2026-08-25",
+    "model": "bitnet-2b4t-i2_s.gguf",
+    "quant": "I2_S",
+    "note": "identical checkpoint to tritium"
+  },
+  "tokens": 32,
+  "runs": 3,
+  "threads": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "suite": "benches/prompts/short.jsonl (tritium); llama-bench tg32 empty context (baselines)",
+  "energy": "unavailable; no exposed RAPL counter",
+  "caveat": "llama.cpp 4-thread point is 18 percent below its August figure and below its own 8-thread figure; treat as suspect until re-run"
+}

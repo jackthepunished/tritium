@@ -1,0 +1,125 @@
+requested threads: 1, pool threads: 1
+tensor 2560x6912, 4.4 MB of planes, kernels: ["avx512vnni", "avx512bw", "avx2", "scalar"]
+
+kernel                 ms       GB/s    vs scalar
+scalar               8.14        0.5        1.00x
+avx512vnni           0.27       16.7       30.64x
+avx512bw             0.35       12.5       22.98x
+avx2                 0.62        7.2       13.21x
+
+Note: 4.4 MB of planes fits in L3, so the table above measures
+compute throughput, not memory throughput. Real decoding streams
+521 MB of weights per token from DRAM; see the streaming pass below.
+
+threads                ms       GB/s
+1                    0.27       16.6
+
+Streaming pass: 65536x6912 = 113 MB of planes, well past L3
+threads                ms       GB/s     implied tok/s*
+1                    7.31       15.5              13.2
+*at this bandwidth against the full 1178 MB/token, ternary + dense.
+
+Dense pass: 16384x2560, 168 MB f32 against 84 MB bf16
+precision         threads         ms       GB/s
+f32                     1       4.65       36.0
+bf16                    1       3.10       27.1
+requested threads: 2, pool threads: 2
+tensor 2560x6912, 4.4 MB of planes, kernels: ["avx512vnni", "avx512bw", "avx2", "scalar"]
+
+kernel                 ms       GB/s    vs scalar
+scalar               8.34        0.5        1.00x
+avx512vnni           0.27       16.6       31.20x
+avx512bw             0.38       11.8       22.19x
+avx2                 0.63        7.1       13.30x
+
+Note: 4.4 MB of planes fits in L3, so the table above measures
+compute throughput, not memory throughput. Real decoding streams
+521 MB of weights per token from DRAM; see the streaming pass below.
+
+threads                ms       GB/s
+2                    0.19       22.8
+
+Streaming pass: 65536x6912 = 113 MB of planes, well past L3
+threads                ms       GB/s     implied tok/s*
+2                    3.63       31.2              26.5
+*at this bandwidth against the full 1178 MB/token, ternary + dense.
+
+Dense pass: 16384x2560, 168 MB f32 against 84 MB bf16
+precision         threads         ms       GB/s
+f32                     2       3.75       44.7
+bf16                    2       1.86       45.1
+requested threads: 4, pool threads: 4
+tensor 2560x6912, 4.4 MB of planes, kernels: ["avx512vnni", "avx512bw", "avx2", "scalar"]
+
+kernel                 ms       GB/s    vs scalar
+scalar               8.19        0.5        1.00x
+avx512vnni           0.26       17.0       31.43x
+avx512bw             0.36       12.2       22.51x
+avx2                 0.62        7.2       13.31x
+
+Note: 4.4 MB of planes fits in L3, so the table above measures
+compute throughput, not memory throughput. Real decoding streams
+521 MB of weights per token from DRAM; see the streaming pass below.
+
+threads                ms       GB/s
+4                    0.13       35.2
+
+Streaming pass: 65536x6912 = 113 MB of planes, well past L3
+threads                ms       GB/s     implied tok/s*
+4                    2.45       46.2              39.2
+*at this bandwidth against the full 1178 MB/token, ternary + dense.
+
+Dense pass: 16384x2560, 168 MB f32 against 84 MB bf16
+precision         threads         ms       GB/s
+f32                     4       3.13       53.6
+bf16                    4       1.35       62.2
+requested threads: 8, pool threads: 8
+tensor 2560x6912, 4.4 MB of planes, kernels: ["avx512vnni", "avx512bw", "avx2", "scalar"]
+
+kernel                 ms       GB/s    vs scalar
+scalar               8.43        0.5        1.00x
+avx512vnni           0.27       16.4       31.30x
+avx512bw             0.42       10.5       20.08x
+avx2                 0.69        6.4       12.23x
+
+Note: 4.4 MB of planes fits in L3, so the table above measures
+compute throughput, not memory throughput. Real decoding streams
+521 MB of weights per token from DRAM; see the streaming pass below.
+
+threads                ms       GB/s
+8                    0.18       24.9
+
+Streaming pass: 65536x6912 = 113 MB of planes, well past L3
+threads                ms       GB/s     implied tok/s*
+8                    2.20       51.5              43.7
+*at this bandwidth against the full 1178 MB/token, ternary + dense.
+
+Dense pass: 16384x2560, 168 MB f32 against 84 MB bf16
+precision         threads         ms       GB/s
+f32                     8       3.08       54.4
+bf16                    8       1.14       73.6
+requested threads: 16, pool threads: 16
+tensor 2560x6912, 4.4 MB of planes, kernels: ["avx512vnni", "avx512bw", "avx2", "scalar"]
+
+kernel                 ms       GB/s    vs scalar
+scalar               8.04        0.5        1.00x
+avx512vnni           0.26       16.7       30.46x
+avx512bw             0.35       12.6       22.97x
+avx2                 0.61        7.3       13.28x
+
+Note: 4.4 MB of planes fits in L3, so the table above measures
+compute throughput, not memory throughput. Real decoding streams
+521 MB of weights per token from DRAM; see the streaming pass below.
+
+threads                ms       GB/s
+16                   0.25       17.4
+
+Streaming pass: 65536x6912 = 113 MB of planes, well past L3
+threads                ms       GB/s     implied tok/s*
+16                   2.46       46.0              39.0
+*at this bandwidth against the full 1178 MB/token, ternary + dense.
+
+Dense pass: 16384x2560, 168 MB f32 against 84 MB bf16
+precision         threads         ms       GB/s
+f32                    16       3.11       53.9
+bf16                   16       1.17       71.9
