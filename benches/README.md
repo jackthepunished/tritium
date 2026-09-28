@@ -8,7 +8,7 @@ baseline adapters, and the committed raw data.
 
 ## What is measured
 
-`benches/run.sh --model models/bitnet-2b4t.trit` always produces:
+`bash benches/run.sh --model models/bitnet-2b4t.trit` always produces:
 
 - **decode tok/s** and **TTFT**, best of N runs after a warmup
 - **bytes/token**, exact from the format rather than estimated

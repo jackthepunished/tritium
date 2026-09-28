@@ -59,7 +59,7 @@ export LLAMA_GGUF=/path/to/qwen2.5-3b-instruct-q4_k_m.gguf
 export BITNET_CPP_BIN=/path/to/bitnet.cpp/build/bin/llama-bench
 export BITNET_GGUF=/path/to/ggml-model-i2_s.gguf
 for T in 1 2 4 8 16; do
-    benches/run.sh --model models/bitnet-2b4t.trit --tokens 32 --threads "$T"
+    bash benches/run.sh --model models/bitnet-2b4t.trit --tokens 32 --threads "$T"
 done
 ```
 
@@ -114,7 +114,7 @@ than carried across. Detail in
 
 ```sh
 # 1. fetch the checkpoint (~5 GB)
-./scripts/fetch_model.sh
+bash scripts/fetch_model.sh
 
 # 2. convert to .trit v1, verifying the result
 cargo run --release -p tritc -- convert \
