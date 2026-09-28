@@ -367,6 +367,9 @@ mod tests {
         let available = std::thread::available_parallelism()
             .map(|n| n.get())
             .unwrap_or(1);
-        assert_eq!(CpuBackend::new(0).threads(), available.min(DEFAULT_MAX_THREADS));
+        assert_eq!(
+            CpuBackend::new(0).threads(),
+            available.min(DEFAULT_MAX_THREADS)
+        );
     }
 }
