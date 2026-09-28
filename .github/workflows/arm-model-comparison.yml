@@ -1,12 +1,8 @@
 name: ARM full-model comparison
 on:
+  # Full checkpoints and four paired rounds are deliberately opt-in. Lightweight
+  # harness regressions remain in ci.yml for every PR.
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/arm-model-comparison.yml'
-      - 'benches/compare_model.py'
-      - 'benches/test_compare_model.py'
-      - 'benches/patches/bitnet-arm-src1-cont.patch'
 permissions:
   contents: read
 defaults:
@@ -67,6 +63,9 @@ jobs:
           cmake --build bitnet/build --target llama-bench -j 4
           cp bitnet/build/CMakeCache.txt results/bitnet-CMakeCache.txt
           sha256sum candidate/target/release/tritc bitnet/build/bin/*.so* > results/build-dependencies.sha256
+      - name: Audit pinned BitNet I2_S source branch (diagnostic baseline)
+        run: |
+          python3 candidate/benches/audit_bitnet_i2s.py --llama-source bitnet/3rdparty/llama.cpp --out results --cc clang
       - name: Acquire pinned public checkpoints and verify SHA256
         run: |
           mkdir -p candidate/models/bitnet-2b4t
@@ -99,7 +98,7 @@ jobs:
           expected = {(mode, str(pos)) for mode in ('Reference', 'Folded', 'IntMlp') for pos in range(8)}
           assert len(positions) == 24 and set(positions) == expected, 'Real checkpoint oracle did not exercise all 24 positions'
           PY
-      - name: Parity, interleaved full-model comparison and phase profiles
+      - name: Parity, paired Tritium timing, optional BitNet diagnostics and profiles
         run: |
           python3 candidate/benches/compare_model.py \
             --baseline baseline/target/release/tritd \
@@ -110,6 +109,7 @@ jobs:
             --tokenizer candidate/models/bitnet-2b4t/tokenizer.json \
             --suite candidate/benches/prompts/short.jsonl \
             --profile candidate/target/release/examples/decode_profile \
+            --bitnet-audit results/bitnet-i2s-validation.json \
             --out results
       - uses: actions/upload-artifact@v4
         if: always()

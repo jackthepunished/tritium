@@ -161,3 +161,24 @@ peak. Details, method and limitations in
 
 The assessment's point 4 still stands unaddressed: TTFT is still a minimum
 rather than a median, and `prefill_tok_per_s` is still hardcoded to zero.
+
+## Follow-up: native ARM full-model evidence — 28 September 2026
+
+The real BitNet 2B4T checkpoint now passes the independent oracle on hosted
+Neoverse-N2 ARM: 24 mode-position checks, cosine >0.999999 and matching top-1.
+The merged mask shuffle improves decode from 3.203/6.054/10.910 to
+4.152/7.827/14.040 tok/s at 1/2/4 threads in the confirmation experiment,
+consistent with an independent initial run. Full 32-token greedy continuations
+match before/after across four prompts and all measured widths. RSS is 1,222 MiB.
+
+Ternary projections still take about 82% of decode. The next bounded experiment
+is an ARM-specific work-per-slot threshold: K/V stays serial and costs 9.71
+ms/token at four threads (13.5% of total). No new runtime optimization is made
+by this measurement work. The attempted pinned bitnet.cpp ARM I2_S comparator
+fails a reproduced arithmetic check, so its raw rates are excluded from
+competitive claims. A valid ARM competitor comparison remains outstanding.
+
+[Report and raw evidence](benches/results/ARM-20260928-full-model.md). These are
+native hosted CPU results, not QEMU performance, target-device qualification or
+energy measurements. Physical target hardware remains unavailable. TTFT and
+prefill reporting limitations above are unchanged and explicitly labelled.

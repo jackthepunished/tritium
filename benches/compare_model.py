@@ -4,7 +4,9 @@
 No builds/downloads run during measurement. Tritium uses short.jsonl, greedy,
 32 tokens, one warmup and one measured pass (median of four prompt rates).
 bitnet.cpp uses empty-context tg32, three repeats (mean). Cross-runtime ratios
-are contextual comparisons, not identical-workload speedups. Every raw JSON,
+are diagnostics, not quality-validated comparisons or identical-workload speedups.
+The pinned ARM I2_S fallback fails the separate source-branch arithmetic audit.
+Every raw JSON,
 stdout/stderr and command is retained; paired speedups only compare Tritium.
 """
 import argparse
@@ -105,12 +107,19 @@ def collect_profiles(binary, model, threads, out):
     run([binary, '--threads', threads, '--pool-probe'], out / f'pool-t{threads}')
 
 
-def summarize(samples):
+def summarize(samples, include_bitnet=True):
+    variants = ORDERS[0] if include_bitnet else ('baseline', 'candidate')
+    expected = {(t, r, v) for t in (1, 2, 4) for r in range(1, 5) for v in variants}
+    observed = [(s['threads'], s['repeat'], s['variant']) for s in samples]
+    if len(observed) != len(expected) or set(observed) != expected:
+        raise ValueError('Incomplete, duplicate or unexpected measurement set')
     summary = []
     for threads in (1, 2, 4):
         selected = [s for s in samples if s['threads'] == threads]
         medians = {v: statistics.median(s['tok_s'] for s in selected if s['variant'] == v)
-                   for v in ORDERS[0]}
+                   for v in variants}
+        if not include_bitnet:
+            medians['bitnet'] = None
         paired = []
         for repeat in range(1, 5):
             pair = {s['variant']: s for s in selected if s['repeat'] == repeat}
@@ -128,14 +137,22 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     for name in ('baseline', 'candidate', 'bitnet', 'model', 'gguf', 'tokenizer', 'suite', 'profile', 'out'):
         p.add_argument('--' + name, required=True, type=Path)
+    p.add_argument('--bitnet-audit', type=Path, help='Source-branch audit JSON; never a full-model quality gate')
     a = p.parse_args()
     if platform.machine() != 'aarch64':
         p.error('ARM report requires a native aarch64 host; no emulation timings')
     for name, value in vars(a).items():
-        setattr(a, name, value.resolve())
+        if isinstance(value, Path):
+            setattr(a, name, value.resolve())
     prepare_output(a.out)
+    audit = json.loads(a.bitnet_audit.read_text()) if a.bitnet_audit else None
+    if audit is not None and (not isinstance(audit, dict) or audit.get('status') not in ('passed', 'failed')):
+        raise ValueError('Invalid BitNet arithmetic audit status')
+    include_bitnet = audit is None or audit['status'] != 'failed'
+    if not include_bitnet:
+        print('bitnet: excluded from timing because its arithmetic audit failed', flush=True)
     identities = {name: dict(path=str(path), sha256=sha256(path))
-                  for name, path in vars(a).items() if name != 'out'}
+                  for name, path in vars(a).items() if name != 'out' and isinstance(path, Path)}
     (a.out / 'identities.json').write_text(json.dumps(identities, indent=2) + '\n')
     prompts = [json.loads(line)['text'] for line in a.suite.read_text().splitlines() if line.strip()]
     if len(prompts) != 4:
@@ -156,6 +173,8 @@ def main():
     for threads in (1, 2, 4):
         for repeat, order in enumerate(ORDERS, 1):
             for variant in order:
+                if variant == 'bitnet' and not include_bitnet:
+                    continue
                 stem = a.out / f't{threads}-r{repeat}-{variant}'
                 prewarm(a.gguf if variant == 'bitnet' else a.model)
                 if variant == 'bitnet':
@@ -173,7 +192,10 @@ def main():
                 samples.append(sample)
                 (a.out / 'samples.json').write_text(json.dumps(samples, indent=2) + '\n')
                 print(stem.name, metrics, flush=True)
-    result = dict(samples=samples, summary=summarize(samples))
+    result = dict(samples=samples, summary=summarize(samples, include_bitnet),
+                  cross_runtime_quality_validated=False,
+                  bitnet_status='unvalidated_diagnostic' if include_bitnet else 'excluded_arithmetic_failure',
+                  bitnet_arithmetic_audit=audit)
     (a.out / 'comparison.json').write_text(json.dumps(result, indent=2) + '\n')
     # Profile separately: phase wrappers add overhead, empty jobs are diagnostic
     # probes, not a directly subtractable estimate of decode synchronization.

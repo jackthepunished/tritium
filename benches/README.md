@@ -144,7 +144,11 @@ full-model decode or energy.
 `.github/workflows/arm-model-comparison.yml` runs the real BitNet b1.58 2B4T
 checkpoint on `ubuntu-24.04-arm`. It downloads pinned public bf16 and I2_S
 checkpoints, verifies their SHA256 hashes, converts the bf16 weights to `.trit`,
-and builds every binary before measurement. The baseline is explicitly pinned
+and builds every binary before measurement. It is manually dispatched because
+it downloads several gigabytes and runs thousands of decode steps; the small
+Python harness regressions run in ordinary PR CI. Once the workflow is on the
+default branch, start it with `gh workflow run arm-model-comparison.yml --ref BRANCH`.
+The baseline is explicitly pinned
 to `902fc8a` (before the NEON mask shuffle); it is not the current PR base.
 The candidate is the workflow checkout. bitnet.cpp and its submodules are pinned.
 The workflow applies `patches/bitnet-arm-src1-cont.patch`: upstream declares
@@ -152,6 +156,17 @@ The workflow applies `patches/bitnet-arm-src1-cont.patch`: upstream declares
 the default ARM build. This moves that declaration outside the guard without
 changing the expression or math. The comparison is labelled **bitnet.cpp +
 build fix**, and the applied diff is retained in the results.
+
+**The pinned ARM I2_S baseline is diagnostic only.** Its non-AVX2 dot fallback
+already produces signed ternary sums, but its caller subtracts the activation
+sum again. A uniform +1-weight/+1-activation 64-element dot produces 0 instead
+of 64. `audit_bitnet_i2s.py` reproduces this source-branch failure; the workflow
+retains its JSON without blocking Tritium's independent correctness/measurement
+gates. The workflow passes `--bitnet-audit results/bitnet-i2s-validation.json` to
+the harness, which skips a failed comparator and records an explicit excluded
+status and null rate. A passing spot check would not establish full-model quality either.
+Do not use this baseline's rate for a competitive speed claim. An independently
+validated I2_S revision or ARM TL1 baseline remains future comparison work.
 
 The independent oracle must execute all 24 positions across Reference, Folded
 and IntMlp, with cosine >0.999999 and matching top-1. A missing model fails the
@@ -175,6 +190,9 @@ python3 benches/compare_model.py \
 
 The harness runs four rounds at each width, with balanced runtime order and
 fresh processes. Every model is read into page cache before each invocation.
+Omitting BitNet after a failed audit preserves balanced before/after Tritium
+order. The bootstrap measurements retained all three runtimes' raw timings;
+their subsequently discovered BitNet numerical failure is labelled in the report.
 Tritium measures four short prompts, greedy, up to 32 tokens each, one warmup
 and one measured pass; its invocation rate is the median of four prompt rates.
 bitnet.cpp measures empty-context tg32, three repeats, reporting their mean.

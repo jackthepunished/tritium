@@ -235,7 +235,7 @@ make.
 **Gate:** J/token from a real counter, next to a baseline measured the same way
 on the same machine.
 
-## A5. ARM throughput
+## A5. ARM throughput — native hosted decode validated
 
 Software preparation, 2026-09-22: kernelbench now measures one thread count per
 process, avoiding the global pool's silent serial fallback at later widths.
@@ -243,8 +243,8 @@ A new sparse flush-boundary regression exposed a baseline NEON overflow; the
 fix passed under QEMU and then on the `ubuntu-24.04-arm` runner, forced by
 kernel name, against both the reference and a naive dense dot product. The fresh x86 baseline and reproduction commands are in
 [the WSL validation report](../benches/results/WSL-20260922.md). There is no
-current access to a physical target device, so the end-to-end ARM gate remains
-open; emulation timings are not ARM throughput measurements.
+current access to a physical target device. At that checkpoint the end-to-end
+ARM gate remained open; emulation timings are not ARM throughput measurements.
 
 **First ARM timing, 2026-09-23.** kernelbench now runs on the ARM runner, so
 the project has ARM numbers for the first time. They do not close this gate --
@@ -272,19 +272,54 @@ Neoverse-N2 runs measure 2.35 to 1.74 ms for NEON dot-product (**1.351x**) and
 2.50 to 1.89 ms for baseline NEON (**1.323x**). Scalar is unchanged. The larger
 tensor improves 1.356x at one thread and 1.352x at two; four-thread samples are
 noisy. See [the report](../benches/results/ARM-20260928-mask-shuffle.md) for raw
-pairs, CPU/compiler identities and cache caveats. These are kernel improvements;
-the full-model ARM gate below remains open.
+pairs, CPU/compiler identities and cache caveats. Those kernel improvements
+alone did not close the full-model gate.
 
-The threading fix carries: the streaming pass scales 1.9 to 3.7 GB/s from one
-thread to two, and the pool reports the width it was asked for at 1, 2 and 4.
+**Full-model validation, 2026-09-28.** Native Neoverse-N2 CI now runs the real
+BitNet 2B4T checkpoint. Two independent paired experiments confirm the mask
+shuffle's end-to-end gain. The confirmation run, with `neon-dotprod`:
+
+| threads | before tok/s | after tok/s | paired speedup |
+|---|---:|---:|---:|
+| 1 | 3.203 | 4.152 | 1.296x |
+| 2 | 6.054 | 7.827 | 1.292x |
+| 4 | 10.910 | 14.040 | 1.285x |
+
+The independent oracle passes all 24 mode-position checks with cosine
+>0.999999 and matching top-1. Before/after greedy text matches for all four
+prompts at 1/2/4 threads through the 32-token benchmark limit. RSS is 1,222 MiB;
+the ARM-converted `.trit` hash matches the x86 asset. Historical Ryzen/WSL
+figures at 1/2/4 threads are 17.947/28.618/33.417 tok/s; different hosts and
+dates prevent a paired cross-architecture speedup claim. Full method, raw
+samples, identities and limitations are in [the report](../benches/results/ARM-20260928-full-model.md).
+
+The attempted pinned bitnet.cpp I2_S comparison is **excluded**: its selected
+ARM scalar fallback and caller apply incompatible activation-sum conventions.
+A reproduced arithmetic check fails. Raw rates are diagnostic only, not evidence
+of a competitive speedup. A validated I2_S revision or ARM TL1 comparison remains
+open; this finding does not invalidate earlier x86 AVX2-path measurements.
+
+**Next experiment:** lower the ARM work-per-slot threshold, initially through
+`TRIT_BYTES_PER_SLOT=131072`, with paired measurements and the same numerical
+gates. Ternary projections consume 81.7% of four-thread profiled decode; K/V
+alone costs 9.71 ms/token (13.5% of total) because its 0.41 MB calls stay serial
+under the 256 KiB threshold. The dense head already has NEON and takes 13.8%.
+No threshold change or further runtime optimization is implemented by this
+measurement milestone.
+
+Earlier kernel measurements already showed the threading fix carrying to ARM:
+the larger-tensor pass scaled 1.9 to 3.7 GB/s from one thread to two, and the
+pool reported the requested width at 1, 2 and 4.
 
 This matters disproportionately for positioning: the edge devices this project
 targets are overwhelmingly ARM, so "verified on x86" is a weaker story than it
 looks. It sits below A2 only because the scaling defect would travel to ARM
 unchanged, and measuring it twice would be wasted work.
 
-**Gate:** decode tok/s on real ARM hardware, published next to the x86 figures,
-with the kernel named.
+**Gate met for native hosted ARM:** decode tok/s published next to historical
+x86 figures, with the kernel named. This is a virtualized CI host, not a target
+edge device. Device-specific throughput, physical accelerator work and energy
+measurements remain open.
 
 ## A6. KV cache precision and context
 

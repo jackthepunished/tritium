@@ -91,6 +91,13 @@ class Measurements(unittest.TestCase):
                                         tok_s=rate, decoded_tokens=128, prompt_tokens=36,
                                         kernel='neon-dotprod'))
         self.assertEqual(summarize(samples)[0]['median_paired_speedup'], 1.5)
+        # A known-invalid comparator is explicitly absent, never silently zero.
+        trit_only = [s for s in samples if s['variant'] != 'bitnet']
+        self.assertIsNone(summarize(trit_only, include_bitnet=False)[0]['median_tok_s']['bitnet'])
+        self.assertEqual(summarize(trit_only, include_bitnet=False)[0]['median_paired_speedup'], 1.5)
+        for incomplete in (samples[:-1], samples + [samples[0]], trit_only):
+            with self.assertRaises(ValueError):
+                summarize(incomplete)
         samples[0]['decoded_tokens'] = 127
         with self.assertRaises(ValueError):
             summarize(samples)
