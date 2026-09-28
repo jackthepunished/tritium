@@ -6,6 +6,7 @@ on:
       - '.github/workflows/arm-model-comparison.yml'
       - 'benches/compare_model.py'
       - 'benches/test_compare_model.py'
+      - 'benches/patches/bitnet-arm-src1-cont.patch'
 permissions:
   contents: read
 defaults:
@@ -54,6 +55,10 @@ jobs:
           cargo build --manifest-path candidate/Cargo.toml --release --locked -p tritd -p tritc
           cargo build --manifest-path candidate/Cargo.toml --release --locked -p tritd --example decode_profile
           cargo test --manifest-path candidate/Cargo.toml --release --locked -p tritsim --test cross_implementation --no-run
+          # Upstream uses src1_cont outside its GGML_USE_LLAMAFILE guard.
+          # Only move the declaration; retain the exact patch in the evidence.
+          git -C bitnet/3rdparty/llama.cpp apply "$GITHUB_WORKSPACE/candidate/benches/patches/bitnet-arm-src1-cont.patch"
+          git -C bitnet/3rdparty/llama.cpp diff > results/bitnet-build-fix.patch
           cmake -S bitnet -B bitnet/build -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
             -DBITNET_ARM_TL1=OFF -DBITNET_X86_TL2=OFF -DGGML_NATIVE=ON \
@@ -61,6 +66,7 @@ jobs:
             -DLLAMA_BUILD_TOOLS=ON -DLLAMA_BUILD_COMMON=ON
           cmake --build bitnet/build --target llama-bench -j 4
           cp bitnet/build/CMakeCache.txt results/bitnet-CMakeCache.txt
+          sha256sum candidate/target/release/tritc bitnet/build/bin/*.so* > results/build-dependencies.sha256
       - name: Acquire pinned public checkpoints and verify SHA256
         run: |
           mkdir -p candidate/models/bitnet-2b4t
