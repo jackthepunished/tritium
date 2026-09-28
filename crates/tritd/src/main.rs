@@ -32,7 +32,7 @@ struct ModelArgs {
     /// Compute backend. `rtl` needs a build with --features rtl.
     #[arg(long, default_value = "cpu")]
     backend: String,
-    /// Worker threads; 0 means one per core.
+    /// Worker threads; 0 means one per core, capped at 8.
     #[arg(long, default_value_t = 0)]
     threads: usize,
     /// Pin a CPU kernel instead of auto-detecting. Errors if unsupported.
