@@ -40,6 +40,11 @@ jobs:
           # actions/checkout leaves its token in .git/config by default, where
           # any build script or test could read it. Nothing here needs it.
           persist-credentials: false
+      - name: benchmark harness regressions
+        run: |
+          python3 benches/test_compare_arm.py
+          python3 benches/test_compare_model.py
+          python3 benches/test_audit_bitnet_i2s.py
       - run: cargo clippy --workspace --exclude trit-rtl --all-targets -- -D warnings
       # trit-rtl is excluded: building it runs Verilator, which the rtl job owns.
       - run: cargo test --workspace --exclude trit-rtl --release

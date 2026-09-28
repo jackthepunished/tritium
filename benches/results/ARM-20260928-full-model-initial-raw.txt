@@ -1,0 +1,1587 @@
+===== conversion.txt =====
+model.layers.0.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.388 err=0.6997
+model.layers.0.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.389 err=0.6622
+model.layers.0.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.385 err=0.6415
+model.layers.0.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.458 err=0.7305
+model.layers.0.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.478 err=0.7155
+model.layers.0.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.508 err=0.7643
+model.layers.0.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.417 err=0.8561
+model.layers.1.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.591 err=0.8348
+model.layers.1.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.599 err=0.7850
+model.layers.1.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.600 err=0.7876
+model.layers.1.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.420 err=0.7561
+model.layers.1.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.446 err=0.8841
+model.layers.1.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.438 err=0.7380
+model.layers.1.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.406 err=0.7471
+model.layers.10.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.423 err=0.7086
+model.layers.10.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.428 err=0.7039
+model.layers.10.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.385 err=0.6862
+model.layers.10.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.523 err=0.7795
+model.layers.10.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.373 err=0.7311
+model.layers.10.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.509 err=0.8106
+model.layers.10.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.418 err=0.6962
+model.layers.11.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.385 err=0.7119
+model.layers.11.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.417 err=0.7085
+model.layers.11.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.398 err=0.6888
+model.layers.11.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.470 err=0.7774
+model.layers.11.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.356 err=0.7183
+model.layers.11.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.506 err=0.7974
+model.layers.11.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.398 err=0.6787
+model.layers.12.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.421 err=0.7113
+model.layers.12.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.430 err=0.7132
+model.layers.12.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.407 err=0.6908
+model.layers.12.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.511 err=0.7619
+model.layers.12.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.412 err=0.7184
+model.layers.12.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.468 err=0.7916
+model.layers.12.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.408 err=0.7423
+model.layers.13.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.414 err=0.7088
+model.layers.13.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.426 err=0.7167
+model.layers.13.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.378 err=0.6938
+model.layers.13.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.468 err=0.7321
+model.layers.13.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.428 err=0.6958
+model.layers.13.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.454 err=0.7528
+model.layers.13.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.414 err=0.6983
+model.layers.14.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.440 err=0.7014
+model.layers.14.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.438 err=0.7148
+model.layers.14.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.409 err=0.6924
+model.layers.14.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.540 err=0.7712
+model.layers.14.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.386 err=0.7247
+model.layers.14.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.500 err=0.8063
+model.layers.14.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.336 err=0.6691
+model.layers.15.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.423 err=0.6924
+model.layers.15.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.441 err=0.7120
+model.layers.15.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.417 err=0.6916
+model.layers.15.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.378 err=0.7462
+model.layers.15.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.352 err=0.6913
+model.layers.15.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.446 err=0.7576
+model.layers.15.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.299 err=0.6756
+model.layers.16.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.435 err=0.6917
+model.layers.16.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.393 err=0.7103
+model.layers.16.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.410 err=0.6911
+model.layers.16.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.443 err=0.7519
+model.layers.16.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.426 err=0.6937
+model.layers.16.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.460 err=0.7801
+model.layers.16.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.325 err=0.6980
+model.layers.17.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.379 err=0.6888
+model.layers.17.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.438 err=0.7124
+model.layers.17.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.398 err=0.6937
+model.layers.17.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.535 err=0.7728
+model.layers.17.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.342 err=0.6794
+model.layers.17.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.475 err=0.8020
+model.layers.17.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.449 err=0.6598
+model.layers.18.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.408 err=0.6860
+model.layers.18.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.413 err=0.7109
+model.layers.18.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.382 err=0.6956
+model.layers.18.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.447 err=0.7555
+model.layers.18.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.443 err=0.7158
+model.layers.18.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.458 err=0.7948
+model.layers.18.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.303 err=0.6406
+model.layers.19.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.418 err=0.6872
+model.layers.19.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.393 err=0.7082
+model.layers.19.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.440 err=0.6953
+model.layers.19.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.412 err=0.7316
+model.layers.19.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.350 err=0.7002
+model.layers.19.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.435 err=0.7552
+model.layers.19.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.349 err=0.6684
+model.layers.2.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.505 err=0.7955
+model.layers.2.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.516 err=0.7394
+model.layers.2.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.518 err=0.7390
+model.layers.2.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.382 err=0.7383
+model.layers.2.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.427 err=0.8502
+model.layers.2.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.423 err=0.7123
+model.layers.2.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.383 err=0.6461
+model.layers.20.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.430 err=0.6825
+model.layers.20.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.414 err=0.7064
+model.layers.20.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.432 err=0.6955
+model.layers.20.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.538 err=0.7608
+model.layers.20.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.425 err=0.7172
+model.layers.20.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.485 err=0.8078
+model.layers.20.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.391 err=0.6977
+model.layers.21.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.379 err=0.6780
+model.layers.21.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.406 err=0.7018
+model.layers.21.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.385 err=0.6907
+model.layers.21.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.438 err=0.7664
+model.layers.21.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.434 err=0.7183
+model.layers.21.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.483 err=0.7953
+model.layers.21.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.392 err=0.6867
+model.layers.22.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.418 err=0.6736
+model.layers.22.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.423 err=0.6983
+model.layers.22.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.393 err=0.6850
+model.layers.22.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.467 err=0.7464
+model.layers.22.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.434 err=0.7373
+model.layers.22.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.461 err=0.7868
+model.layers.22.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.328 err=0.6476
+model.layers.23.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.411 err=0.6720
+model.layers.23.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.381 err=0.6995
+model.layers.23.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.394 err=0.6866
+model.layers.23.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.479 err=0.7593
+model.layers.23.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.387 err=0.7202
+model.layers.23.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.484 err=0.7994
+model.layers.23.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.384 err=0.6605
+model.layers.24.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.390 err=0.6708
+model.layers.24.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.408 err=0.7019
+model.layers.24.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.411 err=0.6888
+model.layers.24.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.479 err=0.7733
+model.layers.24.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.417 err=0.7100
+model.layers.24.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.490 err=0.8020
+model.layers.24.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.417 err=0.6974
+model.layers.25.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.401 err=0.6697
+model.layers.25.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.382 err=0.7009
+model.layers.25.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.402 err=0.6870
+model.layers.25.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.406 err=0.7451
+model.layers.25.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.428 err=0.7540
+model.layers.25.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.446 err=0.7627
+model.layers.25.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.351 err=0.6694
+model.layers.26.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.366 err=0.6709
+model.layers.26.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.385 err=0.7006
+model.layers.26.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.425 err=0.6862
+model.layers.26.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.418 err=0.7545
+model.layers.26.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.442 err=0.7776
+model.layers.26.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.459 err=0.7787
+model.layers.26.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.365 err=0.6736
+model.layers.27.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.368 err=0.6756
+model.layers.27.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.436 err=0.7022
+model.layers.27.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.430 err=0.6860
+model.layers.27.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.459 err=0.7389
+model.layers.27.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.417 err=0.7798
+model.layers.27.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.466 err=0.7703
+model.layers.27.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.333 err=0.6476
+model.layers.28.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.404 err=0.6823
+model.layers.28.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.396 err=0.7011
+model.layers.28.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.422 err=0.6836
+model.layers.28.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.421 err=0.7044
+model.layers.28.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.437 err=0.8618
+model.layers.28.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.422 err=0.7307
+model.layers.28.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.387 err=0.6545
+model.layers.29.mlp.down_proj.weight                         trit [2560, 6912] zeros=0.408 err=0.7140
+model.layers.29.mlp.gate_proj.weight                         trit [6912, 2560] zeros=0.438 err=0.6970
+model.layers.29.mlp.up_proj.weight                           trit [6912, 2560] zeros=0.397 err=0.6810
+model.layers.29.self_attn.k_proj.weight                      trit [640, 2560] zeros=0.401 err=0.6884
+model.layers.29.self_attn.o_proj.weight                      trit [2560, 2560] zeros=0.545 err=0.9328
+model.layers.29.self_attn.q_proj.weight                      trit [2560, 2560] zeros=0.424 err=0.7086
+model.layers.29.self_attn.v_proj.weight                      trit [640, 2560] zeros=0.445 err=0.6960
+model.layers.3.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.462 err=0.7606
+model.layers.3.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.443 err=0.7058
+model.layers.3.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.455 err=0.7065
+model.layers.3.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.406 err=0.7620
+model.layers.3.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.423 err=0.8388
+model.layers.3.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.444 err=0.7293
+model.layers.3.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.384 err=0.6490
+model.layers.4.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.419 err=0.7319
+model.layers.4.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.421 err=0.6955
+model.layers.4.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.429 err=0.6916
+model.layers.4.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.433 err=0.7455
+model.layers.4.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.412 err=0.8062
+model.layers.4.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.445 err=0.7529
+model.layers.4.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.375 err=0.6616
+model.layers.5.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.430 err=0.7311
+model.layers.5.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.405 err=0.6903
+model.layers.5.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.409 err=0.6843
+model.layers.5.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.466 err=0.7645
+model.layers.5.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.438 err=0.8143
+model.layers.5.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.452 err=0.7822
+model.layers.5.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.393 err=0.6230
+model.layers.6.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.376 err=0.7214
+model.layers.6.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.416 err=0.6899
+model.layers.6.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.418 err=0.6834
+model.layers.6.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.420 err=0.7704
+model.layers.6.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.389 err=0.7860
+model.layers.6.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.486 err=0.7902
+model.layers.6.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.344 err=0.6963
+model.layers.7.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.377 err=0.7138
+model.layers.7.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.396 err=0.6945
+model.layers.7.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.395 err=0.6853
+model.layers.7.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.425 err=0.7634
+model.layers.7.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.401 err=0.7900
+model.layers.7.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.459 err=0.7717
+model.layers.7.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.351 err=0.6480
+model.layers.8.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.377 err=0.7094
+model.layers.8.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.398 err=0.6971
+model.layers.8.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.395 err=0.6839
+model.layers.8.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.461 err=0.7892
+model.layers.8.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.391 err=0.7932
+model.layers.8.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.481 err=0.8170
+model.layers.8.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.344 err=0.6434
+model.layers.9.mlp.down_proj.weight                          trit [2560, 6912] zeros=0.375 err=0.7099
+model.layers.9.mlp.gate_proj.weight                          trit [6912, 2560] zeros=0.420 err=0.7028
+model.layers.9.mlp.up_proj.weight                            trit [6912, 2560] zeros=0.388 err=0.6862
+model.layers.9.self_attn.k_proj.weight                       trit [640, 2560] zeros=0.467 err=0.7304
+model.layers.9.self_attn.o_proj.weight                       trit [2560, 2560] zeros=0.438 err=0.7577
+model.layers.9.self_attn.q_proj.weight                       trit [2560, 2560] zeros=0.435 err=0.7561
+model.layers.9.self_attn.v_proj.weight                       trit [640, 2560] zeros=0.348 err=0.6554
+converted 332 tensors (210 ternary), mean zero frac 0.423, mean recon err 0.7244
+verified: 332 tensors, 210 ternary, 2084044800 trits, zero fraction 0.4219, hash ok
+
+
+===== model-info.txt =====
+model           candidate/models/bitnet-2b4t.trit
+backend         cpu/neon-dotprodx4
+cpu kernel      neon-dotprod
+compiled        cpu
+kernels here    neon-dotprod, neon, scalar
+layers          30
+hidden / ff     2560 / 6912
+heads / kv      20 / 5
+vocab           128256
+context         2048
+numerics        IntMlp
+tied embeddings true
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head)
+
+
+===== oracle.txt =====
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.05s
+     Running tests/cross_implementation.rs (candidate/target/release/deps/cross_implementation-e266a9ca152af75d)
+
+running 1 test
+threads=4 kernel=neon-dotprod
+Reference pos 0: cosine 1.000000 top1 sim=279 core=279 margin=0.0578
+Reference pos 1: cosine 1.000000 top1 sim=4320 core=4320 margin=1.6386
+Reference pos 2: cosine 1.000000 top1 sim=315 core=315 margin=1.9202
+Reference pos 3: cosine 1.000000 top1 sim=279 core=279 margin=0.6913
+Reference pos 4: cosine 1.000000 top1 sim=374 core=374 margin=1.9041
+Reference pos 5: cosine 1.000000 top1 sim=12366 core=12366 margin=4.2196
+Reference pos 6: cosine 1.000000 top1 sim=13 core=13 margin=0.4665
+Reference pos 7: cosine 1.000000 top1 sim=12366 core=12366 margin=1.7772
+Folded pos 0: cosine 1.000000 top1 sim=279 core=279 margin=0.0578
+test real_checkpoint_paths_agree has been running for over 60 seconds
+Folded pos 1: cosine 1.000000 top1 sim=4320 core=4320 margin=1.6807
+Folded pos 2: cosine 1.000000 top1 sim=315 core=315 margin=1.9055
+Folded pos 3: cosine 1.000000 top1 sim=279 core=279 margin=0.6949
+Folded pos 4: cosine 1.000000 top1 sim=374 core=374 margin=1.8786
+Folded pos 5: cosine 1.000000 top1 sim=12366 core=12366 margin=4.1949
+Folded pos 6: cosine 1.000000 top1 sim=13 core=13 margin=0.4874
+Folded pos 7: cosine 1.000000 top1 sim=12366 core=12366 margin=1.7708
+IntMlp pos 0: cosine 1.000000 top1 sim=279 core=279 margin=0.0578
+IntMlp pos 1: cosine 1.000000 top1 sim=4320 core=4320 margin=1.6386
+IntMlp pos 2: cosine 1.000000 top1 sim=315 core=315 margin=1.9202
+IntMlp pos 3: cosine 1.000000 top1 sim=279 core=279 margin=0.6913
+IntMlp pos 4: cosine 1.000000 top1 sim=374 core=374 margin=1.9041
+IntMlp pos 5: cosine 1.000000 top1 sim=12366 core=12366 margin=4.1866
+IntMlp pos 6: cosine 1.000000 top1 sim=13 core=13 margin=0.4810
+IntMlp pos 7: cosine 1.000000 top1 sim=12366 core=12366 margin=1.2344
+test real_checkpoint_paths_agree ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 148.72s
+
+
+
+===== parity-t1-p0-baseline.stderr.txt =====
+prefill 6 tok in 1.87s (3.2 tok/s) | decode 16 tok in 5.00s (3.2 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p0-baseline.stdout.txt =====
+ Paris. Paris is a city in the north of France, and it is the
+
+
+===== parity-t1-p0-candidate.stderr.txt =====
+prefill 6 tok in 1.45s (4.1 tok/s) | decode 16 tok in 3.87s (4.1 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p0-candidate.stdout.txt =====
+ Paris. Paris is a city in the north of France, and it is the
+
+
+===== parity-t1-p1-baseline.stderr.txt =====
+prefill 6 tok in 1.87s (3.2 tok/s) | decode 16 tok in 4.99s (3.2 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p1-baseline.stdout.txt =====
+ to mix flour, water, and yeast. The yeast is a living organism that
+
+
+===== parity-t1-p1-candidate.stderr.txt =====
+prefill 6 tok in 1.45s (4.1 tok/s) | decode 16 tok in 3.86s (4.1 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p1-candidate.stdout.txt =====
+ to mix flour, water, and yeast. The yeast is a living organism that
+
+
+===== parity-t1-p2-baseline.stderr.txt =====
+prefill 12 tok in 3.74s (3.2 tok/s) | decode 16 tok in 5.00s (3.2 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p2-baseline.stdout.txt =====
+ }
+
+}
+```
+
+This function `fibonacci` takes an integer `n`
+
+
+===== parity-t1-p2-candidate.stderr.txt =====
+prefill 12 tok in 2.89s (4.1 tok/s) | decode 16 tok in 3.87s (4.1 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p2-candidate.stdout.txt =====
+ }
+
+}
+```
+
+This function `fibonacci` takes an integer `n`
+
+
+===== parity-t1-p3-baseline.stderr.txt =====
+prefill 11 tok in 3.43s (3.2 tok/s) | decode 16 tok in 5.00s (3.2 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p3-baseline.stdout.txt =====
+ The sky appears blue because of a phenomenon called Rayleigh scattering. This occurs when
+
+
+===== parity-t1-p3-candidate.stderr.txt =====
+prefill 11 tok in 2.65s (4.2 tok/s) | decode 16 tok in 3.87s (4.1 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx1 | kernel neon-dotprod
+
+
+===== parity-t1-p3-candidate.stdout.txt =====
+ The sky appears blue because of a phenomenon called Rayleigh scattering. This occurs when
+
+
+===== parity-t2-p0-baseline.stderr.txt =====
+prefill 6 tok in 0.99s (6.1 tok/s) | decode 16 tok in 2.64s (6.1 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p0-baseline.stdout.txt =====
+ Paris. Paris is a city in the north of France, and it is the
+
+
+===== parity-t2-p0-candidate.stderr.txt =====
+prefill 6 tok in 0.76s (7.9 tok/s) | decode 16 tok in 2.05s (7.8 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p0-candidate.stdout.txt =====
+ Paris. Paris is a city in the north of France, and it is the
+
+
+===== parity-t2-p1-baseline.stderr.txt =====
+prefill 6 tok in 0.99s (6.1 tok/s) | decode 16 tok in 2.64s (6.1 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p1-baseline.stdout.txt =====
+ to mix flour, water, and yeast. The yeast is a living organism that
+
+
+===== parity-t2-p1-candidate.stderr.txt =====
+prefill 6 tok in 0.76s (7.9 tok/s) | decode 16 tok in 2.04s (7.8 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p1-candidate.stdout.txt =====
+ to mix flour, water, and yeast. The yeast is a living organism that
+
+
+===== parity-t2-p2-baseline.stderr.txt =====
+prefill 12 tok in 1.97s (6.1 tok/s) | decode 16 tok in 2.66s (6.0 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p2-baseline.stdout.txt =====
+ }
+
+}
+```
+
+This function `fibonacci` takes an integer `n`
+
+
+===== parity-t2-p2-candidate.stderr.txt =====
+prefill 12 tok in 1.54s (7.8 tok/s) | decode 16 tok in 2.06s (7.8 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p2-candidate.stdout.txt =====
+ }
+
+}
+```
+
+This function `fibonacci` takes an integer `n`
+
+
+===== parity-t2-p3-baseline.stderr.txt =====
+prefill 11 tok in 1.81s (6.1 tok/s) | decode 16 tok in 2.65s (6.0 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p3-baseline.stdout.txt =====
+ The sky appears blue because of a phenomenon called Rayleigh scattering. This occurs when
+
+
+===== parity-t2-p3-candidate.stderr.txt =====
+prefill 11 tok in 1.40s (7.9 tok/s) | decode 16 tok in 2.05s (7.8 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx2 | kernel neon-dotprod
+
+
+===== parity-t2-p3-candidate.stdout.txt =====
+ The sky appears blue because of a phenomenon called Rayleigh scattering. This occurs when
+
+
+===== parity-t4-p0-baseline.stderr.txt =====
+prefill 6 tok in 0.54s (11.1 tok/s) | decode 16 tok in 1.46s (11.0 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p0-baseline.stdout.txt =====
+ Paris. Paris is a city in the north of France, and it is the
+
+
+===== parity-t4-p0-candidate.stderr.txt =====
+prefill 6 tok in 0.42s (14.3 tok/s) | decode 16 tok in 1.13s (14.1 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p0-candidate.stdout.txt =====
+ Paris. Paris is a city in the north of France, and it is the
+
+
+===== parity-t4-p1-baseline.stderr.txt =====
+prefill 6 tok in 0.54s (11.0 tok/s) | decode 16 tok in 1.46s (10.9 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p1-baseline.stdout.txt =====
+ to mix flour, water, and yeast. The yeast is a living organism that
+
+
+===== parity-t4-p1-candidate.stderr.txt =====
+prefill 6 tok in 0.43s (13.9 tok/s) | decode 16 tok in 1.15s (13.9 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p1-candidate.stdout.txt =====
+ to mix flour, water, and yeast. The yeast is a living organism that
+
+
+===== parity-t4-p2-baseline.stderr.txt =====
+prefill 12 tok in 1.09s (11.0 tok/s) | decode 16 tok in 1.47s (10.9 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p2-baseline.stdout.txt =====
+ }
+
+}
+```
+
+This function `fibonacci` takes an integer `n`
+
+
+===== parity-t4-p2-candidate.stderr.txt =====
+prefill 12 tok in 0.84s (14.3 tok/s) | decode 16 tok in 1.14s (14.0 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p2-candidate.stdout.txt =====
+ }
+
+}
+```
+
+This function `fibonacci` takes an integer `n`
+
+
+===== parity-t4-p3-baseline.stderr.txt =====
+prefill 11 tok in 1.00s (11.0 tok/s) | decode 16 tok in 1.47s (10.9 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p3-baseline.stdout.txt =====
+ The sky appears blue because of a phenomenon called Rayleigh scattering. This occurs when
+
+
+===== parity-t4-p3-candidate.stderr.txt =====
+prefill 11 tok in 0.79s (13.9 tok/s) | decode 16 tok in 1.14s (14.0 tok/s) | 1178 MB/token | backend cpu/neon-dotprodx4 | kernel neon-dotprod
+
+
+===== parity-t4-p3-candidate.stdout.txt =====
+ The sky appears blue because of a phenomenon called Rayleigh scattering. This occurs when
+
+
+===== profile-t1.stderr.txt =====
+
+
+===== profile-t1.stdout.txt =====
+
+Pool dispatch probe: empty job, 1 pool threads
+(single thread: no dispatch happens)
+
+
+===== profile-t2.stderr.txt =====
+
+
+===== profile-t2.stdout.txt =====
+
+Pool dispatch probe: empty job, 2 pool threads
+slots        gap 0us     gap 2us     gap 5us    gap 10us    gap 20us    gap 50us   gap 100us      (us per dispatch)
+2               2.58        0.58        2.40        2.26        1.78        2.72        2.71
+
+
+===== profile-t4.stderr.txt =====
+
+
+===== profile-t4.stdout.txt =====
+
+Pool dispatch probe: empty job, 4 pool threads
+slots        gap 0us     gap 2us     gap 5us    gap 10us    gap 20us    gap 50us   gap 100us      (us per dispatch)
+2               2.59        0.81        2.45        2.32        1.72        2.66        2.83
+3               2.64        2.38        2.53        2.29        1.86        2.71        3.62
+4               2.65        2.31        2.46        2.24        2.20        2.72        2.74
+
+
+===== t1-r1-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r1-baseline.json
+
+
+===== t1-r1-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            2182.8 ms
+decode          3.18 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        3.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t1-r1-bitnet.stderr.txt =====
+
+
+===== t1-r1-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 1,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:01:52Z",
+    "avg_ns": 46536061727,
+    "stddev_ns": 1684786,
+    "avg_ts": 0.687639,
+    "stddev_ts": 0.000025,
+    "samples_ns": [ 46535728441, 46534568492, 46537888248 ],
+    "samples_ts": [ 0.687644, 0.687661, 0.687612 ]
+  }
+]
+
+
+===== t1-r1-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r1-candidate.json
+
+
+===== t1-r1-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1689.0 ms
+decode          4.12 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        4.9 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t1-r2-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r2-baseline.json
+
+
+===== t1-r2-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            2185.5 ms
+decode          3.18 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        3.7 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t1-r2-bitnet.stderr.txt =====
+
+
+===== t1-r2-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 1,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:04:14Z",
+    "avg_ns": 46518864401,
+    "stddev_ns": 9023582,
+    "avg_ts": 0.687893,
+    "stddev_ts": 0.000133,
+    "samples_ns": [ 46517608654, 46510534464, 46528450085 ],
+    "samples_ts": [ 0.687912, 0.688016, 0.687751 ]
+  }
+]
+
+
+===== t1-r2-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r2-candidate.json
+
+
+===== t1-r2-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1692.8 ms
+decode          4.11 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        4.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t1-r3-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r3-baseline.json
+
+
+===== t1-r3-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            2186.7 ms
+decode          3.18 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        3.7 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t1-r3-bitnet.stderr.txt =====
+
+
+===== t1-r3-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 1,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:10:36Z",
+    "avg_ns": 46524876649,
+    "stddev_ns": 9522404,
+    "avg_ts": 0.687804,
+    "stddev_ts": 0.000141,
+    "samples_ns": [ 46524810917, 46515389724, 46534429307 ],
+    "samples_ts": [ 0.687805, 0.687944, 0.687663 ]
+  }
+]
+
+
+===== t1-r3-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r3-candidate.json
+
+
+===== t1-r3-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1692.5 ms
+decode          4.11 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        4.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t1-r4-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r4-baseline.json
+
+
+===== t1-r4-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            2185.8 ms
+decode          3.18 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        3.7 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t1-r4-bitnet.stderr.txt =====
+
+
+===== t1-r4-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 1,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:12:57Z",
+    "avg_ns": 46529765270,
+    "stddev_ns": 8849294,
+    "avg_ts": 0.687732,
+    "stddev_ts": 0.000131,
+    "samples_ns": [ 46519632988, 46533727064, 46535935760 ],
+    "samples_ts": [ 0.687882, 0.687673, 0.687641 ]
+  }
+]
+
+
+===== t1-r4-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t1-r4-candidate.json
+
+
+===== t1-r4-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx1 (1 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1694.3 ms
+decode          4.10 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        4.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r1-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r1-baseline.json
+
+
+===== t2-r1-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1152.3 ms
+decode          6.03 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        7.1 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r1-bitnet.stderr.txt =====
+
+
+===== t2-r1-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 2,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:18:23Z",
+    "avg_ns": 23365466420,
+    "stddev_ns": 7082806,
+    "avg_ts": 1.369543,
+    "stddev_ts": 0.000415,
+    "samples_ns": [ 23373174724, 23359245268, 23363979268 ],
+    "samples_ts": [ 1.36909, 1.36991, 1.36963 ]
+  }
+]
+
+
+===== t2-r1-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r1-candidate.json
+
+
+===== t2-r1-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            888.8 ms
+decode          7.77 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        9.1 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r2-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r2-baseline.json
+
+
+===== t2-r2-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1148.5 ms
+decode          6.03 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        7.1 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r2-bitnet.stderr.txt =====
+
+
+===== t2-r2-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 2,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:19:34Z",
+    "avg_ns": 23346221325,
+    "stddev_ns": 1877524,
+    "avg_ts": 1.370671,
+    "stddev_ts": 0.000110,
+    "samples_ns": [ 23344660531, 23348304810, 23345698634 ],
+    "samples_ts": [ 1.37076, 1.37055, 1.3707 ]
+  }
+]
+
+
+===== t2-r2-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r2-candidate.json
+
+
+===== t2-r2-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            888.6 ms
+decode          7.78 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        9.2 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r3-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r3-baseline.json
+
+
+===== t2-r3-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1149.2 ms
+decode          6.03 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        7.1 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r3-bitnet.stderr.txt =====
+
+
+===== t2-r3-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 2,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:22:53Z",
+    "avg_ns": 23339948548,
+    "stddev_ns": 743767,
+    "avg_ts": 1.371040,
+    "stddev_ts": 0.000043,
+    "samples_ns": [ 23339309084, 23339795878, 23340740683 ],
+    "samples_ts": [ 1.37108, 1.37105, 1.37099 ]
+  }
+]
+
+
+===== t2-r3-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r3-candidate.json
+
+
+===== t2-r3-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            888.7 ms
+decode          7.76 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        9.1 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r4-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r4-baseline.json
+
+
+===== t2-r4-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            1148.1 ms
+decode          6.05 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        7.1 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t2-r4-bitnet.stderr.txt =====
+
+
+===== t2-r4-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 2,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:24:04Z",
+    "avg_ns": 23348390203,
+    "stddev_ns": 6556069,
+    "avg_ts": 1.370544,
+    "stddev_ts": 0.000385,
+    "samples_ns": [ 23355807788, 23343371209, 23345991612 ],
+    "samples_ts": [ 1.37011, 1.37084, 1.37068 ]
+  }
+]
+
+
+===== t2-r4-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t2-r4-candidate.json
+
+
+===== t2-r4-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx2 (2 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            889.5 ms
+decode          7.77 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        9.1 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r1-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r1-baseline.json
+
+
+===== t4-r1-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            631.4 ms
+decode          10.86 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        12.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r1-bitnet.stderr.txt =====
+
+
+===== t4-r1-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 4,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:26:55Z",
+    "avg_ns": 11865894785,
+    "stddev_ns": 12164368,
+    "avg_ts": 2.696807,
+    "stddev_ts": 0.002766,
+    "samples_ns": [ 11852167785, 11875336842, 11870179728 ],
+    "samples_ts": [ 2.69993, 2.69466, 2.69583 ]
+  }
+]
+
+
+===== t4-r1-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r1-candidate.json
+
+
+===== t4-r1-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            489.4 ms
+decode          13.96 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        16.4 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r2-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r2-baseline.json
+
+
+===== t4-r2-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            630.5 ms
+decode          10.86 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        12.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r2-bitnet.stderr.txt =====
+
+
+===== t4-r2-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 4,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:27:32Z",
+    "avg_ns": 11853621254,
+    "stddev_ns": 7889377,
+    "avg_ts": 2.699598,
+    "stddev_ts": 0.001797,
+    "samples_ns": [ 11844886704, 11860229736, 11855747322 ],
+    "samples_ts": [ 2.70159, 2.69809, 2.69911 ]
+  }
+]
+
+
+===== t4-r2-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r2-candidate.json
+
+
+===== t4-r2-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            489.7 ms
+decode          13.95 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        16.4 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r3-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r3-baseline.json
+
+
+===== t4-r3-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            630.6 ms
+decode          10.85 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        12.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r3-bitnet.stderr.txt =====
+
+
+===== t4-r3-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 4,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:29:20Z",
+    "avg_ns": 11885422805,
+    "stddev_ns": 1888346,
+    "avg_ts": 2.692374,
+    "stddev_ts": 0.000426,
+    "samples_ns": [ 11883249612, 11886511060, 11886507745 ],
+    "samples_ts": [ 2.69287, 2.69213, 2.69213 ]
+  }
+]
+
+
+===== t4-r3-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r3-candidate.json
+
+
+===== t4-r3-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            489.9 ms
+decode          13.86 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        16.3 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r4-baseline.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r4-baseline.json
+
+
+===== t4-r4-baseline.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            638.7 ms
+decode          10.85 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        12.8 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
+
+
+===== t4-r4-bitnet.stderr.txt =====
+
+
+===== t4-r4-bitnet.stdout.txt =====
+[
+  {
+    "build_commit": "390c307",
+    "build_number": 1,
+    "cpu_info": "CPU",
+    "gpu_info": "",
+    "backends": "CPU",
+    "model_filename": "/home/runner/work/tritium/tritium/candidate/models/bitnet-2b4t-i2_s.gguf",
+    "model_type": "bitnet-b1.58 2B Q1_0",
+    "model_size": 1179449920,
+    "model_n_params": 2412820480,
+    "n_batch": 2048,
+    "n_ubatch": 512,
+    "n_threads": 4,
+    "cpu_mask": "0x0",
+    "cpu_strict": false,
+    "poll": 50,
+    "type_k": "f16",
+    "type_v": "f16",
+    "n_gpu_layers": 0,
+    "n_cpu_moe": 0,
+    "split_mode": "layer",
+    "main_gpu": 0,
+    "no_kv_offload": false,
+    "flash_attn": -1,
+    "devices": "auto",
+    "tensor_split": "0.00",
+    "tensor_buft_overrides": "none",
+    "use_mmap": true,
+    "use_direct_io": false,
+    "embeddings": false,
+    "no_op_offload": 0,
+    "no_host": false,
+    "fit_target": 0,
+    "fit_min_ctx": 0,
+    "n_prompt": 0,
+    "n_gen": 32,
+    "n_depth": 0,
+    "test_time": "2026-09-28T19:29:56Z",
+    "avg_ns": 11887852718,
+    "stddev_ns": 34863423,
+    "avg_ts": 2.691839,
+    "stddev_ts": 0.007882,
+    "samples_ns": [ 11863286288, 11872516841, 11927755026 ],
+    "samples_ts": [ 2.6974, 2.6953, 2.68282 ]
+  }
+]
+
+
+===== t4-r4-candidate.stderr.txt =====
+wrote /home/runner/work/tritium/tritium/results/t4-r4-candidate.json
+
+
+===== t4-r4-candidate.stdout.txt =====
+backend         cpu/neon-dotprodx4 (4 threads)
+cpu kernel      neon-dotprod
+prompt          35 tokens
+decoded         128 tokens
+ttft            489.8 ms
+decode          13.94 tok/s
+bytes/token     1177681920 (521 MB ternary + 657 MB lm_head), kv 315 MB
+achieved        16.4 GB/s
+roofline        not measured
+peak rss        1222 MB
+energy          unavailable (no counter on this host)
