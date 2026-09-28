@@ -36,7 +36,26 @@ If the Must targets fail, the write-up says so and explains why — a credible n
 
 ## 4. Profiler output (the dev-tools seed)
 
-`tritd --profile` emits per-token JSON: per-layer cycles, DMA stall %, achieved GB/s, lane utilization, energy integral. This is the embryo of the standalone inference-profiler tool — same format targeted at CPU/GPU runtimes later. Design the schema once, here.
+There is no `tritd --profile` runtime option. The current diagnostic profiler is
+the [`decode_profile` example](../crates/tritd/examples/decode_profile.rs):
+
+```sh
+cargo run --release -p tritd --example decode_profile -- \
+    --model models/bitnet-2b4t.trit --threads 4 --tokens 32 --runs 3
+```
+
+It wraps the injected `MatvecBackend` around a real decode and prints
+human-readable tables for total decode time, ternary projections, the dense
+language-model head, the serial remainder, and each ternary tensor shape. The
+tables include calls per token and achieved GB/s where the byte count is known.
+`--pool-probe` and `--bw-probe` run the separate dispatch and bandwidth
+diagnostics described in `benches/README.md`.
+
+This example does not emit JSON or measure per-layer cycles, DMA stall
+percentages, lane utilization, or energy. Energy remains reported only where a
+real counter exists; it is never inferred from CPU time. A stable machine
+readable profiler schema is a future tool decision, rather than a current
+`tritd` interface.
 
 ## 5. Reporting format
 

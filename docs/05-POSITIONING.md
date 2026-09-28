@@ -17,7 +17,7 @@
 2. **Next (months):** dev-board/module for hardware startups that need offline language capability (the Magical-Toys-shaped customer: needs a voice brain, can't ship cloud latency/cost/privacy). Sell modules + the runtime.
 3. **Later (18mo+):** ternary inference ASIC — the select-accumulate datapath at 10–100x FPGA efficiency. The FPGA stack becomes the reference design and the customer funnel.
 
-Fallback wedges if hardware demand is slow: `tritd`'s profiler as a standalone inference-observability tool (software revenue, same codebase); licensing the RTL core.
+Fallback wedges if hardware demand is slow: the [`decode_profile` diagnostic example](../crates/tritd/examples/decode_profile.rs) as the seed of a standalone inference-observability tool (software revenue, same codebase); licensing the RTL core.
 
 ## 4. Why us
 
