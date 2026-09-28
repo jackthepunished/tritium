@@ -5,11 +5,41 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from compare_model import ORDERS, parse_bitnet, parse_trit, require_parity, run, summarize
+from compare_model import (ORDERS, collect_profiles, parse_bitnet, parse_trit,
+                           prepare_output, require_parity, run, summarize)
 
 
 class Measurements(unittest.TestCase):
+    def test_phase_and_empty_dispatch_profiles_are_separate(self):
+        output = ('ternary projections 60.00 60.0% 210.0 8.7\n'
+                  'dense bf16 head 30.00 30.0% 1.0 21.9\n'
+                  'other (serial scalar) 10.00 10.0% - -\n')
+        with tempfile.TemporaryDirectory() as directory, patch('compare_model.run') as execute:
+            out = Path(directory)
+            execute.side_effect = [output, 'empty-dispatch diagnostics']
+            collect_profiles(Path('profiler'), Path('model.trit'), 4, out)
+            first, second = execute.call_args_list
+            self.assertNotIn('--pool-probe', first.args[0])
+            self.assertIn('--pool-probe', second.args[0])
+            self.assertNotEqual(first.args[1], second.args[1])
+            self.assertTrue((out / 'profile-t4.json').exists())
+            execute.side_effect = None
+            execute.return_value = 'empty-dispatch diagnostics'
+            with self.assertRaises(ValueError):
+                collect_profiles(Path('profiler'), Path('model.trit'), 4, out)
+
+    def test_reusing_measurement_directory_fails_before_overwriting(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            (out / 'rustc.txt').write_text('environment evidence')
+            prepare_output(out)
+            (out / 'identities.json').write_text('previous identities')
+            with self.assertRaises(ValueError):
+                prepare_output(out)
+            self.assertEqual((out / 'identities.json').read_text(), 'previous identities')
+
     def test_failed_process_keeps_diagnostics(self):
         with tempfile.TemporaryDirectory() as directory:
             stem = Path(directory) / 'failed'

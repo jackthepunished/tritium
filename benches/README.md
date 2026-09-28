@@ -178,6 +178,9 @@ fresh processes. Every model is read into page cache before each invocation.
 Tritium measures four short prompts, greedy, up to 32 tokens each, one warmup
 and one measured pass; its invocation rate is the median of four prompt rates.
 bitnet.cpp measures empty-context tg32, three repeats, reporting their mean.
+Its `test_gen` feeds synthetic random token IDs; it does not sample and
+detokenize generated text as Tritium does. This is an additional workload
+difference, not a cross-runtime output-quality check.
 Tables take the median of four invocation rates. Only the two Tritium versions
 have identical workloads; their speedup is the median of paired ratios.
 

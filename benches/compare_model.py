@@ -12,6 +12,7 @@ import hashlib
 import json
 import math
 import platform
+import re
 import statistics
 import subprocess
 from pathlib import Path
@@ -80,6 +81,30 @@ def run(command, stem):
     return stem.with_suffix('.stdout.txt').read_text()
 
 
+def prepare_output(path):
+    path.mkdir(parents=True, exist_ok=True)
+    # The workflow already placed build/environment evidence in this directory.
+    # Reject only artifacts owned by a previous harness attempt.
+    if any((path / name).exists() for name in ('identities.json', 'parity.json',
+                                              'samples.json', 'comparison.json')):
+        raise ValueError('Output contains an earlier measurement; use a fresh directory')
+
+
+def collect_profiles(binary, model, threads, out):
+    command = [binary, '--model', model, '--threads', threads, '--tokens', 32, '--runs', 1]
+    output = run(command, out / f'profile-t{threads}')
+    phases = {}
+    for phase in ('ternary projections', 'dense bf16 head', 'other (serial scalar)'):
+        matches = re.findall(r'^' + re.escape(phase) + r'\s+([\d.]+)\s+([\d.]+)%', output, re.M)
+        if len(matches) != 1:
+            raise ValueError(f'Missing or repeated model phase: {phase}')
+        phases[phase] = dict(ms_per_token=positive(float(matches[0][0])),
+                             share_pct=positive(float(matches[0][1])))
+    (out / f'profile-t{threads}.json').write_text(json.dumps(phases, indent=2) + '\n')
+    # --pool-probe exits before model loading: it must be a separate process.
+    run([binary, '--threads', threads, '--pool-probe'], out / f'pool-t{threads}')
+
+
 def summarize(samples):
     summary = []
     for threads in (1, 2, 4):
@@ -108,7 +133,7 @@ def main():
         p.error('ARM report requires a native aarch64 host; no emulation timings')
     for name, value in vars(a).items():
         setattr(a, name, value.resolve())
-    a.out.mkdir(parents=True, exist_ok=True)
+    prepare_output(a.out)
     identities = {name: dict(path=str(path), sha256=sha256(path))
                   for name, path in vars(a).items() if name != 'out'}
     (a.out / 'identities.json').write_text(json.dumps(identities, indent=2) + '\n')
@@ -122,11 +147,11 @@ def main():
             for variant in ('baseline', 'candidate'):
                 outputs.append(run([getattr(a, variant), 'run', '--model', a.model,
                                     '--tokenizer', a.tokenizer, '--threads', threads,
-                                    '--prompt', prompt, '--steps', 16],
+                                    '--prompt', prompt, '--steps', 32],
                                    a.out / f'parity-t{threads}-p{index}-{variant}'))
             require_parity(*outputs)
     (a.out / 'parity.json').write_text(json.dumps(dict(prompts=4, threads=[1, 2, 4],
-                                                     max_tokens=16, matching=True)) + '\n')
+                                                     max_tokens=32, matching=True)) + '\n')
     samples = []
     for threads in (1, 2, 4):
         for repeat, order in enumerate(ORDERS, 1):
@@ -153,8 +178,7 @@ def main():
     # Profile separately: phase wrappers add overhead, empty jobs are diagnostic
     # probes, not a directly subtractable estimate of decode synchronization.
     for threads in (1, 2, 4):
-        run([a.profile, '--model', a.model, '--threads', threads, '--tokens', 32,
-             '--runs', 1, '--pool-probe'], a.out / f'profile-t{threads}')
+        collect_profiles(a.profile, a.model, threads, a.out)
     print(json.dumps(result['summary'], indent=2), flush=True)
 
 
