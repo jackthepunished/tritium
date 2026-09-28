@@ -140,8 +140,8 @@ on loopback.
 | x86-64 + AVX-512 VNNI | `avx512vnni` | `vpdpbusd` under a `k` mask | verified, 32.5x scalar |
 | x86-64 + AVX-512BW | `avx512bw` | masked `maddubs` | verified, 23.9x scalar |
 | x86-64 + AVX2 | `avx2` | byte-spread mask + `maddubs` | verified, 13.9x scalar |
-| ARM64 + `dotprod` | `neon-dotprod` | `sdot` against ones | correctness verified on CI hardware; **no timing measured** |
-| ARM64 baseline | `neon` | `vtstq` mask + `vpadalq` | correctness verified on CI hardware; **no timing measured** |
+| ARM64 + `dotprod` | `neon-dotprod` | `sdot` against ones | correctness verified; native kernel timing measured on CI ([report](benches/results/ARM-20260928-mask-shuffle.md)) |
+| ARM64 baseline | `neon` | `vtstq` mask + `vpadalq` | correctness verified; native kernel timing measured on CI ([report](benches/results/ARM-20260928-mask-shuffle.md)) |
 | anything | `scalar` | set-bit iteration, skips the 42% zeros | verified |
 | RTL under Verilator | `trit-rtl` | 64-lane adder tree, no multipliers | verified, 24.4 s/token |
 
@@ -216,10 +216,10 @@ Full specification, including both plane invariants and the v0 migration path:
 
 - Batch size 1. No batched prefill, no continuous batching.
 - Context capped at 2048; the KV cache is f32 and preallocated (315 MB).
-- Performance is measured on x86-64 only. The NEON kernels are now executed on
-  real aarch64 hardware by CI and match the reference exactly across the whole
-  differential corpus, so they are correct — but no ARM *timing* has been taken,
-  and no ARM performance number is claimed.
+- Full-model end-to-end performance is measured on x86-64 only. Native aarch64
+  CI has now measured the NEON kernel microbenchmarks; those results are not
+  full-model decode rates, do not establish sustained DRAM bandwidth, and do
+  not include energy measurements. See the [ARM kernel report](benches/results/ARM-20260928-mask-shuffle.md).
 - No FPGA silicon yet. The RTL is simulation-first: the 64-term single-cycle
   reduction and 64 parallel activation reads are fine under Verilator and are not
   yet timing-closed on a board.
