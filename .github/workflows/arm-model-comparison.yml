@@ -1,0 +1,113 @@
+name: ARM full-model comparison
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/arm-model-comparison.yml'
+      - 'benches/compare_model.py'
+      - 'benches/test_compare_model.py'
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  full-model:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # Before the NEON mask shuffle, including the pool deadline fix.
+          ref: 902fc8a85fc297662d19ac47dd0224051c3281de
+          path: baseline
+      - uses: actions/checkout@v4
+        with:
+          repository: microsoft/BitNet
+          ref: 0b341e582afbf9e1011f24744b554c96a3477eb5
+          submodules: recursive
+          persist-credentials: false
+          path: bitnet
+      - name: Record native environment
+        run: |
+          mkdir results
+          test "$(uname -m)" = aarch64
+          uname -a > results/uname.txt
+          lscpu > results/lscpu.txt
+          free -h > results/memory.txt
+          df -h > results/disk.txt
+          rustc -Vv > results/rustc.txt
+          clang --version > results/clang.txt
+          git -C baseline rev-parse HEAD > results/base.txt
+          git -C candidate rev-parse HEAD > results/candidate.txt
+          git -C bitnet rev-parse HEAD > results/bitnet.txt
+          git -C bitnet submodule status --recursive > results/bitnet-submodules.txt
+          python3 candidate/benches/test_compare_model.py
+      - name: Build all binaries before measurement
+        run: |
+          cargo build --manifest-path baseline/Cargo.toml --release --locked -p tritd
+          cargo build --manifest-path candidate/Cargo.toml --release --locked -p tritd -p tritc
+          cargo build --manifest-path candidate/Cargo.toml --release --locked -p tritd --example decode_profile
+          cargo test --manifest-path candidate/Cargo.toml --release --locked -p tritsim --test cross_implementation --no-run
+          cmake -S bitnet -B bitnet/build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+            -DBITNET_ARM_TL1=OFF -DBITNET_X86_TL2=OFF -DGGML_NATIVE=ON \
+            -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=ON \
+            -DLLAMA_BUILD_TOOLS=ON -DLLAMA_BUILD_COMMON=ON
+          cmake --build bitnet/build --target llama-bench -j 4
+          cp bitnet/build/CMakeCache.txt results/bitnet-CMakeCache.txt
+      - name: Acquire pinned public checkpoints and verify SHA256
+        run: |
+          mkdir -p candidate/models/bitnet-2b4t
+          BF16_URL=https://huggingface.co/microsoft/bitnet-b1.58-2B-4T-bf16/resolve/276681394656abdadb8e80e5b2c3db5e5d7fcaff
+          GGUF_URL=https://huggingface.co/microsoft/bitnet-b1.58-2B-4T-gguf/resolve/a1f2f1c765812aa8af3f6eda4a313707064bba15
+          for FILE in model.safetensors config.json tokenizer.json tokenizer_config.json special_tokens_map.json; do
+            curl --fail --location --retry 3 "$BF16_URL/$FILE" -o "candidate/models/bitnet-2b4t/$FILE"
+          done
+          curl --fail --location --retry 3 "$GGUF_URL/ggml-model-i2_s.gguf" -o candidate/models/bitnet-2b4t-i2_s.gguf
+          cat > results/downloads.sha256 <<'EOF'
+          529637ff6dab1f5890767356928693f69ffe61d3b6040a43de9306b37bfd5ae1  candidate/models/bitnet-2b4t/model.safetensors
+          4221b252fdd5fd25e15847adfeb5ee88886506ba50b8a34548374492884c2162  candidate/models/bitnet-2b4t-i2_s.gguf
+          EOF
+          sha256sum --check results/downloads.sha256
+          sha256sum candidate/models/bitnet-2b4t/*.json > results/configs.sha256
+          candidate/target/release/tritc convert --input candidate/models/bitnet-2b4t --output candidate/models/bitnet-2b4t.trit --verify 2>&1 | tee results/conversion.txt
+          candidate/target/release/tritd info --model candidate/models/bitnet-2b4t.trit --verify 2>&1 | tee results/model-info.txt
+      - name: Independent real-checkpoint oracle (must not skip)
+        env:
+          XCMP_THREADS: 4
+          XCMP_KERNEL: neon-dotprod
+        run: |
+          test -s candidate/models/bitnet-2b4t.trit
+          cargo test --manifest-path candidate/Cargo.toml -p tritsim --release --locked --test cross_implementation real_checkpoint_paths_agree -- --ignored --exact --nocapture 2>&1 | tee results/oracle.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('results/oracle.txt').read_text()
+          positions = re.findall(r'^(Reference|Folded|IntMlp) pos (\d+): cosine', text, re.M)
+          expected = {(mode, str(pos)) for mode in ('Reference', 'Folded', 'IntMlp') for pos in range(8)}
+          assert len(positions) == 24 and set(positions) == expected, 'Real checkpoint oracle did not exercise all 24 positions'
+          PY
+      - name: Parity, interleaved full-model comparison and phase profiles
+        run: |
+          python3 candidate/benches/compare_model.py \
+            --baseline baseline/target/release/tritd \
+            --candidate candidate/target/release/tritd \
+            --bitnet bitnet/build/bin/llama-bench \
+            --model candidate/models/bitnet-2b4t.trit \
+            --gguf candidate/models/bitnet-2b4t-i2_s.gguf \
+            --tokenizer candidate/models/bitnet-2b4t/tokenizer.json \
+            --suite candidate/benches/prompts/short.jsonl \
+            --profile candidate/target/release/examples/decode_profile \
+            --out results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arm-full-model-comparison
+          path: results/
+          retention-days: 30
