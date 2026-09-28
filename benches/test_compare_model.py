@@ -32,7 +32,7 @@ class Measurements(unittest.TestCase):
                 parse_bitnet(rows, 2)
 
     def test_trit_preserves_metric_meaning(self):
-        row = dict(threads=2, prompts=4, backend='cpu', decoded_tokens=128,
+        row = dict(threads=2, prompts=4, backend='cpu/neon-dotprodx2', decoded_tokens=128,
                    prompt_tokens=36, kernel='neon-dotprod', decode_tok_per_s=15,
                    ttft_ms=200, peak_rss_mb=1250)
         parsed = parse_trit(row, 2)

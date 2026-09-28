@@ -35,7 +35,7 @@ def positive(value):
 
 def parse_trit(report, threads):
     if (report['threads'] != threads or report['prompts'] != 4
-            or report['backend'] != 'cpu'
+            or report['backend'] != f"cpu/{report['kernel']}x{threads}"
             or not 0 < report['decoded_tokens'] <= 128):
         raise ValueError(f'Unexpected Tritium workload: {report}')
     return dict(tok_s=positive(report['decode_tok_per_s']),
